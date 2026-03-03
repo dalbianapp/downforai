@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ServiceCategory {
+  LLM
+  IMAGE
+  VIDEO
+  AUDIO
+  DEV
+  INFRA
+  SEARCH
+  PRODUCTIVITY
+  AGENTS
+  THREE_D
+  DESIGN
+}
+
+enum BadgeType {
+  LIVE_MONITORING
+  STATUS_PAGE_SYNC
+  COMMUNITY_REPORTS
+}
+
+enum ServiceStatus {
+  OPERATIONAL
+  DEGRADED
+  OUTAGE
+  UNKNOWN
+}
+
+enum IncidentStatus {
+  OPEN
+  MONITORING
+  RESOLVED
+}
+
+enum IncidentSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum ReportType {
+  DOWN
+  SLOW
+  LOGIN
+  API_ERROR
+  OTHER
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  name            String
+  category        ServiceCategory
+  tier            Int             @default(1)
+  defaultBadge    BadgeType
+  limitPhraseKey  String
+  websiteUrl      String?
+  iconUrl         String?
+  description     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  surfaces         ServiceSurface[]
+  incidents        Incident[]
+  communityReports CommunityReport[]
+
+  @@index([category])
+}
+
+model ServiceSurface {
+  id                     String    @id @default(cuid())
+  serviceId              String
+  slug                   String
+  displayName            String
+  badgeOverride          BadgeType?
+  limitPhraseOverrideKey String?
+  isEnabled              Boolean   @default(true)
+  checkUrl               String?   // URL to ping for monitoring (optional, fallback to service.websiteUrl)
+  createdAt              DateTime  @default(now())
+
+  service       Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  observations  Observation[]
+  reports       CommunityReport[]
+
+  @@unique([serviceId, slug])
+  @@index([serviceId])
+}
+
+model Region {
+  id          String @id @default(cuid())
+  code        String @unique
+  displayName String
+
+  observations Observation[]
+}
+
+model Observation {
+  id               String        @id @default(cuid())
+  serviceSurfaceId String
+  regionId         String
+  status           ServiceStatus
+  latencyMs        Int?
+  errorRate        Int?
+  httpStatus       Int?          // HTTP status code from monitoring check
+  confidence       String?       // "HIGH" or "LOW" - reliability of the check result
+  observedAt       DateTime      @default(now())
+
+  serviceSurface ServiceSurface @relation(fields: [serviceSurfaceId], references: [id], onDelete: Cascade)
+  region         Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@index([serviceSurfaceId, observedAt(sort: Desc)])
+  @@index([regionId])
+}
+
+model Incident {
+  id          String           @id @default(cuid())
+  serviceId   String
+  title       String
+  status      IncidentStatus
+  severity    IncidentSeverity
+  startedAt   DateTime         @default(now())
+  resolvedAt  DateTime?
+  summary     String?
+  sourceBadge BadgeType
+  createdAt   DateTime         @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, startedAt(sort: Desc)])
+}
+
+model CommunityReport {
+  id          String     @id @default(cuid())
+  serviceId   String
+  surfaceId   String?    // NEW - optional affected component/surface
+  reportType  ReportType
+  countryCode String?
+  ipHash      String?
+  email       String?    // NEW - optional email for notifications
+  comment     String?    // NEW - optional user comment (max 500 chars)
+  createdAt   DateTime   @default(now())
+
+  service Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  surface ServiceSurface? @relation(fields: [surfaceId], references: [id], onDelete: SetNull)
+
+  @@index([serviceId, createdAt(sort: Desc)])
+  @@index([ipHash, createdAt(sort: Desc)])
+  @@index([ipHash, serviceId, createdAt(sort: Desc)])
+  @@index([surfaceId, createdAt(sort: Desc)])
+  @@index([serviceId, reportType, createdAt(sort: Desc)])
+}
+
+model BadgePhrase {
+  key  String @id
+  lang String
+  text String
+
+  @@unique([key, lang])
+}

@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-hover: #f5f5f5;
+    --border: #e5e5e5;
+    --border-subtle: #f0f0f0;
+    --text: #171717;
+    --text-secondary: #525252;
+    --text-muted: #a3a3a3;
+    --text-dim: #d4d4d4;
+    --operational: #16a34a;
+    --operational-bg: #f0fdf4;
+    --operational-border: #bbf7d0;
+    --degraded: #ca8a04;
+    --degraded-bg: #fefce8;
+    --degraded-border: #fef08a;
+    --outage: #dc2626;
+    --outage-bg: #fef2f2;
+    --outage-border: #fecaca;
+    --unknown: #737373;
+    --unknown-bg: #f5f5f5;
+    --accent: #2563eb;
+    --accent-secondary: #7c3aed;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-led {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes pulse-outline {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-pulse-led {
+  animation: pulse-led 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-outline {
+  animation: pulse-outline 2s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
