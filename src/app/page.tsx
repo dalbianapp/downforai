@@ -81,6 +81,7 @@ export default async function HomePage() {
     operational: services.filter((s) => s.status === "OPERATIONAL").length,
     degraded: services.filter((s) => s.status === "DEGRADED").length,
     outage: services.filter((s) => s.status === "OUTAGE").length,
+    total: services.length,
   };
 
   // Featured services for Bento: 4 most problematic + 2 biggest operational
@@ -112,6 +113,7 @@ export default async function HomePage() {
         operational={counts.operational}
         degraded={counts.degraded}
         outage={counts.outage}
+        total={counts.total}
       />
 
       {/* Bento Section - Featured Services (seulement si incidents) */}
@@ -137,7 +139,7 @@ export default async function HomePage() {
               All systems operational
             </div>
             <div style={{ fontSize: '13px', color: '#16a34a' }}>
-              No issues detected across {counts.operational + counts.degraded + counts.outage} AI services
+              No issues detected across {counts.total} AI services
             </div>
           </div>
         </div>

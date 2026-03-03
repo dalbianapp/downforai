@@ -4,11 +4,11 @@ interface HeroSectionProps {
   operational: number;
   degraded: number;
   outage: number;
+  total: number;
 }
 
-export function HeroSection({ operational, degraded, outage }: HeroSectionProps) {
+export function HeroSection({ operational, degraded, outage, total }: HeroSectionProps) {
   const issues = degraded + outage;
-  const total = operational + degraded + outage;
 
   return (
     <div className="text-center py-6 mb-4">
