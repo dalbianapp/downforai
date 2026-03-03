@@ -41,16 +41,21 @@ export function LatencyChart({ observations }: LatencyChartProps) {
       grouped[key].push(obs.latencyMs);
     });
 
-    // Calculate averages
+    // Calculate averages and sort chronologically
     return Object.entries(grouped)
-      .map(([time, latencies]) => ({
-        time: new Date(time).toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        latency: Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length),
-      }))
-      .sort((a, b) => a.time.localeCompare(b.time));
+      .map(([time, latencies]) => {
+        const date = new Date(time);
+        return {
+          time: date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false, // Force 24h format
+          }),
+          timestamp: date.getTime(),
+          latency: Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length),
+        };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
   }, [observations]);
 
   if (chartData.length === 0) {
