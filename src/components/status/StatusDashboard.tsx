@@ -18,7 +18,7 @@ interface StatusDashboardProps {
   services: ServiceData[];
 }
 
-const CATEGORIES = ["LLM", "IMAGE", "VIDEO", "AUDIO", "DEV", "INFRA", "SEARCH", "PRODUCTIVITY"];
+const CATEGORIES = ["LLM", "IMAGE", "VIDEO", "AUDIO", "DEV", "INFRA", "SEARCH", "PRODUCTIVITY", "AGENTS", "THREE_D", "DESIGN"];
 
 function generateSparkline(status: ServiceStatus): number[] {
   return Array.from({ length: 24 }, (_, i) => {
