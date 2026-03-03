@@ -146,6 +146,43 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
           })}
         </div>
       </div>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "16px",
+          marginTop: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        {Object.entries(statusLabels).map(([status, label]) => (
+          <div
+            key={status}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <div
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "2px",
+                backgroundColor: statusColors[status],
+                border: status === "UNKNOWN" ? "1px solid #e5e5e5" : "none",
+                opacity: status === "UNKNOWN" ? 0.7 : 1,
+              }}
+            />
+            <span style={{ fontSize: "12px", color: "#737373" }}>
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
