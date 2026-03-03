@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PostHogProvider } from "@/lib/posthog";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -50,13 +51,15 @@ export default function RootLayout({
         className={`${plusJakarta.variable} antialiased`}
         style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
       >
-        <Header />
-        <main className="min-h-screen">
-          <div className="max-w-[1200px] mx-auto px-4 py-8">{children}</div>
-        </main>
-        <Footer />
-        <Analytics />
-        <SpeedInsights />
+        <PostHogProvider>
+          <Header />
+          <main className="min-h-screen">
+            <div className="max-w-[1200px] mx-auto px-4 py-8">{children}</div>
+          </main>
+          <Footer />
+          <Analytics />
+          <SpeedInsights />
+        </PostHogProvider>
       </body>
     </html>
   );
