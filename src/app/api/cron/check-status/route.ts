@@ -141,7 +141,16 @@ function generateLatency(status: StatusResult): number | null {
   return null; // OUTAGE
 }
 
+// Support both GET (Vercel Cron) and POST (manual trigger)
+export async function GET(request: NextRequest) {
+  return handleCheckStatus(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleCheckStatus(request);
+}
+
+async function handleCheckStatus(request: NextRequest) {
   if (!process.env.CRON_SECRET) {
     console.error("CRON_SECRET is not configured");
     return NextResponse.json(

@@ -8,7 +8,16 @@ function verifyAuth(request: NextRequest): boolean {
   return authHeader === `Bearer ${CRON_SECRET}`;
 }
 
+// Support both GET (Vercel Cron) and POST (manual trigger)
+export async function GET(request: NextRequest) {
+  return handleAggregateReports(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleAggregateReports(request);
+}
+
+async function handleAggregateReports(request: NextRequest) {
   if (!process.env.CRON_SECRET) {
     console.error("CRON_SECRET is not configured");
     return NextResponse.json(
