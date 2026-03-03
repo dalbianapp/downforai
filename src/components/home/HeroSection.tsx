@@ -11,7 +11,7 @@ export function HeroSection({ operational, degraded, outage }: HeroSectionProps)
   const total = operational + degraded + outage;
 
   return (
-    <div className="text-center py-12 mb-12">
+    <div className="text-center py-6 mb-4">
       <h1 className="text-5xl font-extrabold mb-6" style={{ letterSpacing: '-3px', color: 'var(--text)' }}>
         Is your AI <span className="gradient-text">down</span>?
       </h1>

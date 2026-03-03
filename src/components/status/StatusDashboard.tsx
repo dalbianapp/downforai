@@ -12,6 +12,7 @@ interface ServiceData {
   category: string;
   status: ServiceStatus;
   badgeType: BadgeType;
+  latencyMs?: number | null;
 }
 
 interface StatusDashboardProps {
@@ -162,6 +163,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
                       category={service.category}
                       status={service.status}
                       sparklineData={generateSparkline(service.status)}
+                      latencyMs={service.latencyMs}
                     />
                   ))}
                 </div>
@@ -186,6 +188,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
               category={service.category}
               status={service.status}
               sparklineData={generateSparkline(service.status)}
+              latencyMs={service.latencyMs}
             />
           ))}
         </div>

@@ -54,6 +54,7 @@ async function getServicesStatus() {
       category: service.category,
       status,
       badgeType: service.defaultBadge,
+      latencyMs: allObservations[0]?.latencyMs || null,
     };
   });
 }
@@ -101,7 +102,7 @@ export default async function HomePage() {
   const jsonLd = generateWebSiteJsonLd("DownForAI", siteUrl);
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -9,6 +9,7 @@ interface ServiceCardProps {
   category: string;
   status: ServiceStatus;
   sparklineData: number[];
+  latencyMs?: number | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -53,7 +54,7 @@ function sparklinePath(values: number[], width: number, height: number): string 
   return d;
 }
 
-export function ServiceCard({ slug, name, category: _category, status, sparklineData }: ServiceCardProps) {
+export function ServiceCard({ slug, name, category: _category, status, sparklineData, latencyMs }: ServiceCardProps) {
   const color = statusColors[status] || "#6b7280";
   const hasIssue = status === "OUTAGE" || status === "DEGRADED";
   const svgW = 140;
@@ -153,6 +154,13 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
             )}
           </svg>
         </div>
+
+        {/* Latency */}
+        {latencyMs && (
+          <div style={{ fontSize: "11px", color: "#a3a3a3", textAlign: "right", marginTop: "2px" }}>
+            {latencyMs}ms
+          </div>
+        )}
       </div>
     </Link>
   );
