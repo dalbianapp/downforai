@@ -59,7 +59,8 @@ async function getServicesStatus() {
       const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
-      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5 });
+      const lastObservedAt = surface.observations[0]?.observedAt || null;
+      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5, lastObservedAt });
     });
     const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
     const avgBaseline = surfacePerformances.length > 0
@@ -125,7 +126,12 @@ export default async function HomePage() {
 
   // Performance alerts: services with elevated/severe latency but not in outage
   const perfAlerts = services
-    .filter((s) => s.performanceLevel !== "NORMAL" && s.status !== "OUTAGE")
+    .filter((s) =>
+      s.performanceLevel !== "NORMAL" &&
+      s.performanceLevel !== "UNKNOWN" &&
+      s.status !== "OUTAGE" &&
+      s.status !== "UNKNOWN"
+    )
     .sort((a, b) => b.performanceScore - a.performanceScore)
     .slice(0, 6);
 

@@ -74,7 +74,8 @@ async function getCategoryServices(category: string) {
       const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
-      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5 });
+      const lastObservedAt = surface.observations[0]?.observedAt || null;
+      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5, lastObservedAt });
     });
     const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
     const avgBaseline = surfacePerformances.length > 0

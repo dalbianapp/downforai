@@ -86,7 +86,7 @@ export function BentoSection({ services }: BentoSectionProps) {
 
   // Get chart color: use status color for OUTAGE/UNKNOWN, otherwise use performance color
   const getChartColor = (status: ServiceStatus, performanceLevel: PerformanceLevel) => {
-    if (status === 'OUTAGE' || status === 'UNKNOWN') {
+    if (status === 'OUTAGE' || status === 'UNKNOWN' || performanceLevel === 'UNKNOWN') {
       return getStatusColor(status);
     }
     return getPerformanceColor(performanceLevel);

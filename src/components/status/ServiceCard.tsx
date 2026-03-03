@@ -59,11 +59,12 @@ function sparklinePath(values: number[], width: number, height: number): string 
 export function ServiceCard({ slug, name, category: _category, status, sparklineData, latencyMs, performanceLevel }: ServiceCardProps) {
   // Dual color system: status color for dot, performance color for sparkline
   const dotColor = statusColors[status] || "#6b7280";
-  const sparkColor = (status === "OUTAGE" || status === "UNKNOWN")
-    ? dotColor
+  const sparkColor = (status === "OUTAGE" || status === "UNKNOWN" || performanceLevel === "UNKNOWN")
+    ? (statusColors[status] || "#6b7280")
     : getPerformanceColor(performanceLevel);
 
-  const hasIssue = status === "OUTAGE" || status === "DEGRADED" || performanceLevel !== "NORMAL";
+  const hasIssue = status === "OUTAGE" || status === "DEGRADED"
+    || (performanceLevel !== "NORMAL" && performanceLevel !== "UNKNOWN");
 
   // Card background and border based on status and performance
   const cardBg =

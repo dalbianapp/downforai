@@ -1,4 +1,4 @@
-export type PerformanceLevel = "NORMAL" | "ELEVATED" | "SEVERE";
+export type PerformanceLevel = "UNKNOWN" | "NORMAL" | "ELEVATED" | "SEVERE";
 
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
@@ -44,18 +44,29 @@ export interface PerformanceResult { level: PerformanceLevel; baseline: number; 
 export function computeSurfacePerformance(opts: {
   last72hLatencies: number[];
   last5Latencies: number[];
+  lastObservedAt?: Date | null;
 }): PerformanceResult {
+  const validLatencies = opts.last5Latencies.filter((x) => Number.isFinite(x) && x > 0);
+  if (validLatencies.length < 3) {
+    return { level: "UNKNOWN", baseline: 0, baselinePoints: 0 };
+  }
+  if (opts.lastObservedAt) {
+    const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+    if (opts.lastObservedAt.getTime() < threeHoursAgo) {
+      return { level: "UNKNOWN", baseline: 0, baselinePoints: 0 };
+    }
+  }
   const { baseline, points } = computeBaseline(opts.last72hLatencies);
-  const pointLevels = opts.last5Latencies
-    .filter((x) => Number.isFinite(x) && x > 0)
-    .map((x) => classifyPoint(x, baseline));
-  const level = pointLevels.length > 0 ? smoothLevel(pointLevels) : "NORMAL";
+  const pointLevels = validLatencies.map((x) => classifyPoint(x, baseline));
+  const level = smoothLevel(pointLevels);
   return { level, baseline, baselinePoints: points };
 }
 
 export function aggregateServicePerformance(levels: PerformanceLevel[]): PerformanceLevel {
-  if (levels.includes("SEVERE")) return "SEVERE";
-  if (levels.includes("ELEVATED")) return "ELEVATED";
+  const nonUnknown = levels.filter((l) => l !== "UNKNOWN");
+  if (nonUnknown.length === 0) return "UNKNOWN";
+  if (nonUnknown.includes("SEVERE")) return "SEVERE";
+  if (nonUnknown.includes("ELEVATED")) return "ELEVATED";
   return "NORMAL";
 }
 
@@ -64,11 +75,12 @@ export function getPerformanceColor(level: PerformanceLevel): string {
     case "SEVERE": return "#ef4444";
     case "ELEVATED": return "#f59e0b";
     case "NORMAL": return "#16a34a";
+    case "UNKNOWN": return "#6b7280";
   }
 }
 
 export function computePerformanceScore(lastLatency: number | null, baseline: number, level: PerformanceLevel): number {
-  if (!lastLatency || baseline <= 0) return 0;
+  if (!lastLatency || baseline <= 0 || level === "UNKNOWN") return 0;
   const ratio = Math.min(lastLatency / baseline, 20);
   const severityWeight = level === "SEVERE" ? 2 : 1;
   return ratio * severityWeight;
