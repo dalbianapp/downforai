@@ -44,7 +44,7 @@ async function getCategoryServices(category: string) {
               },
             },
             orderBy: { observedAt: "desc" },
-            take: 1,
+            take: 24,
           },
         },
       },
@@ -60,6 +60,13 @@ async function getCategoryServices(category: string) {
       status = calculateWorstStatus(statuses);
     }
 
+    // Build sparkline data from real latency observations
+    const sparklineData: number[] = allObservations
+      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())
+      .map((o) => o.latencyMs)
+      .filter((lat): lat is number => lat !== null)
+      .slice(-24);
+
     return {
       slug: service.slug,
       name: service.name,
@@ -67,6 +74,8 @@ async function getCategoryServices(category: string) {
       category: service.category,
       status,
       badgeType: service.defaultBadge,
+      latencyMs: allObservations[0]?.latencyMs || null,
+      sparklineData,
     };
   });
 }

@@ -13,6 +13,7 @@ interface ServiceData {
   status: ServiceStatus;
   badgeType: BadgeType;
   latencyMs?: number | null;
+  sparklineData: number[];
 }
 
 interface StatusDashboardProps {
@@ -20,14 +21,6 @@ interface StatusDashboardProps {
 }
 
 const CATEGORIES = ["LLM", "IMAGE", "VIDEO", "AUDIO", "DEV", "INFRA", "SEARCH", "PRODUCTIVITY", "AGENTS", "THREE_D", "DESIGN"];
-
-function generateSparkline(status: ServiceStatus): number[] {
-  return Array.from({ length: 24 }, (_, i) => {
-    if (status === 'OUTAGE') return i < 18 ? Math.random() * 200 + 250 : Math.random() * 50 + 10;
-    if (status === 'DEGRADED') return Math.random() * 300 + 200 + (i > 12 ? Math.random() * 400 : 0);
-    return Math.random() * 100 + 150;
-  });
-}
 
 export function StatusDashboard({ services }: StatusDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -162,7 +155,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
                       name={service.name}
                       category={service.category}
                       status={service.status}
-                      sparklineData={generateSparkline(service.status)}
+                      sparklineData={service.sparklineData}
                       latencyMs={service.latencyMs}
                     />
                   ))}
@@ -187,7 +180,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
               name={service.name}
               category={service.category}
               status={service.status}
-              sparklineData={generateSparkline(service.status)}
+              sparklineData={service.sparklineData}
               latencyMs={service.latencyMs}
             />
           ))}

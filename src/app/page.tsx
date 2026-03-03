@@ -28,7 +28,7 @@ async function getServicesStatus() {
               },
             },
             orderBy: { observedAt: "desc" },
-            take: 1,
+            take: 24, // Get last 24 observations for sparkline
           },
         },
       },
@@ -46,6 +46,13 @@ async function getServicesStatus() {
       status = calculateWorstStatus(statuses);
     }
 
+    // Build sparkline data from real latency observations
+    const sparklineData: number[] = allObservations
+      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime()) // Sort ascending (oldest to newest)
+      .map((o) => o.latencyMs)
+      .filter((lat): lat is number => lat !== null) // Remove nulls
+      .slice(-24); // Keep last 24 points max
+
     return {
       id: service.id,
       slug: service.slug,
@@ -55,6 +62,7 @@ async function getServicesStatus() {
       status,
       badgeType: service.defaultBadge,
       latencyMs: allObservations[0]?.latencyMs || null,
+      sparklineData,
     };
   });
 }

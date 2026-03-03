@@ -42,27 +42,13 @@ interface BentoService {
   description: string | null;
   status: ServiceStatus;
   badgeType: BadgeType;
+  sparklineData: number[];
+  latencyMs: number | null;
 }
 
 interface BentoSectionProps {
   services: BentoService[];
 }
-
-// Generate fake chart data (24 points for 24 hours)
-const generateChartData = (status: ServiceStatus) => {
-  return Array.from({ length: 24 }, (_, i) => {
-    if (status === 'OUTAGE') {
-      // Starts normal, drops to near 0 at the end
-      return i < 18 ? Math.random() * 200 + 250 : Math.random() * 50 + 10;
-    }
-    if (status === 'DEGRADED') {
-      // Increasingly erratic
-      return Math.random() * 300 + 200 + (i > 12 ? Math.random() * 400 : 0);
-    }
-    // OPERATIONAL - stable low values
-    return Math.random() * 100 + 150;
-  });
-};
 
 export function BentoSection({ services }: BentoSectionProps) {
   // Sort: outage > degraded > unknown > operational
@@ -138,7 +124,7 @@ export function BentoSection({ services }: BentoSectionProps) {
           )}
           <div className="mt-auto">
             <AreaChart
-              data={generateChartData(main.status)}
+              data={main.sparklineData}
               color={getStatusColor(main.status)}
               height={80}
             />
@@ -172,7 +158,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                 </p>
               )}
               <AreaChart
-                data={generateChartData(second.status)}
+                data={second.sparklineData}
                 color={getStatusColor(second.status)}
                 height={45}
               />
@@ -208,7 +194,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                 <div className="flex flex-col gap-2">
                   <svg width="100%" height={28} viewBox="0 0 120 28" preserveAspectRatio="none">
                     <path
-                      d={sparklinePath(generateChartData(third.status), 120, 28)}
+                      d={sparklinePath(third.sparklineData, 120, 28)}
                       fill="none"
                       stroke={getStatusColor(third.status)}
                       strokeWidth={1.5}
@@ -219,7 +205,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                     className="text-xs font-mono"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    {Math.floor(Math.random() * 300) + 200}ms
+                    {third.latencyMs ? `${third.latencyMs}ms` : '—'}
                   </span>
                 </div>
               </Link>
@@ -252,7 +238,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                 <div className="flex flex-col gap-2">
                   <svg width="100%" height={28} viewBox="0 0 120 28" preserveAspectRatio="none">
                     <path
-                      d={sparklinePath(generateChartData(fourth.status), 120, 28)}
+                      d={sparklinePath(fourth.sparklineData, 120, 28)}
                       fill="none"
                       stroke={getStatusColor(fourth.status)}
                       strokeWidth={1.5}
@@ -263,7 +249,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                     className="text-xs font-mono"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    {Math.floor(Math.random() * 300) + 200}ms
+                    {fourth.latencyMs ? `${fourth.latencyMs}ms` : '—'}
                   </span>
                 </div>
               </Link>
