@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { ServiceStatus, BadgeType } from "@prisma/client";
 import { ServiceCard } from "./ServiceCard";
 import { formatCategoryLabel } from "@/lib/utils";
+import { type PerformanceLevel } from "@/lib/performance";
 
 interface ServiceData {
   slug: string;
@@ -14,6 +15,7 @@ interface ServiceData {
   badgeType: BadgeType;
   latencyMs?: number | null;
   sparklineData: number[];
+  performanceLevel: PerformanceLevel;
 }
 
 interface StatusDashboardProps {
@@ -157,6 +159,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
                       status={service.status}
                       sparklineData={service.sparklineData}
                       latencyMs={service.latencyMs}
+                      performanceLevel={service.performanceLevel}
                     />
                   ))}
                 </div>
@@ -182,6 +185,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
               status={service.status}
               sparklineData={service.sparklineData}
               latencyMs={service.latencyMs}
+              performanceLevel={service.performanceLevel}
             />
           ))}
         </div>

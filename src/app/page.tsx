@@ -7,6 +7,8 @@ import { RecentIncidents } from "@/components/home/RecentIncidents";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { calculateWorstStatus } from "@/lib/utils";
 import { generateWebSiteJsonLd } from "@/lib/seo";
+import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore, getPerformanceColor } from "@/lib/performance";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "DownForAI — Is Your AI Down? Real-Time AI Status Monitor",
@@ -22,13 +24,8 @@ async function getServicesStatus() {
       surfaces: {
         include: {
           observations: {
-            where: {
-              observedAt: {
-                gte: new Date(Date.now() - 6 * 60 * 60 * 1000), // Last 6 hours — matches UNKNOWN threshold
-              },
-            },
             orderBy: { observedAt: "desc" },
-            take: 24, // Get last 24 observations for sparkline
+            take: 72, // Get last 72 observations for performance baseline
           },
         },
       },
@@ -38,11 +35,15 @@ async function getServicesStatus() {
   return services.map((service) => {
     const allObservations = service.surfaces.flatMap((s) => s.observations);
 
+    // Filter recent observations (last 6 hours) for status determination
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    const recentObservations = allObservations.filter((o) => o.observedAt >= sixHoursAgo);
+
     // If no observations in last 6 hours, status is UNKNOWN
     let status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" = "UNKNOWN";
 
-    if (allObservations.length > 0) {
-      const statuses = allObservations.map((o) => o.status);
+    if (recentObservations.length > 0) {
+      const statuses = recentObservations.map((o) => o.status);
       status = calculateWorstStatus(statuses);
     }
 
@@ -52,6 +53,18 @@ async function getServicesStatus() {
       .map((o) => o.latencyMs)
       .filter((lat): lat is number => lat !== null) // Remove nulls
       .slice(-24); // Keep last 24 points max
+
+    // Compute performance level
+    const surfacePerformances = service.surfaces.map((surface) => {
+      const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
+      const last5 = latencies.slice(0, 5);
+      const last72h = latencies;
+      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5 });
+    });
+    const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
+    const avgBaseline = surfacePerformances.length > 0
+      ? Math.round(surfacePerformances.reduce((sum, p) => sum + p.baseline, 0) / surfacePerformances.length)
+      : 0;
 
     return {
       id: service.id,
@@ -63,6 +76,9 @@ async function getServicesStatus() {
       badgeType: service.defaultBadge,
       latencyMs: allObservations[0]?.latencyMs || null,
       sparklineData,
+      performanceLevel,
+      performanceBaseline: avgBaseline,
+      performanceScore: computePerformanceScore(allObservations[0]?.latencyMs || null, avgBaseline, performanceLevel),
     };
   });
 }
@@ -107,6 +123,12 @@ export default async function HomePage() {
 
   const featuredServices = [...problematicServices, ...operationalServices].slice(0, 4);
 
+  // Performance alerts: services with elevated/severe latency but not in outage
+  const perfAlerts = services
+    .filter((s) => s.performanceLevel !== "NORMAL" && s.status !== "OUTAGE")
+    .sort((a, b) => b.performanceScore - a.performanceScore)
+    .slice(0, 6);
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://downforai.com";
   const jsonLd = generateWebSiteJsonLd("DownForAI", siteUrl);
 
@@ -149,6 +171,61 @@ export default async function HomePage() {
             <div style={{ fontSize: '13px', color: '#16a34a' }}>
               No issues detected across {counts.total} AI services
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Alerts */}
+      {perfAlerts.length > 0 && (
+        <div
+          style={{
+            background: '#fffbeb',
+            border: '1px solid #fef3c7',
+            borderRadius: '14px',
+            padding: '20px 24px',
+          }}
+        >
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#92400e' }}>
+              Performance Alerts
+            </div>
+            <div style={{ fontSize: '13px', color: '#b45309' }}>
+              Services responding but with elevated latency
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {perfAlerts.map((service) => (
+              <Link
+                key={service.slug}
+                href={`/${service.slug}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 14px',
+                  background: '#ffffff',
+                  border: `1px solid ${service.performanceLevel === 'SEVERE' ? '#fecaca' : '#fef3c7'}`,
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  color: '#171717',
+                  textDecoration: 'none',
+                }}
+              >
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: getPerformanceColor(service.performanceLevel),
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontWeight: 600 }}>{service.name}</span>
+                <span style={{ fontFamily: 'monospace', color: '#737373' }}>
+                  {service.latencyMs ? `${service.latencyMs}ms` : '—'}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       )}

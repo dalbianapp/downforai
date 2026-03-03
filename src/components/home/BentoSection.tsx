@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ServiceStatus, BadgeType } from "@prisma/client";
 import { StatusBadge } from "../status/StatusBadge";
 import { AreaChart } from "../status/AreaChart";
+import { getPerformanceColor, type PerformanceLevel } from "@/lib/performance";
 
 function sparklinePath(values: number[], width: number, height: number): string {
   const n = values.length;
@@ -44,6 +45,7 @@ interface BentoService {
   badgeType: BadgeType;
   sparklineData: number[];
   latencyMs: number | null;
+  performanceLevel: PerformanceLevel;
 }
 
 interface BentoSectionProps {
@@ -80,6 +82,14 @@ export function BentoSection({ services }: BentoSectionProps) {
       case 'OPERATIONAL': return '#16a34a';
       default: return '#737373';
     }
+  };
+
+  // Get chart color: use status color for OUTAGE/UNKNOWN, otherwise use performance color
+  const getChartColor = (status: ServiceStatus, performanceLevel: PerformanceLevel) => {
+    if (status === 'OUTAGE' || status === 'UNKNOWN') {
+      return getStatusColor(status);
+    }
+    return getPerformanceColor(performanceLevel);
   };
 
   const getStatusShadow = (status: ServiceStatus) => {
@@ -125,7 +135,7 @@ export function BentoSection({ services }: BentoSectionProps) {
           <div className="mt-auto">
             <AreaChart
               data={main.sparklineData}
-              color={getStatusColor(main.status)}
+              color={getChartColor(main.status, main.performanceLevel)}
               height={80}
             />
           </div>
@@ -159,7 +169,7 @@ export function BentoSection({ services }: BentoSectionProps) {
               )}
               <AreaChart
                 data={second.sparklineData}
-                color={getStatusColor(second.status)}
+                color={getChartColor(second.status, second.performanceLevel)}
                 height={45}
               />
             </Link>
@@ -196,7 +206,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                     <path
                       d={sparklinePath(third.sparklineData, 120, 28)}
                       fill="none"
-                      stroke={getStatusColor(third.status)}
+                      stroke={getChartColor(third.status, third.performanceLevel)}
                       strokeWidth={1.5}
                       strokeLinecap="round"
                     />
@@ -240,7 +250,7 @@ export function BentoSection({ services }: BentoSectionProps) {
                     <path
                       d={sparklinePath(fourth.sparklineData, 120, 28)}
                       fill="none"
-                      stroke={getStatusColor(fourth.status)}
+                      stroke={getChartColor(fourth.status, fourth.performanceLevel)}
                       strokeWidth={1.5}
                       strokeLinecap="round"
                     />

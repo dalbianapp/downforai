@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { calculateWorstStatus, formatCategoryLabel } from "@/lib/utils";
 import { ServiceCategory } from "@prisma/client";
+import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 
 export const revalidate = 120;
 
@@ -38,13 +39,8 @@ async function getCategoryServices(category: string) {
       surfaces: {
         include: {
           observations: {
-            where: {
-              observedAt: {
-                gte: new Date(Date.now() - 6 * 60 * 60 * 1000),
-              },
-            },
             orderBy: { observedAt: "desc" },
-            take: 24,
+            take: 72, // Get last 72 observations for performance baseline
           },
         },
       },
@@ -53,10 +49,16 @@ async function getCategoryServices(category: string) {
 
   return services.map((service) => {
     const allObservations = service.surfaces.flatMap((s) => s.observations);
+
+    // Filter recent observations (last 6 hours) for status determination
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    const recentObservations = allObservations.filter((o) => o.observedAt >= sixHoursAgo);
+
+    // If no observations in last 6 hours, status is UNKNOWN
     let status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" = "UNKNOWN";
 
-    if (allObservations.length > 0) {
-      const statuses = allObservations.map((o) => o.status);
+    if (recentObservations.length > 0) {
+      const statuses = recentObservations.map((o) => o.status);
       status = calculateWorstStatus(statuses);
     }
 
@@ -67,6 +69,18 @@ async function getCategoryServices(category: string) {
       .filter((lat): lat is number => lat !== null)
       .slice(-24);
 
+    // Compute performance level
+    const surfacePerformances = service.surfaces.map((surface) => {
+      const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
+      const last5 = latencies.slice(0, 5);
+      const last72h = latencies;
+      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5 });
+    });
+    const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
+    const avgBaseline = surfacePerformances.length > 0
+      ? Math.round(surfacePerformances.reduce((sum, p) => sum + p.baseline, 0) / surfacePerformances.length)
+      : 0;
+
     return {
       slug: service.slug,
       name: service.name,
@@ -76,6 +90,9 @@ async function getCategoryServices(category: string) {
       badgeType: service.defaultBadge,
       latencyMs: allObservations[0]?.latencyMs || null,
       sparklineData,
+      performanceLevel,
+      performanceBaseline: avgBaseline,
+      performanceScore: computePerformanceScore(allObservations[0]?.latencyMs || null, avgBaseline, performanceLevel),
     };
   });
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ServiceStatus } from "@prisma/client";
+import { getPerformanceColor, type PerformanceLevel } from "@/lib/performance";
 
 interface ServiceCardProps {
   slug: string;
@@ -10,6 +11,7 @@ interface ServiceCardProps {
   status: ServiceStatus;
   sparklineData: number[];
   latencyMs?: number | null;
+  performanceLevel: PerformanceLevel;
 }
 
 const statusColors: Record<string, string> = {
@@ -54,9 +56,30 @@ function sparklinePath(values: number[], width: number, height: number): string 
   return d;
 }
 
-export function ServiceCard({ slug, name, category: _category, status, sparklineData, latencyMs }: ServiceCardProps) {
-  const color = statusColors[status] || "#6b7280";
-  const hasIssue = status === "OUTAGE" || status === "DEGRADED";
+export function ServiceCard({ slug, name, category: _category, status, sparklineData, latencyMs, performanceLevel }: ServiceCardProps) {
+  // Dual color system: status color for dot, performance color for sparkline
+  const dotColor = statusColors[status] || "#6b7280";
+  const sparkColor = (status === "OUTAGE" || status === "UNKNOWN")
+    ? dotColor
+    : getPerformanceColor(performanceLevel);
+
+  const hasIssue = status === "OUTAGE" || status === "DEGRADED" || performanceLevel !== "NORMAL";
+
+  // Card background and border based on status and performance
+  const cardBg =
+    status === "OUTAGE" ? "#fef2f2" :
+    status === "DEGRADED" ? "#fefce8" :
+    performanceLevel === "SEVERE" ? "#fef2f2" :
+    performanceLevel === "ELEVATED" ? "#fffbeb" :
+    "#ffffff";
+
+  const cardBorder =
+    status === "OUTAGE" ? "#fecaca" :
+    status === "DEGRADED" ? "#fef08a" :
+    performanceLevel === "SEVERE" ? "#fecaca" :
+    performanceLevel === "ELEVATED" ? "#fef3c7" :
+    "#f0f0f0";
+
   const svgW = 140;
   const svgH = 24;
   const pathD = sparklineData.length >= 2 ? sparklinePath(sparklineData, svgW, svgH) : "";
@@ -74,12 +97,8 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
     <Link href={`/${slug}`}>
       <div
         style={{
-          background: hasIssue
-            ? (status === 'OUTAGE' ? '#fef2f2' : '#fefce8')
-            : '#ffffff',
-          border: hasIssue
-            ? `1px solid ${status === 'OUTAGE' ? '#fecaca' : '#fef08a'}`
-            : '1px solid #f0f0f0',
+          background: cardBg,
+          border: `1px solid ${cardBorder}`,
           borderRadius: '12px',
           padding: '12px',
           transition: 'all 0.15s ease',
@@ -89,14 +108,12 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
           e.currentTarget.style.borderColor = hasIssue
-            ? (status === 'OUTAGE' ? '#fca5a5' : '#fde047')
+            ? (cardBorder === '#fecaca' ? '#fca5a5' : cardBorder === '#fef08a' ? '#fde047' : cardBorder === '#fef3c7' ? '#fde68a' : '#e5e5e5')
             : '#e5e5e5';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = hasIssue
-            ? (status === 'OUTAGE' ? '#fecaca' : '#fef08a')
-            : '#f0f0f0';
+          e.currentTarget.style.borderColor = cardBorder;
         }}
       >
         {/* Nom + dot */}
@@ -106,10 +123,10 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: color,
+              backgroundColor: dotColor,
               flexShrink: 0,
               marginTop: '5px',
-              boxShadow: hasIssue ? `0 0 6px ${color}40` : 'none',
+              boxShadow: hasIssue ? `0 0 6px ${dotColor}40` : 'none',
             }}
           />
           <span
@@ -143,14 +160,14 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
               <path
                 d={pathD}
                 fill="none"
-                stroke={color}
+                stroke={sparkColor}
                 strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             )}
             {lastPt && (
-              <circle cx={lastPt.x} cy={lastPt.y} r={2} fill={color} />
+              <circle cx={lastPt.x} cy={lastPt.y} r={2} fill={sparkColor} />
             )}
           </svg>
         </div>
