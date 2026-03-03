@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { ServiceStatus } from "@prisma/client";
 import { generateWebApplicationJsonLd } from "@/lib/seo";
 import { calculateWorstStatus, formatDate } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -187,9 +188,10 @@ export default async function ServicePage({
 
   const { service, surfaceStatuses, reportsCount24h, latestObs, latestCommunityReports, surfaceBreakdown } = data;
 
+  // Use only the LATEST observation per surface for overall status
   const statuses = service.surfaces
-    .flatMap((s) => s.observations.map((o) => o.status))
-    .filter((s) => s !== "UNKNOWN");
+    .map((s) => s.observations[0]?.status)
+    .filter((s): s is ServiceStatus => !!s && s !== "UNKNOWN");
   const overallStatus = statuses.length > 0 ? calculateWorstStatus(statuses) : "UNKNOWN";
   const sc = statusColors[overallStatus] || statusColors.UNKNOWN;
 
