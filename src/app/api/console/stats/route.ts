@@ -21,13 +21,33 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Minuit heure de Paris (Europe/Paris)
+    // Get today's date in Paris timezone
+    const dateInParis = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); // "2026-03-04"
 
-    const [services, reports24h, reportsWithComments, activeIncidents] = await Promise.all([
+    // Calculate UTC offset for Paris timezone
+    // Create a test date at midday UTC to determine the offset
+    const testUTC = new Date(dateInParis + 'T12:00:00.000Z');
+    const hourInParis = parseInt(
+      new Intl.DateTimeFormat('en', {
+        timeZone: 'Europe/Paris',
+        hour: '2-digit',
+        hour12: false
+      }).format(testUTC)
+    );
+
+    // Calculate offset (Paris = UTC + offset)
+    const utcOffset = hourInParis - 12;
+
+    // Midnight in Paris = midnight on dateInParis, shifted by -offset hours in UTC
+    const midnightUTC = new Date(dateInParis + 'T00:00:00.000Z');
+    const midnightParisUTC = new Date(midnightUTC.getTime() - utcOffset * 3600000);
+
+    const [services, reportsToday, reportsWithComments, activeIncidents] = await Promise.all([
       prisma.service.count(),
       prisma.communityReport.count({
         where: {
-          createdAt: { gte: twentyFourHoursAgo },
+          createdAt: { gte: midnightParisUTC },
         },
       }),
       prisma.communityReport.count({
@@ -44,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       services,
-      reports24h,
+      reportsToday,
       reportsWithComments,
       activeIncidents,
     });
