@@ -21,28 +21,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const comments = await prisma.communityReport.findMany({
-      where: {
-        comment: { not: null },
-      },
-      select: {
-        id: true,
-        comment: true,
-        reportType: true,
-        countryCode: true,
-        createdAt: true,
-        service: {
-          select: {
-            name: true,
-            slug: true,
+    const [comments, total] = await Promise.all([
+      prisma.communityReport.findMany({
+        where: {
+          comment: { not: null },
+        },
+        select: {
+          id: true,
+          comment: true,
+          reportType: true,
+          countryCode: true,
+          createdAt: true,
+          service: {
+            select: {
+              name: true,
+              slug: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+      }),
+      prisma.communityReport.count({
+        where: {
+          comment: { not: null },
+        },
+      }),
+    ]);
 
-    return NextResponse.json({ comments });
+    return NextResponse.json({ comments, total });
   } catch (error) {
     console.error("Console comments error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
