@@ -18,24 +18,37 @@ export function computeBaseline(latencies: number[]): BaselineResult {
   if (clean.length < 8) return { baseline: 800, mad: 200, points: clean.length };
   const med = median(clean);
   const m = mad(clean, med);
-  const baseline = Math.min(Math.max(med, 200), 5000);
+  const baseline = Math.min(Math.max(med, 350), 5000);
   return { baseline, mad: m, points: clean.length };
 }
 
-function classifyPoint(latency: number, baseline: number): "NORMAL" | "ELEVATED" | "SEVERE" {
-  const elevatedRel = Math.max(baseline * 3, baseline + 800);
-  const severeRel = Math.max(baseline * 6, baseline + 2000);
-  if (latency >= severeRel || latency >= 6000) return "SEVERE";
-  if (latency >= elevatedRel || latency >= 2000) return "ELEVATED";
+function classifyPoint(
+  latency: number,
+  baseline: number,
+  isBootstrap: boolean
+): "NORMAL" | "ELEVATED" | "SEVERE" {
+  const elevatedMult = isBootstrap ? 3.5 : 2.5;
+  const severeMult = isBootstrap ? 6 : 5;
+  const absElevated = isBootstrap ? 1500 : 1200;
+  const absSevere = isBootstrap ? 3000 : 2500;
+
+  const elevatedRel = Math.max(baseline * elevatedMult, baseline + 800);
+  const severeRel = Math.max(baseline * severeMult, baseline + 2000);
+
+  if (latency >= severeRel || latency >= absSevere) return "SEVERE";
+  if (latency >= elevatedRel || latency >= absElevated) return "ELEVATED";
   return "NORMAL";
 }
 
-function smoothLevel(pointLevels: Array<"NORMAL" | "ELEVATED" | "SEVERE">): PerformanceLevel {
-  const w = pointLevels.slice(0, 5);
-  const severeCount = w.filter((x) => x === "SEVERE").length;
-  const nonNormalCount = w.filter((x) => x !== "NORMAL").length;
+function smoothLevel(
+  pointLevels: Array<"NORMAL" | "ELEVATED" | "SEVERE">
+): PerformanceLevel {
+  const window = pointLevels.slice(0, 3);
+  const severeCount = window.filter((x) => x === "SEVERE").length;
+  const elevatedCount = window.filter((x) => x !== "NORMAL").length;
+
   if (severeCount >= 2) return "SEVERE";
-  if (nonNormalCount >= 3) return "ELEVATED";
+  if (elevatedCount >= 2) return "ELEVATED";
   return "NORMAL";
 }
 
@@ -57,7 +70,14 @@ export function computeSurfacePerformance(opts: {
     }
   }
   const { baseline, points } = computeBaseline(opts.last72hLatencies);
-  const pointLevels = validLatencies.map((x) => classifyPoint(x, baseline));
+
+  // Guard: baseline pas encore fiable (moins de 24h de données)
+  const isBootstrap = points < 48;
+  if (points < 24) {
+    return { level: "NORMAL", baseline, baselinePoints: points };
+  }
+
+  const pointLevels = validLatencies.map((x) => classifyPoint(x, baseline, isBootstrap));
   const level = smoothLevel(pointLevels);
   return { level, baseline, baselinePoints: points };
 }
