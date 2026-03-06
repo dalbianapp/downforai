@@ -45,23 +45,6 @@ export async function generateMetadata({
   const title = `${service.name}: ${errorInfo.metaTitle} | DownForAI`;
   const description = `${service.name} ${errorInfo.title}? Check live status, troubleshooting steps, and community reports.`;
 
-  // Noindex if no activity (0 reports in 28 days AND 0 incidents in 90 days)
-  const recentReports = await prisma.communityReport.count({
-    where: {
-      serviceId: service.id,
-      createdAt: { gte: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000) },
-    },
-  });
-
-  const recentIncidents = await prisma.incident.count({
-    where: {
-      serviceId: service.id,
-      startedAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
-    },
-  });
-
-  const shouldIndex = recentReports > 0 || recentIncidents > 0;
-
   return {
     title,
     description,
@@ -78,9 +61,10 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
     },
-    robots: shouldIndex
-      ? { index: true, follow: true }
-      : { index: false, follow: true },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
