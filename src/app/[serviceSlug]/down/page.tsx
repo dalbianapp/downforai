@@ -26,23 +26,6 @@ export async function generateMetadata({
   const title = `Is ${service.name} Down Right Now? — Live Status Check | DownForAI`;
   const description = `Check if ${service.name} is down right now. Real-time status monitoring, uptime history, and incident reports for ${service.name}. Get instant answers about ${service.name} outages and service disruptions.`;
 
-  // Check recent activity to determine if page should be indexed (thin content protection)
-  const recentReports = await prisma.communityReport.count({
-    where: {
-      serviceId: service.id,
-      createdAt: { gte: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000) }, // 28 days
-    },
-  });
-
-  const recentIncidents = await prisma.incident.count({
-    where: {
-      serviceId: service.id,
-      startedAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }, // 90 days
-    },
-  });
-
-  const shouldIndex = recentReports > 0 || recentIncidents > 0;
-
   return {
     title,
     description,
@@ -61,7 +44,7 @@ export async function generateMetadata({
       description,
     },
     robots: {
-      index: shouldIndex,
+      index: true,
       follow: true,
     },
   };

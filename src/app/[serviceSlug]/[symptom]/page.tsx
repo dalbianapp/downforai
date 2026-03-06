@@ -44,23 +44,6 @@ export async function generateMetadata({
   const title = `${service.name} ${symptomInfo.title}? Check Status & Solutions | DownForAI`;
   const description = `Experiencing ${symptomInfo.title.toLowerCase()} with ${service.name}? ${symptomInfo.description} Get real-time status updates, common causes, and step-by-step solutions.`;
 
-  // Check recent activity to determine if page should be indexed (thin content protection)
-  const recentReports = await prisma.communityReport.count({
-    where: {
-      serviceId: service.id,
-      createdAt: { gte: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000) }, // 28 days
-    },
-  });
-
-  const recentIncidents = await prisma.incident.count({
-    where: {
-      serviceId: service.id,
-      startedAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }, // 90 days
-    },
-  });
-
-  const shouldIndex = recentReports > 0 || recentIncidents > 0;
-
   return {
     title,
     description,
@@ -79,7 +62,7 @@ export async function generateMetadata({
       description,
     },
     robots: {
-      index: shouldIndex,
+      index: true,
       follow: true,
     },
   };
