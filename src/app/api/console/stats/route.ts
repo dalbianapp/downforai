@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const midnightUTC = new Date(dateInParis + 'T00:00:00.000Z');
     const midnightParisUTC = new Date(midnightUTC.getTime() - utcOffset * 3600000);
 
-    const [services, reportsToday, reportsWithComments, activeIncidents] = await Promise.all([
+    const [services, reportsToday, reportsWithComments, totalComments, pendingComments, activeIncidents] = await Promise.all([
       prisma.service.count(),
       prisma.communityReport.count({
         where: {
@@ -53,6 +53,17 @@ export async function GET(request: NextRequest) {
       prisma.communityReport.count({
         where: {
           comment: { not: null },
+        },
+      }),
+      prisma.communityReport.count({
+        where: {
+          comment: { not: null },
+        },
+      }),
+      prisma.communityReport.count({
+        where: {
+          comment: { not: null },
+          adminReply: null,
         },
       }),
       prisma.incident.count({
@@ -66,6 +77,8 @@ export async function GET(request: NextRequest) {
       services,
       reportsToday,
       reportsWithComments,
+      totalComments,
+      pendingComments,
       activeIncidents,
     });
   } catch (error) {

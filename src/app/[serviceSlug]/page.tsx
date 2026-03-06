@@ -94,6 +94,7 @@ async function getServiceDetails(slug: string) {
     where: {
       serviceId: service.id,
       comment: { not: null },
+      isVisible: true, // Only show visible comments
     },
     include: {
       surface: { select: { displayName: true } },
@@ -426,36 +427,62 @@ export default async function ServicePage({
               const timeAgo = getRelativeTime(report.createdAt);
 
               return (
-                <div
-                  key={report.id}
-                  style={{
-                    padding: "12px 16px",
-                    borderRadius: "10px",
-                    border: "1px solid #f0f0f0",
-                    background: "#fafafa",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "13px", color: "#6b7280" }}>
-                    <span>{typeInfo.icon}</span>
-                    <span style={{ fontWeight: 600, color: "#171717" }}>{typeInfo.label}</span>
-                    {report.surface?.displayName && (
-                      <>
-                        <span>·</span>
-                        <span>{report.surface.displayName}</span>
-                      </>
-                    )}
-                    {flag && (
-                      <>
-                        <span>·</span>
-                        <span>{flag}</span>
-                      </>
-                    )}
-                    <span>·</span>
-                    <span>{timeAgo}</span>
+                <div key={report.id}>
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid #f0f0f0",
+                      background: "#fafafa",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "13px", color: "#6b7280" }}>
+                      <span>{typeInfo.icon}</span>
+                      <span style={{ fontWeight: 600, color: "#171717" }}>{typeInfo.label}</span>
+                      {report.surface?.displayName && (
+                        <>
+                          <span>·</span>
+                          <span>{report.surface.displayName}</span>
+                        </>
+                      )}
+                      {flag && (
+                        <>
+                          <span>·</span>
+                          <span>{flag}</span>
+                        </>
+                      )}
+                      <span>·</span>
+                      <span>{timeAgo}</span>
+                    </div>
+                    <div style={{ fontSize: "14px", color: "#171717", fontStyle: "italic", lineHeight: 1.5 }}>
+                      &ldquo;{report.comment}&rdquo;
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", color: "#171717", fontStyle: "italic", lineHeight: 1.5 }}>
-                    &ldquo;{report.comment}&rdquo;
-                  </div>
+
+                  {/* Admin Reply */}
+                  {report.adminReply && (
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        padding: "12px 16px",
+                        borderRadius: "10px",
+                        background: "#eff6ff",
+                        borderLeft: "3px solid #3b82f6",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e3a5f" }}>🛡️ DownForAI Team</span>
+                        {report.adminReplyAt && (
+                          <span style={{ fontSize: "11px", color: "#64748b" }}>
+                            · {getRelativeTime(report.adminReplyAt)}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#1e40af", lineHeight: 1.5 }}>
+                        {report.adminReply}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

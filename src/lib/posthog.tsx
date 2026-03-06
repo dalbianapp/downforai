@@ -7,7 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 if (typeof window !== "undefined") {
   posthog.init("phc_HVNiHPy9WRPOxsW7NocJDRPG6iiVkvhUr78db30Bk4B", {
-    api_host: "https://eu.i.posthog.com",
+    api_host: "https://us.i.posthog.com",
     person_profiles: "identified_only",
     capture_pageview: false, // We'll manually capture pageviews
     capture_pageleave: true,

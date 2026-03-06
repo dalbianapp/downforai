@@ -32,6 +32,10 @@ export async function GET(request: NextRequest) {
           reportType: true,
           countryCode: true,
           createdAt: true,
+          adminReply: true,
+          adminReplyAt: true,
+          isVisible: true,
+          isSpam: true,
           service: {
             select: {
               name: true,
