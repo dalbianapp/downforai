@@ -6,8 +6,8 @@ import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 if (typeof window !== "undefined") {
-  posthog.init("phc_HVNiHPy9WRPOxsW7NocJDRPG6iiVkvhUr78db30Bk4B", {
-    api_host: "https://us.i.posthog.com",
+  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY || "phc_HVNiHPy9WRPOxsW7NocJDRPG6iiVkvhUr78db30Bk4B", {
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
     person_profiles: "identified_only",
     capture_pageview: false, // We'll manually capture pageviews
     capture_pageleave: true,
