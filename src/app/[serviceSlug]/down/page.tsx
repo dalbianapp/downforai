@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
 import Link from "next/link";
-import { TIER_1_2_SERVICES } from "@/lib/ai-symptoms";
 
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  return TIER_1_2_SERVICES.map((slug) => ({ serviceSlug: slug }));
+  const services = await prisma.service.findMany({ select: { slug: true } });
+  return services.map((s: { slug: string }) => ({ serviceSlug: s.slug }));
 }
 
 export async function generateMetadata({
@@ -124,11 +124,6 @@ export default async function ServiceDownPage({
   params: Promise<{ serviceSlug: string }>;
 }) {
   const { serviceSlug } = await params;
-
-  // Only allow Tier 1+2 services
-  if (!TIER_1_2_SERVICES.includes(serviceSlug)) {
-    notFound();
-  }
 
   const data = await getServiceStatus(serviceSlug);
   if (!data) notFound();
