@@ -24,6 +24,7 @@ export async function generateMetadata({
   return {
     title: `${categoryLabel} AI Services — Real-Time Status Monitor | DownForAI`,
     description: `Real-time status monitoring for ${categoryLabel} AI services. Check uptime and incidents.`,
+    robots: { index: true, follow: true },
     alternates: {
       canonical: `/category/${category}`,
     },

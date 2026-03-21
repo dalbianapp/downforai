@@ -23,6 +23,7 @@ export async function generateMetadata({
   return {
     title: `${errorInfo.title} — What It Means & How to Fix It | DownForAI`,
     description: `${errorInfo.description} Learn the common causes of ${errorInfo.title.toLowerCase()}, practical solutions, and which AI services are currently affected.`,
+    robots: { index: true, follow: true },
   };
 }
 

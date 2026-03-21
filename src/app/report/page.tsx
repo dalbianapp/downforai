@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Report an Issue — DownForAI",
   description:
     "Report issues with AI services. Help us monitor problems with ChatGPT, Claude, Midjourney, and other AI platforms.",
+  robots: { index: true, follow: true },
   alternates: {
     canonical: "/report",
   },

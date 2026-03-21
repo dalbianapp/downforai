@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { ServiceCategory } from "@prisma/client";
-import { GLOBAL_ERRORS, TIER_1_2_SERVICES, TIER_1_SERVICES, getSymptomsForCategory } from "@/lib/ai-symptoms";
+import { GLOBAL_ERRORS, TIER_1_SERVICES, getSymptomsForCategory } from "@/lib/ai-symptoms";
 import { getErrorsForCategory } from "@/lib/error-playbooks";
 
 // Date de déploiement stable pour les pages statiques
@@ -56,6 +56,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.5,
     },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: DEPLOY_DATE,
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: DEPLOY_DATE,
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
   ];
 
   // Service status pages (all 201 services)
@@ -96,16 +108,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Down pages (~40 routes: Tier 1 + Tier 2 services)
-  const downRoutes: MetadataRoute.Sitemap = TIER_1_2_SERVICES.map((slug) => {
-    const service = services.find((s) => s.slug === slug);
-    return {
-      url: `${baseUrl}/${slug}/down`,
-      lastModified: service?.updatedAt || DEPLOY_DATE,
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    };
-  });
+  // Down pages (all services)
+  const downRoutes: MetadataRoute.Sitemap = services.map((service) => ({
+    url: `${baseUrl}/${service.slug}/down`,
+    lastModified: service.updatedAt,
+    changeFrequency: "daily" as const,
+    priority: 0.7,
+  }));
 
   // Symptom pages (~60 routes: Tier 1 services × 3 symptoms each)
   const symptomRoutes: MetadataRoute.Sitemap = [];

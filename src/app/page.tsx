@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "DownForAI — Is Your AI Down? Real-Time AI Status Monitor",
   description:
     "Real-time status monitoring for 200+ AI services. Check if ChatGPT, Claude, Gemini, Midjourney, and more are down right now.",
+  robots: { index: true, follow: true },
 };
 
 export const revalidate = 60;

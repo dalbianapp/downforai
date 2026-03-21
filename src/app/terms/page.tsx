@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms of Service — DownForAI",
   description: "Terms of service for DownForAI. Rules for using our AI status monitoring platform.",
-  robots: "noindex, follow",
+  robots: { index: true, follow: true },
   alternates: {
     canonical: "/terms",
   },

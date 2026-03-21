@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "AI Service Incidents — Latest Outages & Issues | DownForAI",
   description:
     "Timeline of recent AI service incidents, outages, and degraded performance across 200+ AI services.",
+  robots: { index: true, follow: true },
   alternates: {
     canonical: "/incidents",
   },

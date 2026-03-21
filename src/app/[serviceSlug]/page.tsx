@@ -39,6 +39,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `/${serviceSlug}`,
     },
+    robots: { index: true, follow: true },
     openGraph: {
       title: `${service.name} Status — Is ${service.name} Down?`,
       description: `Real-time ${service.name} status monitoring.`,

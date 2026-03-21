@@ -5,6 +5,7 @@ import { GLOBAL_ERRORS, getErrorInfo } from "@/lib/ai-symptoms";
 export const metadata: Metadata = {
   title: "AI Service Error Guide — Common Errors & Solutions | DownForAI",
   description: "Comprehensive guide to common AI service errors. Learn what each error means, why it happens, and how to fix it. Covers API errors, rate limits, timeouts, authentication issues, and more.",
+  robots: { index: true, follow: true },
   alternates: {
     canonical: "/errors",
   },
