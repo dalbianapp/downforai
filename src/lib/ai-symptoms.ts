@@ -22,6 +22,11 @@ export const AI_SYMPTOM_MAPPING: Record<ServiceCategory, string[]> = {
   AGENTS: ["not-working", "api-error", "task-failed"],
   DESIGN: ["not-working", "export-failed", "slow-rendering"],
   THREE_D: ["not-working", "generation-failed", "model-error"],
+  MLOPS: ["not-working", "api-error", "slow-response"],
+  VECTOR_DB: ["not-working", "api-error", "slow-response"],
+  ROLEPLAY: ["not-working", "login-issue", "slow-response"],
+  MARKETING: ["not-working", "api-error", "slow-response"],
+  SUPPORT: ["not-working", "api-error", "slow-response"],
 };
 
 // Détails des symptômes

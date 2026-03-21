@@ -58,6 +58,11 @@ export function getCategoryColor(category: string): string {
     AGENTS: "from-indigo-500/20 to-indigo-600/20",
     THREE_D: "from-teal-500/20 to-teal-600/20",
     DESIGN: "from-rose-500/20 to-rose-600/20",
+    MLOPS: "from-violet-500/20 to-violet-600/20",
+    VECTOR_DB: "from-emerald-500/20 to-emerald-600/20",
+    ROLEPLAY: "from-fuchsia-500/20 to-fuchsia-600/20",
+    MARKETING: "from-amber-500/20 to-amber-600/20",
+    SUPPORT: "from-sky-500/20 to-sky-600/20",
   };
   return colors[category] || "from-gray-500/20 to-gray-600/20";
 }
@@ -75,6 +80,11 @@ export function getCategoryInitialBgColor(category: string): string {
     AGENTS: "bg-indigo-500",
     THREE_D: "bg-teal-500",
     DESIGN: "bg-rose-500",
+    MLOPS: "bg-violet-500",
+    VECTOR_DB: "bg-emerald-500",
+    ROLEPLAY: "bg-fuchsia-500",
+    MARKETING: "bg-amber-500",
+    SUPPORT: "bg-sky-500",
   };
   return colors[category] || "bg-gray-500";
 }
@@ -96,6 +106,11 @@ export function formatCategoryLabel(category: string): string {
     AGENTS: "Agents",
     THREE_D: "3D & Avatars",
     DESIGN: "Design",
+    MLOPS: "MLOps",
+    VECTOR_DB: "Vector DB",
+    ROLEPLAY: "Roleplay AI",
+    MARKETING: "Marketing AI",
+    SUPPORT: "Support AI",
   };
   return labels[category] || category;
 }

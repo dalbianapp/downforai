@@ -2127,7 +2127,7 @@ const services: ServiceInput[] = [
     {
       slug: "devin",
       name: "Devin (Cognition)",
-      category: "AGENTS",
+      category: "DEV",
       tier: 1,
       defaultBadge: "COMMUNITY_REPORTS",
       limitPhraseKey: "COMMUNITY_GENERIC",
@@ -2285,7 +2285,7 @@ const services: ServiceInput[] = [
     {
       slug: "capcut",
       name: "CapCut",
-      category: "DESIGN",
+      category: "VIDEO",
       tier: 1,
       defaultBadge: "COMMUNITY_REPORTS",
       limitPhraseKey: "COMMUNITY_GENERIC",

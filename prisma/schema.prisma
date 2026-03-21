@@ -20,6 +20,11 @@ enum ServiceCategory {
   AGENTS
   THREE_D
   DESIGN
+  MLOPS
+  VECTOR_DB
+  ROLEPLAY
+  MARKETING
+  SUPPORT
 }
 
 enum BadgeType {

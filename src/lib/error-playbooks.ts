@@ -2154,6 +2154,728 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       },
     ],
   },
+
+  // ==================== MLOPS ====================
+  {
+    category: "MLOPS",
+    errors: [
+      {
+        slug: "api-error",
+        title: "API Error (500 / 502 / 503)",
+        metaTitle: "MLOps API Error — Fix & Live Status",
+        description:
+          "{service} is returning API errors (HTTP 500, 502, or 503), indicating the platform's backend is experiencing issues. MLOps platforms handle complex workloads — model training, experiment tracking, pipeline orchestration — making server errors particularly disruptive to active workflows.",
+        causes: [
+          "Backend infrastructure overload during peak usage",
+          "Scheduled maintenance or unplanned downtime",
+          "Database or storage layer failures affecting experiment tracking",
+          "Orchestration service failures impacting pipeline runs",
+          "Cloud provider incidents affecting the underlying infrastructure",
+        ],
+        fixSteps: [
+          "Check {service}'s status page for active incidents",
+          "Verify your API key and authentication credentials are still valid",
+          "Retry with exponential backoff (1s, 2s, 4s, 8s between attempts)",
+          "Check if the issue affects all endpoints or just specific ones",
+          "Review recent platform changelogs for breaking changes",
+          "Contact {service} support with your request ID if the issue persists",
+        ],
+        errorSignatures: [
+          "500 Internal Server Error",
+          "502 Bad Gateway",
+          "503 Service Unavailable",
+          "Request failed with status code 500",
+          "Internal server error",
+          "Service temporarily unavailable",
+          "upstream connect error",
+          "gateway timeout",
+        ],
+        faq: [
+          {
+            q: "Will an API error affect my running experiments or pipelines?",
+            a: "It depends on the platform. Most MLOps tools checkpoint runs periodically. Check your experiment state after the outage resolves — many platforms auto-resume interrupted runs.",
+          },
+          {
+            q: "How do I protect my ML pipelines from {service} outages?",
+            a: "Implement retry logic with exponential backoff, design pipelines to be idempotent (safe to re-run), and use checkpointing for long-running training jobs. Consider multi-cloud redundancy for critical production models.",
+          },
+          {
+            q: "Is {service} down right now?",
+            a: "Check the live status indicator at the top of this page. Community reports and our monitoring will show the current state of {service}'s API and services.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+      {
+        slug: "pipeline-failed",
+        title: "Pipeline / Training Run Failed",
+        metaTitle: "Pipeline Failed on {service} — Fix & Live Status",
+        description:
+          "Your ML pipeline or training run on {service} has failed unexpectedly. This can be caused by platform-side issues (compute unavailability, orchestration bugs) or configuration problems on your end. Distinguishing between the two is key to a fast resolution.",
+        causes: [
+          "Compute resources (GPU/CPU) temporarily unavailable on the platform",
+          "Out-of-memory errors due to model size or batch size misconfiguration",
+          "Dependency or environment conflicts in the runtime container",
+          "Network timeout between pipeline steps or data sources",
+          "Platform-side orchestration bugs causing premature job termination",
+        ],
+        fixSteps: [
+          "Check the run logs for the exact error message and step that failed",
+          "Verify that the required compute tier is available on {service}'s status page",
+          "Reduce batch size or model size if you're hitting memory limits",
+          "Check your data pipeline for connectivity issues to storage (S3, GCS, etc.)",
+          "Try re-running with a smaller test dataset to isolate the issue",
+          "Open a support ticket with the run ID if the error appears platform-side",
+        ],
+        errorSignatures: [
+          "Run failed with exit code 1",
+          "OOMKilled",
+          "Out of memory",
+          "Pipeline execution error",
+          "Step timed out",
+          "Compute not available",
+          "Job preempted",
+          "Container failed to start",
+        ],
+        faq: [
+          {
+            q: "How do I tell if the pipeline failure is my fault or {service}'s?",
+            a: "Check the error logs carefully. OOM errors and code exceptions are usually your issue. 'Compute not available', 'job preempted', or infrastructure-level errors point to the platform. Check if other users are reporting similar failures on this page.",
+          },
+          {
+            q: "Will I be charged for a failed pipeline run?",
+            a: "Most MLOps platforms bill for compute time used, even on failed runs. If the failure is clearly platform-side, contact {service} support to request a credit.",
+          },
+          {
+            q: "How do I prevent pipeline failures from losing hours of training progress?",
+            a: "Enable checkpointing in your training code (most frameworks support this natively). Configure your pipeline to checkpoint every N steps so a failure only loses a fraction of progress.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "model-registry-error",
+        title: "Model Registry / Artifact Store Error",
+        metaTitle: "Model Registry Error on {service} — Fix & Live Status",
+        description:
+          "You cannot push, pull, or access model artifacts in {service}'s model registry. This blocks model deployment and versioning workflows. Registry errors are often caused by storage backend issues or permission problems.",
+        causes: [
+          "Object storage backend (S3, GCS, Azure Blob) experiencing issues",
+          "Permission or IAM misconfiguration blocking access to artifacts",
+          "Storage quota exceeded on your account or workspace",
+          "Network connectivity issues between the registry and your environment",
+          "Platform-side registry service degradation",
+        ],
+        fixSteps: [
+          "Verify your credentials and permissions for the registry",
+          "Check your storage quota and usage in {service}'s dashboard",
+          "Test connectivity to the underlying storage bucket directly",
+          "Check {service}'s status page for registry-specific incidents",
+          "Try accessing the registry from a different environment or region",
+          "Contact support with the artifact path and error message",
+        ],
+        errorSignatures: [
+          "Failed to push artifact",
+          "Artifact not found",
+          "Access denied to model registry",
+          "Storage quota exceeded",
+          "Connection timeout to registry",
+          "Model version not found",
+          "Registry authentication failed",
+        ],
+        faq: [
+          {
+            q: "Is my model data safe during a registry outage?",
+            a: "Yes. Registry outages typically affect access, not data integrity. Your model artifacts stored in the underlying object storage (S3/GCS) are durable and should be intact once the service recovers.",
+          },
+          {
+            q: "Can I deploy a model if the registry is down?",
+            a: "If you have the model weights cached locally or in your own storage, you may be able to deploy directly. Otherwise, you'll need to wait for the registry to recover.",
+          },
+          {
+            q: "How do I back up my model artifacts independently of {service}?",
+            a: "Always store a copy of critical model weights in your own cloud storage bucket. Configure {service} to use your own S3/GCS bucket as the artifact backend so you retain full ownership.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+    ],
+  },
+
+  // ==================== VECTOR_DB ====================
+  {
+    category: "VECTOR_DB",
+    errors: [
+      {
+        slug: "api-error",
+        title: "API Error (500 / 502 / 503)",
+        metaTitle: "Vector DB API Error — Fix & Live Status",
+        description:
+          "{service} is returning server errors (HTTP 500, 502, or 503). Vector databases power real-time search and retrieval-augmented generation (RAG) applications — an outage directly impacts your AI product's ability to retrieve context, answer questions, or perform semantic search.",
+        causes: [
+          "Vector index server overload from high query or upsert volume",
+          "Backend storage layer issues affecting index persistence",
+          "Scheduled maintenance or unplanned infrastructure downtime",
+          "Regional cloud provider incident affecting {service}'s deployment",
+          "Index corruption or replication lag causing query failures",
+        ],
+        fixSteps: [
+          "Check {service}'s status page for active incidents",
+          "Verify your API key is valid and hasn't expired",
+          "Check if the issue is isolated to specific indexes or affects all collections",
+          "Implement retry logic with exponential backoff in your application",
+          "If running RAG, consider a fallback response path when the vector store is unavailable",
+          "Contact {service} support with your index name and error details",
+        ],
+        errorSignatures: [
+          "500 Internal Server Error",
+          "503 Service Unavailable",
+          "Index not found",
+          "Failed to upsert vectors",
+          "Query timeout",
+          "Connection refused",
+          "upstream connect error",
+        ],
+        faq: [
+          {
+            q: "Will my vector data be lost during a {service} outage?",
+            a: "No. Vector databases replicate data across multiple nodes. An outage typically means temporary unavailability, not data loss. Your embeddings should be fully accessible once the service recovers.",
+          },
+          {
+            q: "How do I handle {service} being down in my RAG application?",
+            a: "Implement a graceful fallback: catch the error, return a generic response or use a keyword-based search as backup, and retry vector queries automatically once connectivity is restored.",
+          },
+          {
+            q: "Is {service} down right now?",
+            a: "Check the live status indicator at the top of this page for real-time monitoring data and community reports from other developers.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+      {
+        slug: "slow-response",
+        title: "Slow Query Response / High Latency",
+        metaTitle: "Slow Vector DB Queries on {service} — Fix & Live Status",
+        description:
+          "Queries to {service} are taking much longer than usual, degrading the performance of your semantic search or RAG pipeline. High latency in vector databases is often caused by index size, query complexity, or infrastructure load.",
+        causes: [
+          "Index too large relative to available memory (thrashing to disk)",
+          "Too many concurrent queries overwhelming the cluster",
+          "Complex similarity searches across high-dimensional vectors",
+          "Network latency between your application and {service}'s region",
+          "Platform-side infrastructure degradation during peak hours",
+        ],
+        fixSteps: [
+          "Check average query latency in {service}'s dashboard metrics",
+          "Verify your application is in the same region as your {service} index",
+          "Reduce the number of results returned (lower top-k values)",
+          "Enable approximate nearest neighbor (ANN) search if not already active",
+          "Consider filtering before searching to reduce the search space",
+          "Check {service}'s status page for latency-related incidents",
+        ],
+        errorSignatures: [
+          "Query timeout after Xms",
+          "Request timed out",
+          "Latency spike detected",
+          "504 Gateway Timeout",
+          "Read timeout",
+          "Operation took too long",
+        ],
+        faq: [
+          {
+            q: "What is an acceptable query latency for a vector database?",
+            a: "For production RAG applications, aim for under 100ms P99. Anything over 500ms will noticeably degrade user experience. If {service} is consistently above this, check your index configuration and region proximity.",
+          },
+          {
+            q: "Does increasing my {service} plan reduce latency?",
+            a: "Yes, in most cases. Higher tiers typically provide more dedicated compute and memory, which directly reduces query latency especially for large indexes. Check if you're on a shared or dedicated plan.",
+          },
+          {
+            q: "How do I monitor {service} latency in my application?",
+            a: "Measure round-trip time for each query in your application code. Set up alerts when P99 latency exceeds your threshold. This helps distinguish between platform issues and application-side problems.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "index-unavailable",
+        title: "Index / Collection Unavailable",
+        metaTitle: "Index Unavailable on {service} — Fix & Live Status",
+        description:
+          "Your vector index or collection on {service} is returning errors or appears to be missing. This can happen after index recreation, namespace issues, or platform-side storage problems.",
+        causes: [
+          "Index was accidentally deleted or recreated with a different name",
+          "Namespace or collection name mismatch in your application code",
+          "Index still initializing after creation or migration",
+          "Platform-side index replication failure",
+          "Account or project permissions changed, revoking index access",
+        ],
+        fixSteps: [
+          "List all indexes/collections via the {service} API to confirm they exist",
+          "Double-check the index name and namespace in your application configuration",
+          "Verify your API key has read/write access to the target index",
+          "Check if the index shows as 'ready' or 'initializing' in the dashboard",
+          "If the index is missing, check deletion logs in your {service} audit trail",
+          "Contact support if the index disappeared without any action on your end",
+        ],
+        errorSignatures: [
+          "Index not found",
+          "Collection does not exist",
+          "Namespace not found",
+          "Index is not ready",
+          "Index initializing",
+          "No such index",
+          "Resource not found",
+        ],
+        faq: [
+          {
+            q: "Can I recover a deleted vector index on {service}?",
+            a: "Most vector databases do not support point-in-time recovery of deleted indexes. If you have your source data and embeddings generation pipeline, you can re-index. This is why maintaining a source-of-truth dataset is critical.",
+          },
+          {
+            q: "How long does a new index take to become available on {service}?",
+            a: "Index initialization typically takes seconds to a few minutes for empty indexes. For indexes with millions of vectors, it can take longer. Check the index status via the API before sending queries.",
+          },
+          {
+            q: "How do I prevent accidental index deletion?",
+            a: "Use {service}'s project-level permissions to restrict deletion rights. Add index deletion confirmation to your deployment scripts. Keep a backup of your vector data in your own storage.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+    ],
+  },
+
+  // ==================== ROLEPLAY ====================
+  {
+    category: "ROLEPLAY",
+    errors: [
+      {
+        slug: "not-working",
+        title: "Service Down / Not Responding",
+        metaTitle: "{service} Down — Fix & Live Status",
+        description:
+          "{service} is not loading or responding to requests. Roleplay and entertainment AI platforms rely on large language models and real-time conversation infrastructure — any backend issue will make the service completely inaccessible.",
+        causes: [
+          "Server overload from high concurrent user traffic",
+          "Scheduled or emergency maintenance on backend systems",
+          "Infrastructure issues with the underlying LLM provider",
+          "CDN or network issues preventing access to the platform",
+          "App-specific backend services (persona management, memory) failing",
+        ],
+        fixSteps: [
+          "Check {service}'s official status page or social media for announcements",
+          "Try refreshing the page or clearing your browser cache",
+          "Attempt access from a different browser or device",
+          "Check if other users are reporting the same issue on Reddit or Discord",
+          "Wait 15-30 minutes and try again — most outages resolve quickly",
+          "Check this page for live community reports",
+        ],
+        errorSignatures: [
+          "Something went wrong",
+          "Unable to connect",
+          "Service unavailable",
+          "502 Bad Gateway",
+          "503 Service Unavailable",
+          "Try again later",
+          "Server error",
+          "Failed to load",
+        ],
+        faq: [
+          {
+            q: "Why does {service} go down so often?",
+            a: "AI roleplay platforms experience unpredictable traffic spikes — a viral moment or trending character can suddenly multiply active users. Most platforms are working to scale their infrastructure, but brief outages during peak times are common.",
+          },
+          {
+            q: "Will my conversations and characters be saved during a {service} outage?",
+            a: "Most platforms save conversation history to a database. Your characters and chats should be intact once the service recovers. Export your important conversations periodically as a backup.",
+          },
+          {
+            q: "Is {service} down for everyone or just me?",
+            a: "Check the community reports on this page. If multiple users are reporting the same issue simultaneously, it's a platform-wide outage. If it's just you, try clearing cache, checking your internet connection, or using a VPN.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+      {
+        slug: "login-issue",
+        title: "Login / Authentication Issues",
+        metaTitle: "Can't Log In to {service} — Fix & Live Status",
+        description:
+          "You're unable to log in to {service}, or you're being repeatedly logged out. Authentication issues can affect access to your characters, subscription, and conversation history.",
+        causes: [
+          "Authentication service (OAuth, JWT) experiencing issues",
+          "Password reset emails not being delivered",
+          "Account flagged or suspended by the platform",
+          "Browser cookie or session issues",
+          "Platform-wide authentication service outage",
+        ],
+        fixSteps: [
+          "Try logging in with a different method (Google, email, etc.)",
+          "Clear your browser cookies and cached data for {service}",
+          "Try an incognito/private browsing window",
+          "Request a password reset email",
+          "Disable browser extensions that might interfere with authentication",
+          "Contact {service} support if you believe your account was wrongly flagged",
+        ],
+        errorSignatures: [
+          "Invalid credentials",
+          "Login failed",
+          "Session expired",
+          "Authentication error",
+          "Account not found",
+          "Too many login attempts",
+          "Please log in again",
+        ],
+        faq: [
+          {
+            q: "I was logged out of {service} suddenly — is this normal?",
+            a: "Sudden logouts can happen during platform updates, security sweeps, or session token refreshes. Try logging back in. If it keeps happening, clear your cookies or try a different browser.",
+          },
+          {
+            q: "I didn't get my password reset email from {service}. What should I do?",
+            a: "Check your spam/junk folder first. If nothing arrives after 10 minutes, try requesting again. If the issue persists, the platform's email service may be experiencing issues — check community reports here.",
+          },
+          {
+            q: "My {service} account was suspended — how do I appeal?",
+            a: "Contact {service} support directly via their help center or email. Provide your account details and explain the situation. Most platforms have an appeal process for wrongly suspended accounts.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "slow-response",
+        title: "Slow / Laggy Responses",
+        metaTitle: "{service} Slow Responses — Fix & Live Status",
+        description:
+          "Responses from {service} are taking much longer than usual, breaking the immersion of roleplay conversations. Slow AI response times are typically caused by server overload or model inference bottlenecks.",
+        causes: [
+          "High concurrent user load overwhelming the inference servers",
+          "Underlying LLM model under heavy demand",
+          "Long conversation context requiring more processing time",
+          "Network latency between your device and {service}'s servers",
+          "Platform running additional safety filters adding latency",
+        ],
+        fixSteps: [
+          "Check {service}'s status page for performance degradation notices",
+          "Try starting a new conversation to reset the context length",
+          "Use the platform during off-peak hours (early morning in your timezone)",
+          "Check your internet connection speed",
+          "If the platform has a mobile app, try it — sometimes the app uses different infrastructure",
+          "Report slow performance using the feedback options in the app",
+        ],
+        errorSignatures: [
+          "Generating response...",
+          "Thinking...",
+          "Response taking longer than usual",
+          "Timeout",
+          "Request timed out",
+          "Slow server response",
+        ],
+        faq: [
+          {
+            q: "Why are {service} responses slower at certain times of day?",
+            a: "AI platforms experience peak load during evenings and weekends when most users are active (primarily US and EU evening hours). Responses are typically faster in the early morning hours.",
+          },
+          {
+            q: "Does a paid {service} subscription give faster responses?",
+            a: "On most platforms, paid tiers get priority queue access, resulting in faster response times especially during peak load. Check {service}'s pricing page for specifics on response time guarantees.",
+          },
+          {
+            q: "My conversations are very long — does that make responses slower?",
+            a: "Yes. Longer conversation histories require more tokens to process, increasing response time. Starting a fresh conversation or using memory/summary features can help maintain speed.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+    ],
+  },
+
+  // ==================== MARKETING ====================
+  {
+    category: "MARKETING",
+    errors: [
+      {
+        slug: "api-error",
+        title: "API Error (500 / 502 / 503)",
+        metaTitle: "Marketing AI API Error — Fix & Live Status",
+        description:
+          "{service} is returning server errors (HTTP 500, 502, or 503). Marketing and writing AI tools rely on both LLM inference APIs and their own content management infrastructure — errors can block content generation, scheduling, and publishing workflows.",
+        causes: [
+          "LLM inference backend overloaded or experiencing issues",
+          "Content database or CMS backend failure",
+          "Third-party integration (social media API, CRM) causing cascade errors",
+          "Scheduled maintenance during business hours",
+          "Rate limiting on underlying AI model APIs",
+        ],
+        fixSteps: [
+          "Check {service}'s status page and any connected integrations",
+          "Verify your API key or account credentials are valid",
+          "Check if the error is specific to one content type or affects all features",
+          "Retry after 2-5 minutes — most transient errors resolve quickly",
+          "Review any recent changes to connected integrations or webhooks",
+          "Contact {service} support with the exact error message and timestamp",
+        ],
+        errorSignatures: [
+          "500 Internal Server Error",
+          "503 Service Unavailable",
+          "Content generation failed",
+          "Request failed",
+          "Something went wrong",
+          "Please try again",
+          "Generation error",
+        ],
+        faq: [
+          {
+            q: "Is {service} down right now?",
+            a: "Check the live status indicator at the top of this page. Our monitoring and community reports will show you the current state of {service}'s service.",
+          },
+          {
+            q: "Will a {service} outage affect my scheduled content?",
+            a: "It depends on whether content was already queued and sent to the publishing platform, or if {service} handles the scheduling. Check your scheduled queue in {service}'s dashboard after the outage resolves.",
+          },
+          {
+            q: "How do I build a content workflow resilient to AI tool outages?",
+            a: "Keep a content buffer of pre-generated pieces. Use multiple AI tools rather than relying on a single provider. Maintain templates and outlines that human writers can fill in during AI outages.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+      {
+        slug: "generation-failed",
+        title: "Content Generation Failed",
+        metaTitle: "Content Generation Failed on {service} — Fix & Live Status",
+        description:
+          "Your content generation request on {service} has failed or returned an empty/incomplete result. This could be caused by prompt issues, content policy filters, or platform-side infrastructure problems.",
+        causes: [
+          "Content policy filter blocking the requested topic or tone",
+          "Prompt too long or complex for the current model context window",
+          "Underlying LLM model experiencing issues or rate limits",
+          "Account usage limits reached for your current plan",
+          "Platform-side generation service degradation",
+        ],
+        fixSteps: [
+          "Simplify your prompt or break it into smaller generation requests",
+          "Check if your content request might be triggering safety filters",
+          "Verify you haven't hit your monthly generation limit for your plan",
+          "Try a different content template or format",
+          "Check {service}'s status page for generation service issues",
+          "Clear the editor and start a fresh generation request",
+        ],
+        errorSignatures: [
+          "Generation failed",
+          "Unable to generate content",
+          "Content policy violation",
+          "Rate limit exceeded",
+          "Usage limit reached",
+          "Empty response",
+          "Generation timed out",
+        ],
+        faq: [
+          {
+            q: "Why did {service} generate empty or cut-off content?",
+            a: "Empty responses often indicate the model hit its context limit or encountered a content filter. Try shortening your prompt, being more specific about tone and format, or breaking the request into smaller chunks.",
+          },
+          {
+            q: "My {service} content quality has dropped suddenly — is the model down?",
+            a: "Quality drops can indicate the model was updated or is experiencing partial degradation. Check community reports here. If widespread, {service} may have rolled out a model change.",
+          },
+          {
+            q: "How many content pieces can I generate per day on {service}?",
+            a: "Generation limits vary by plan. Check your usage dashboard in {service}'s account settings. Upgrading your plan or waiting for the daily reset typically resolves limit errors.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "slow-response",
+        title: "Slow Generation / High Latency",
+        metaTitle: "{service} Slow Generation — Fix & Live Status",
+        description:
+          "Content generation on {service} is taking much longer than usual. Slow response times disrupt content creation workflows and can indicate underlying infrastructure strain on the platform.",
+        causes: [
+          "High concurrent user load on the generation servers",
+          "Underlying LLM provider experiencing capacity constraints",
+          "Complex, long-form content requests requiring more processing time",
+          "SEO or research features making additional external API calls",
+          "Platform infrastructure degradation during peak business hours",
+        ],
+        fixSteps: [
+          "Check {service}'s status page for performance notices",
+          "Try generating shorter content pieces first",
+          "Use the platform during off-peak hours (early morning or late evening)",
+          "Disable optional enrichment features (SEO analysis, plagiarism check) temporarily",
+          "Check your internet connection isn't the bottleneck",
+          "Report the slowdown via {service}'s in-app feedback",
+        ],
+        errorSignatures: [
+          "Generating...",
+          "This is taking longer than expected",
+          "Request timeout",
+          "504 Gateway Timeout",
+          "Slow response from server",
+        ],
+        faq: [
+          {
+            q: "Why is {service} so slow during business hours?",
+            a: "Marketing AI tools see peak demand during business hours when content teams are most active. Many platforms share underlying LLM APIs that also get heavy use at these times. Try scheduling heavy generation work for early morning.",
+          },
+          {
+            q: "Does long-form content generation always take longer on {service}?",
+            a: "Yes. Longer content (blog posts, white papers) takes more time than short-form (social posts, subject lines) because of the larger context and token count. Plan your generation queues accordingly.",
+          },
+          {
+            q: "Will upgrading my {service} plan make generation faster?",
+            a: "Higher tiers often include priority access to generation infrastructure, resulting in faster speeds especially during peak load. Check {service}'s plan comparison for performance details.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+    ],
+  },
+
+  // ==================== SUPPORT ====================
+  {
+    category: "SUPPORT",
+    errors: [
+      {
+        slug: "api-error",
+        title: "API Error (500 / 502 / 503)",
+        metaTitle: "Customer Support AI API Error — Fix & Live Status",
+        description:
+          "{service} is returning server errors (HTTP 500, 502, or 503). Customer support and sales AI platforms are mission-critical — an outage means your chatbot, live chat, or AI assist features stop working, directly impacting customer service quality.",
+        causes: [
+          "Backend API servers experiencing overload or failures",
+          "Integration layer between {service} and your CRM/helpdesk failing",
+          "Underlying LLM or NLP service experiencing issues",
+          "WebSocket connection issues affecting real-time chat features",
+          "Database issues affecting conversation history and ticket management",
+        ],
+        fixSteps: [
+          "Check {service}'s status page immediately for active incidents",
+          "Verify all API credentials and webhook configurations are still valid",
+          "Test the connection between {service} and your CRM/helpdesk",
+          "Switch to a human agent fallback if available on your platform",
+          "Check if the issue affects all channels or just specific integrations",
+          "Contact {service} support urgently — they typically have SLAs for enterprise customers",
+        ],
+        errorSignatures: [
+          "500 Internal Server Error",
+          "503 Service Unavailable",
+          "API request failed",
+          "Webhook delivery failed",
+          "Bot unavailable",
+          "Chat service error",
+          "Integration error",
+        ],
+        faq: [
+          {
+            q: "My customer-facing chatbot is down — what do I tell customers?",
+            a: "Enable a fallback message like 'Our chat is temporarily unavailable — please email us at support@...' Most platforms let you configure fallback responses. Route customers to email or phone support in the meantime.",
+          },
+          {
+            q: "Is {service} down right now?",
+            a: "Check the live status indicator at the top of this page. Our monitoring and community reports reflect real-time {service} availability.",
+          },
+          {
+            q: "How do I minimize the impact of a {service} outage on my support operations?",
+            a: "Always have a human agent fallback configured. Set up monitoring alerts for your {service} integration. Maintain an offline FAQ document that agents can reference. Consider multi-channel support so customers can always reach you.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+      {
+        slug: "ai-feature-broken",
+        title: "AI Feature Not Working (Suggestions / Summarization / Auto-Reply)",
+        metaTitle: "AI Features Broken on {service} — Fix & Live Status",
+        description:
+          "AI-powered features in {service} — such as suggested replies, ticket summarization, sentiment analysis, or auto-routing — have stopped working or are producing incorrect results. This often indicates a partial platform degradation affecting the AI layer.",
+        causes: [
+          "AI model update introducing regression in feature behavior",
+          "NLP service experiencing partial degradation",
+          "Knowledge base or training data connection issue",
+          "Feature toggle accidentally disabled by a platform update",
+          "API rate limits on the underlying AI service being exceeded",
+        ],
+        fixSteps: [
+          "Check if the issue affects all AI features or just specific ones",
+          "Verify your AI features are still enabled in {service}'s settings",
+          "Clear your browser cache and reload the platform",
+          "Check {service}'s changelog for recent AI model updates",
+          "Test with a fresh conversation to rule out conversation-specific issues",
+          "Report the specific feature and behavior via {service}'s support channel",
+        ],
+        errorSignatures: [
+          "AI suggestions unavailable",
+          "Summarization failed",
+          "Auto-reply not generating",
+          "Sentiment analysis error",
+          "Feature temporarily unavailable",
+          "AI assistance is currently disabled",
+        ],
+        faq: [
+          {
+            q: "The AI suggestions on {service} have become much less accurate — is something wrong?",
+            a: "Sudden quality drops can indicate a model rollback, A/B test, or partial degradation. Check community reports here. If the issue is widespread, {service} may have deployed a model update. Contact support to report quality regression.",
+          },
+          {
+            q: "Will broken AI features affect human agent performance on {service}?",
+            a: "Human agents can still work without AI features, just with less efficiency. The core ticketing and messaging functions should remain available during an AI feature outage. Inform your team to work manually until the features recover.",
+          },
+          {
+            q: "How do I configure a fallback when {service}'s AI features are unavailable?",
+            a: "Most platforms allow you to set default routing rules and canned responses that activate when AI features fail. Configure these in your platform settings as a safety net for outages.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "slow-response",
+        title: "Slow Response Times / Lag",
+        metaTitle: "{service} Slow Response — Fix & Live Status",
+        description:
+          "Response times from {service} are elevated — whether for your chatbot replies, agent AI suggestions, or API calls. In customer support contexts, slow responses directly impact customer satisfaction (CSAT) scores.",
+        causes: [
+          "High concurrent ticket or chat volume on the platform",
+          "Underlying LLM inference taking longer due to load",
+          "Complex conversation history requiring more processing time",
+          "Third-party integration calls (CRM lookup, order status) adding latency",
+          "Platform infrastructure degradation during peak support hours",
+        ],
+        fixSteps: [
+          "Check {service}'s dashboard for response time metrics",
+          "Simplify AI prompts — shorter instructions reduce inference time",
+          "Disable non-essential third-party lookups during the slowdown",
+          "Check the status of any connected CRM or helpdesk integrations",
+          "Consider routing complex queries to human agents temporarily",
+          "Report performance issues via {service}'s support channel with timing data",
+        ],
+        errorSignatures: [
+          "Response timeout",
+          "Bot response taking too long",
+          "Request timed out",
+          "504 Gateway Timeout",
+          "Slow API response",
+          "Degraded performance",
+        ],
+        faq: [
+          {
+            q: "How slow is too slow for a customer support chatbot on {service}?",
+            a: "Industry benchmarks suggest chatbot responses should arrive within 1-3 seconds. Beyond 5 seconds, customer abandonment rates spike significantly. If {service} is consistently above 3 seconds, investigate infrastructure or prompt optimization.",
+          },
+          {
+            q: "Peak hours cause {service} to slow down — how do I manage this?",
+            a: "Pre-generate common responses as canned replies. Optimize AI prompts to be shorter and more focused. Use {service}'s routing rules to send simple queries to fast-path responses and complex ones to human agents.",
+          },
+          {
+            q: "Can I get SLA guarantees for {service} response times?",
+            a: "Enterprise plans on most support AI platforms include response time SLAs. Review your contract or contact {service}'s sales team if you need guaranteed performance levels for production deployments.",
+          },
+        ],
+        hasHowToSchema: false,
+      },
+    ],
+  },
 ];
 
 // Service-specific links
