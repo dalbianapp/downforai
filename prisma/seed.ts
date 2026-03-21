@@ -14,6 +14,7 @@ interface ServiceInput {
   surfaces: Array<{
     slug: string;
     displayName: string;
+    checkUrl?: string;
     badgeOverride?: BadgeType;
     limitPhraseOverrideKey?: string;
   }>;
@@ -382,7 +383,7 @@ const services: ServiceInput[] = [
     limitPhraseKey: "LIVE_MONITORING_EU",
     websiteUrl: "https://azure.microsoft.com/en-us/products/ai-services/openai-service",
     description: "Microsoft Azure's hosted OpenAI models service",
-    surfaces: [{ slug: "api", displayName: "Azure OpenAI API" }],
+    surfaces: [{ slug: "api", displayName: "Azure OpenAI API", checkUrl: "https://azure.status.microsoft/en-us/status/" }],
   },
   {
     slug: "google-vertex",
@@ -448,7 +449,7 @@ const services: ServiceInput[] = [
     limitPhraseKey: "LIVE_MONITORING_EU",
     websiteUrl: "https://leonardo.ai",
     description: "AI-powered creative platform for image generation",
-    surfaces: [{ slug: "web", displayName: "Leonardo Web" }],
+    surfaces: [{ slug: "web", displayName: "Leonardo Web", checkUrl: "https://docs.leonardo.ai/" }],
   },
   {
     slug: "ideogram",
@@ -1330,7 +1331,7 @@ const services: ServiceInput[] = [
       limitPhraseKey: "COMMUNITY_GENERIC",
       websiteUrl: "https://ai.google.dev/gemma",
       description: "Google's open-source lightweight language model family",
-      surfaces: [{ slug: "model", displayName: "Gemma Models" }],
+      surfaces: [{ slug: "model", displayName: "Gemma Models", checkUrl: "https://deepmind.google/models/gemma/" }],
     },
     {
       slug: "ibm-granite",
@@ -2518,6 +2519,7 @@ async function main() {
           create: surfaces.map((surface) => ({
             slug: surface.slug,
             displayName: surface.displayName,
+            checkUrl: surface.checkUrl,
             badgeOverride: surface.badgeOverride,
             limitPhraseOverrideKey: surface.limitPhraseOverrideKey,
           })),
