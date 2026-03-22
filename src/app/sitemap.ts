@@ -68,6 +68,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.2,
     },
+    {
+      url: `${baseUrl}/cookie-policy`,
+      lastModified: DEPLOY_DATE,
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
   ];
 
   // Service status pages (all 201 services)

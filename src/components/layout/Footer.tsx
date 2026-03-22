@@ -44,6 +44,7 @@ export function Footer() {
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <Link href="/privacy" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Privacy Policy</Link>
               <Link href="/terms" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Terms of Service</Link>
+              <Link href="/cookie-policy" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Cookie Policy</Link>
             </div>
           </div>
         </div>

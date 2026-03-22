@@ -49,13 +49,14 @@ export default function PrivacyPage() {
 
           <section style={{ marginBottom: "24px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>3. Cookies</h2>
-            <p>DownForAI does not use advertising or tracking cookies. We may use essential cookies for basic site functionality (e.g., preventing duplicate reports).</p>
+            <p>DownForAI uses essential cookies (session management, spam prevention) and PostHog analytics cookies (anonymous usage data, EU servers). No advertising cookies are currently active.</p>
+            <p style={{ marginTop: "8px" }}>For full details, see our <Link href="/cookie-policy" style={{ color: "#2563eb", textDecoration: "none" }}>Cookie Policy</Link>.</p>
           </section>
 
           <section style={{ marginBottom: "24px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>4. Third-Party Services</h2>
             <p>We use the following third-party services:</p>
-            <p style={{ marginTop: "4px" }}>• <strong>Vercel</strong> (hosting & analytics) — Covina, CA, USA<br/>• <strong>Neon</strong> (database) — San Francisco, CA, USA</p>
+            <p style={{ marginTop: "4px" }}>• <strong>Vercel</strong> (hosting & analytics) — Covina, CA, USA<br/>• <strong>Neon</strong> (database) — San Francisco, CA, USA<br/>• <strong>PostHog</strong> (product analytics, EU instance) — <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb" }}>posthog.com/privacy</a></p>
             <p style={{ marginTop: "8px" }}>These services have their own privacy policies. No personal data is shared with any other third party.</p>
           </section>
 
