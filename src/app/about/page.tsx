@@ -3,10 +3,11 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "About DownForAI — Real-Time AI Status Monitoring",
-  description: "Learn about DownForAI, the free real-time status monitoring platform for 200+ AI services. Our mission, how it works, and who we are.",
+  description: "Learn about DownForAI, the free real-time status monitoring platform for 500+ AI services. Our mission, how it works, and who we are.",
   alternates: {
     canonical: "/about",
   },
+  robots: { index: true, follow: true },
 };
 
 export default function AboutPage() {
@@ -23,7 +24,7 @@ export default function AboutPage() {
           <section style={{ marginBottom: "28px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Our Mission</h2>
             <p>
-              DownForAI is a free, independent monitoring platform that tracks the real-time status of 200+ AI services — from ChatGPT and Claude to Midjourney, Stable Diffusion, and beyond.
+              DownForAI is a free, independent monitoring platform that tracks the real-time status of 500+ AI services — from ChatGPT and Claude to Midjourney, Stable Diffusion, and beyond.
             </p>
             <p style={{ marginTop: "8px" }}>
               When an AI service goes down, developers and users need to know immediately. Is it just me, or is everyone affected? DownForAI answers that question in seconds.
@@ -59,7 +60,7 @@ export default function AboutPage() {
           <section style={{ marginBottom: "28px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Services We Monitor</h2>
             <p>
-              We currently track 200+ AI services across 11 categories: LLMs (ChatGPT, Claude, Gemini...), Image Generation (Midjourney, DALL-E, Stable Diffusion...), Video, Audio, Dev Tools, Infrastructure, Search, Productivity, Agents (Devin, LangChain...), Design (Figma, CapCut...), and 3D & Avatars.
+              We currently track 500+ AI services across 16 categories: LLMs (ChatGPT, Claude, Gemini...), Image Generation (Midjourney, DALL-E, Stable Diffusion...), Video, Audio, Dev Tools, Infrastructure, Search, Productivity, Agents, Design, 3D & Avatars, MLOps (Weights & Biases, LangSmith...), Vector DB (Pinecone, Chroma, Milvus...), Roleplay AI (Replika, Character AI...), Marketing AI (Surfer SEO, Anyword...), and Support AI (Intercom Fin, Zendesk AI...).
             </p>
             <p style={{ marginTop: "8px" }}>
               Missing a service? <Link href="/contact" style={{ color: "#2563eb", textDecoration: "none" }}>Let us know</Link> and we'll add it.

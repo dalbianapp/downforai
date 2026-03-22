@@ -18,19 +18,19 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://downforai.com"),
   title: "DownForAI — Real-Time AI Service Status Monitor",
   description:
-    "Real-time status monitoring for 200+ AI services. Check if ChatGPT, Claude, Gemini, Midjourney, and more are down right now.",
+    "Real-time status monitoring for 500+ AI services. Check if ChatGPT, Claude, Gemini, Midjourney, and more are down right now.",
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "DownForAI",
     title: "DownForAI — Real-Time AI Service Status Monitor",
-    description: "Real-time status monitoring for 200+ AI services.",
+    description: "Real-time status monitoring for 500+ AI services.",
     url: "https://downforai.com",
   },
   twitter: {
     card: "summary_large_image",
     title: "DownForAI — Real-Time AI Service Status Monitor",
-    description: "Real-time status monitoring for 200+ AI services.",
+    description: "Real-time status monitoring for 500+ AI services.",
   },
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>↓</text></svg>",
