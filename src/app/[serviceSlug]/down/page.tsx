@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
 import Link from "next/link";
+import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
 export const revalidate = 60;
 
@@ -23,8 +24,8 @@ export async function generateMetadata({
 
   if (!service) return {};
 
-  const title = `Is ${service.name} Down Right Now? — Live Status Check | DownForAI`;
-  const description = `Check if ${service.name} is down right now. Real-time status monitoring, uptime history, and incident reports for ${service.name}. Get instant answers about ${service.name} outages and service disruptions.`;
+  const title = `${service.name} Down? Outage Map & Live Status`;
+  const description = `Is ${service.name} down right now? Live outage tracking, user reports, and server status. Check if ${service.name} is experiencing issues.`;
 
   return {
     title,
@@ -307,6 +308,8 @@ export default async function ServiceDownPage({
           )}
         </div>
       </div>
+
+      <AffiliateBlock serviceName={service.name} category={service.category} />
 
       {/* FAQ */}
       <div

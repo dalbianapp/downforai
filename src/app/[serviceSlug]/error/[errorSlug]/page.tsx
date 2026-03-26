@@ -5,6 +5,7 @@ import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/uti
 import Link from "next/link";
 import { getErrorsForCategory, getErrorInfo, getServiceLinks, getRelevantReportTypes } from "@/lib/error-playbooks";
 import { BackToServiceButton } from "@/components/ui/BackToServiceButton";
+import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
 export const revalidate = 60;
 
@@ -42,8 +43,8 @@ export async function generateMetadata({
   const errorInfo = getErrorInfo(service.category, errorSlug);
   if (!errorInfo) return {};
 
-  const title = `${service.name}: ${errorInfo.metaTitle} | DownForAI`;
-  const description = `${service.name} ${errorInfo.title}? Check live status, troubleshooting steps, and community reports.`;
+  const title = `${service.name}: ${errorInfo.metaTitle}`;
+  const description = `Getting "${errorInfo.title}" on ${service.name}? Check if it's a server outage or an issue on your end. Live status & reports.`;
 
   return {
     title,
@@ -851,6 +852,8 @@ export default async function ServiceErrorPage({
           ))}
         </div>
       </div>
+
+      <AffiliateBlock serviceName={service.name} category={service.category} />
 
       {/* 12. Related Pages */}
       <div

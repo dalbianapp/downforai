@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/lib/posthog";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -40,11 +41,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const isAdmin = headersList.get("x-admin-page") === "1";
+
   return (
     <html lang="en">
       <body
@@ -52,13 +56,23 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
       >
         <PostHogProvider>
-          <Header />
-          <main className="min-h-screen">
-            <div className="max-w-[1200px] mx-auto px-4 py-8">{children}</div>
-          </main>
-          <Footer />
-          <Analytics />
-          <SpeedInsights />
+          {isAdmin ? (
+            <>
+              {children}
+              <Analytics />
+              <SpeedInsights />
+            </>
+          ) : (
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <div className="max-w-[1200px] mx-auto px-4 py-8">{children}</div>
+              </main>
+              <Footer />
+              <Analytics />
+              <SpeedInsights />
+            </>
+          )}
         </PostHogProvider>
       </body>
     </html>

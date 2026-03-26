@@ -63,6 +63,9 @@ export function getCategoryColor(category: string): string {
     ROLEPLAY: "from-fuchsia-500/20 to-fuchsia-600/20",
     MARKETING: "from-amber-500/20 to-amber-600/20",
     SUPPORT: "from-sky-500/20 to-sky-600/20",
+    EDUCATION: "from-lime-500/20 to-lime-600/20",
+    HR_AI: "from-orange-500/20 to-orange-600/20",
+    LEGAL_AI: "from-slate-500/20 to-slate-600/20",
   };
   return colors[category] || "from-gray-500/20 to-gray-600/20";
 }
@@ -85,6 +88,9 @@ export function getCategoryInitialBgColor(category: string): string {
     ROLEPLAY: "bg-fuchsia-500",
     MARKETING: "bg-amber-500",
     SUPPORT: "bg-sky-500",
+    EDUCATION: "bg-lime-500",
+    HR_AI: "bg-orange-500",
+    LEGAL_AI: "bg-slate-500",
   };
   return colors[category] || "bg-gray-500";
 }
@@ -111,6 +117,9 @@ export function formatCategoryLabel(category: string): string {
     ROLEPLAY: "Roleplay AI",
     MARKETING: "Marketing AI",
     SUPPORT: "Support AI",
+    EDUCATION: "Education AI",
+    HR_AI: "HR & Recruitment AI",
+    LEGAL_AI: "Legal AI",
   };
   return labels[category] || category;
 }

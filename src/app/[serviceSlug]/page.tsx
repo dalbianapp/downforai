@@ -9,6 +9,8 @@ import { QuickReport } from "@/components/status/QuickReport";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
 import { getErrorsForCategory } from "@/lib/error-playbooks";
 import { UptimeBarWithHours } from "@/components/status/UptimeBar";
+import { CommentSection } from "@/components/status/CommentSection";
+import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
 const LatencyChart = dynamic(
   () => import("@/components/status/LatencyChart").then((mod) => ({ default: mod.LatencyChart }))
@@ -34,34 +36,35 @@ export async function generateMetadata({
   const service = await prisma.service.findUnique({ where: { slug: serviceSlug } });
   if (!service) return {};
   return {
-    title: `${service.name} Status — Is ${service.name} Down? | DownForAI`,
-    description: `Real-time ${service.name} status. Check if ${service.name} is down right now. Live monitoring, uptime history, and incident reports.`,
+    title: `${service.name} Status: Down Right Now? [Live Check]`,
+    description: `Is ${service.name} down? Real-time server status, outage map, and live monitoring. Check ${service.name} issues today.`,
     alternates: {
       canonical: `/${serviceSlug}`,
     },
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${service.name} Status — Is ${service.name} Down?`,
-      description: `Real-time ${service.name} status monitoring.`,
+      title: `${service.name} Status: Down Right Now? [Live Check]`,
+      description: `Is ${service.name} down? Real-time server status, outage map, and live monitoring. Check ${service.name} issues today.`,
       url: `https://downforai.com/${serviceSlug}`,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `Is ${service.name} Down? — DownForAI`,
+      title: `${service.name} Status: Down Right Now? [Live Check]`,
     },
   };
 }
 
 async function getServiceDetails(slug: string) {
+  const since25h = new Date(Date.now() - 25 * 60 * 60 * 1000);
   const service = await prisma.service.findUnique({
     where: { slug },
     include: {
       surfaces: {
         include: {
           observations: {
+            where: { observedAt: { gte: since25h } },
             orderBy: { observedAt: "desc" },
-            take: 192,
           },
         },
       },
@@ -338,10 +341,12 @@ export default async function ServicePage({
         <UptimeBarWithHours slots={uptimeSlots} uptimePercent={uptimePercent} />
       </div>
 
+      <AffiliateBlock serviceName={service.name} category={service.category} />
+
       {/* Latency Chart */}
       <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>Latency (24h)</h2>
-        <LatencyChart observations={service.surfaces.flatMap((s) => s.observations).slice(0, 192)} />
+        <LatencyChart observations={service.surfaces.flatMap((s) => s.observations).filter((o) => o.observedAt.getTime() > Date.now() - 24 * 60 * 60 * 1000)} />
       </div>
 
       {/* Recent Incidents */}
@@ -556,6 +561,8 @@ export default async function ServicePage({
           </div>
         )}
       </div>
+
+      <CommentSection serviceSlug={service.slug} serviceName={service.name} />
     </div>
   );
 }

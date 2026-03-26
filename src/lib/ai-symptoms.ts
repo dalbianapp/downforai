@@ -27,6 +27,9 @@ export const AI_SYMPTOM_MAPPING: Record<ServiceCategory, string[]> = {
   ROLEPLAY: ["not-working", "login-issue", "slow-response"],
   MARKETING: ["not-working", "api-error", "slow-response"],
   SUPPORT: ["not-working", "api-error", "slow-response"],
+  EDUCATION: ["not-working", "api-error", "slow-response"],
+  HR_AI: ["not-working", "api-error", "login-issue"],
+  LEGAL_AI: ["not-working", "api-error", "slow-response"],
 };
 
 // Détails des symptômes

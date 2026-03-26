@@ -1,1 +1,1 @@
-# ads.txt - to be configured when ad network is activated
+google.com, pub-5406693499900768, DIRECT, f08c47fec0942fa0

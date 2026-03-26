@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface UptimeSlot {
   status: string;
@@ -28,6 +28,8 @@ const statusLabels: Record<string, string> = {
 
 export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: UptimeBarWithHoursProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
 
   // Generate hour markers - every 3 hours for 24h (8 markers)
   const hourMarkers = [0, 6, 12, 18, 24, 30, 36, 42]; // Indices for 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
@@ -114,9 +116,9 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
             const slot = slots[slotIndex];
             if (!slot) return null;
 
-            // Show actual clock time (local time)
-            const hours = slot.time.getHours();
-            const label = `${hours.toString().padStart(2, "0")}h`;
+            // Show actual clock time (local time) — only after hydration
+            const d = new Date(slot.time);
+            const label = isClient ? `${d.getHours().toString().padStart(2, "0")}h` : "";
 
             return (
               <div
@@ -138,7 +140,7 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
                     background: "#d1d5db",
                   }}
                 />
-                <span style={{ fontSize: "10px", color: "#a3a3a3", fontFamily: "monospace" }}>
+                <span suppressHydrationWarning style={{ fontSize: "10px", color: "#a3a3a3", fontFamily: "monospace" }}>
                   {label}
                 </span>
               </div>

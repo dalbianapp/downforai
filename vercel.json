@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/check-status",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/3 * * * *"
     },
     {
       "path": "/api/cron/aggregate-reports",

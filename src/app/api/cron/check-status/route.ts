@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const CHECK_TIMEOUT_MS = 8000; // 8s timeout per check
-const BATCH_SIZE = 40; // Check 40 surfaces per cron run
+const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check
+const BATCH_SIZE = 200; // Check 200 surfaces per cron run (fully parallel)
 
 function verifyAuth(request: NextRequest): boolean {
   const authHeader = request.headers.get("Authorization");
@@ -263,42 +263,45 @@ async function handleCheckStatus(request: NextRequest) {
     }> = [];
 
     const now = new Date();
+    const checkStart = Date.now();
 
-    // Parallelize checks in chunks to avoid timeout (10 concurrent max)
+    // Throttled parallel checks — max 20 concurrent to get accurate latency measurements
+    const CONCURRENCY = 20;
     const urlEntries = Array.from(urlToSurfaces.entries());
-    const CONCURRENT_LIMIT = 10;
+    const results: PromiseSettledResult<{ url: string; surfacesForUrl: typeof batch; result: CheckResult }>[] = [];
 
-    for (let i = 0; i < urlEntries.length; i += CONCURRENT_LIMIT) {
-      const chunk = urlEntries.slice(i, i + CONCURRENT_LIMIT);
-
-      const results = await Promise.allSettled(
+    for (let i = 0; i < urlEntries.length; i += CONCURRENCY) {
+      const chunk = urlEntries.slice(i, i + CONCURRENCY);
+      const chunkResults = await Promise.allSettled(
         chunk.map(async ([url, surfacesForUrl]) => {
           const result = await checkUrl(url);
           return { url, surfacesForUrl, result };
         })
       );
+      results.push(...chunkResults);
+    }
 
-      for (const settled of results) {
-        if (settled.status === "fulfilled") {
-          const { surfacesForUrl, result } = settled.value;
-          for (const surface of surfacesForUrl) {
-            observations.push({
-              serviceSurfaceId: surface.id,
-              regionId: region.id,
-              status: result.status,
-              latencyMs: result.latencyMs,
-              httpStatus: result.httpStatus,
-              confidence: result.confidence,
-              errorRate: null,
-              observedAt: now,
-            });
-          }
-        } else {
-          // Check completely failed (shouldn't happen often due to checkUrl's try/catch)
-          console.error("HTTP check failed:", settled.reason);
+    for (const settled of results) {
+      if (settled.status === "fulfilled") {
+        const { surfacesForUrl, result } = settled.value;
+        for (const surface of surfacesForUrl) {
+          observations.push({
+            serviceSurfaceId: surface.id,
+            regionId: region.id,
+            status: result.status,
+            latencyMs: result.latencyMs,
+            httpStatus: result.httpStatus,
+            confidence: result.confidence,
+            errorRate: null,
+            observedAt: now,
+          });
         }
+      } else {
+        console.error("HTTP check failed:", settled.reason);
       }
     }
+
+    const checkElapsedMs = Date.now() - checkStart;
 
     // Bulk insert observations
     if (observations.length > 0) {
@@ -372,6 +375,7 @@ async function handleCheckStatus(request: NextRequest) {
       batch_size: BATCH_SIZE,
       total_surfaces: surfacesWithData.length,
       unique_urls_checked: urlToSurfaces.size,
+      elapsed_ms: checkElapsedMs,
       results: {
         OPERATIONAL: observations.filter(o => o.status === "OPERATIONAL").length,
         DEGRADED: observations.filter(o => o.status === "DEGRADED").length,

@@ -25,6 +25,9 @@ enum ServiceCategory {
   ROLEPLAY
   MARKETING
   SUPPORT
+  EDUCATION
+  HR_AI
+  LEGAL_AI
 }
 
 enum BadgeType {
@@ -77,6 +80,7 @@ model Service {
   surfaces         ServiceSurface[]
   incidents        Incident[]
   communityReports CommunityReport[]
+  comments         Comment[]
 
   @@index([category])
 }
@@ -166,6 +170,33 @@ model CommunityReport {
   @@index([ipHash, serviceId, createdAt(sort: Desc)])
   @@index([surfaceId, createdAt(sort: Desc)])
   @@index([serviceId, reportType, createdAt(sort: Desc)])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  serviceId String
+  pseudo    String   @default("Anonymous")
+  content   String
+  aiReply   String?
+  ipHash    String?
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, createdAt(sort: Desc)])
+  @@index([ipHash, createdAt(sort: Desc)])
+}
+
+model AffiliateClick {
+  id          String   @id @default(cuid())
+  partner     String
+  serviceName String
+  page        String
+  createdAt   DateTime @default(now())
+
+  @@index([partner, createdAt])
 }
 
 model BadgePhrase {

@@ -65,7 +65,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error (500 / 502 / 503)",
-        metaTitle: "API Error — Fix & Live Status",
+        metaTitle: "API Error 500/502/503 [Server Status]",
         description:
           "When {service} returns an API error (HTTP 500, 502, or 503), it typically means the servers are experiencing issues, undergoing maintenance, or handling an unexpected surge in traffic. This is usually a server-side problem, not something wrong with your code.",
         causes: [
@@ -114,7 +114,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "rate-limit-exceeded",
         title: "Rate Limit Exceeded (429)",
-        metaTitle: "Rate Limit Exceeded (429) — Fix & Live Status",
+        metaTitle: "Rate Limit Exceeded [Error 429]",
         description:
           "A 429 'Rate Limit Exceeded' error from {service} means you've sent too many requests in a given time period. This is a protective measure to ensure fair usage across all users. It can be triggered by your individual usage or by {service}-wide capacity constraints.",
         causes: [
@@ -163,7 +163,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "timeout-or-slow",
         title: "Timeout or Slow Response",
-        metaTitle: "Timeout / Slow Response — Fix & Live Status",
+        metaTitle: "Timeout & Slow Response [Live Status]",
         description:
           "When {service} is timing out or responding very slowly, requests take much longer than usual or fail entirely. This can affect both API calls and the web interface. Slow responses often indicate server overload, network issues, or problems with specific models.",
         causes: [
@@ -212,7 +212,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "auth-error",
         title: "Authentication Failed / Invalid API Key",
-        metaTitle: "Authentication Error — Fix & Live Status",
+        metaTitle: "Auth Error / Invalid API Key [Status]",
         description:
           "An authentication error from {service} means your API key, token, or login credentials were rejected. This can happen when keys expire, are misconfigured, or when {service}'s authentication service itself is having problems.",
         causes: [
@@ -261,7 +261,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "model-unavailable",
         title: "Model Unavailable / Overloaded",
-        metaTitle: "Model Unavailable — Fix & Live Status",
+        metaTitle: "Model Unavailable [Live Outage Check]",
         description:
           "When {service} reports a model as unavailable or overloaded, the specific AI model you're trying to use cannot process requests right now. This is often temporary and happens during peak usage times, model updates, or capacity issues.",
         causes: [
@@ -317,7 +317,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "generation-failed",
         title: "Image Generation Failed",
-        metaTitle: "Image Generation Failed — Fix & Live Status",
+        metaTitle: "Image Generation Failed [Server Status]",
         description:
           "When {service} fails to generate an image, your request was processed but the image could not be created. This can happen due to server issues, content policy violations, unsupported parameters, or service outages.",
         causes: [
@@ -365,7 +365,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "queue-full",
         title: "Generation Queue Full / Long Wait",
-        metaTitle: "Queue Full / Long Wait — Fix & Live Status",
+        metaTitle: "Queue Full / Long Wait [Live Status]",
         description:
           "When {service}'s generation queue is full, your request has been accepted but is waiting in line behind other users. During peak times, wait times can range from minutes to hours depending on your plan and the service's capacity.",
         causes: [
@@ -414,7 +414,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "upload-failed",
         title: "Image Upload Failed / Processing Error",
-        metaTitle: "Upload Failed — Fix & Live Status",
+        metaTitle: "Upload Failed [Server Status]",
         description:
           "When {service} fails to upload or process your image, the file couldn't be received or interpreted by the server. This typically relates to file format, size, network issues, or service problems.",
         causes: [
@@ -461,7 +461,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "moderation-block",
         title: "Content Blocked / Safety Filter",
-        metaTitle: "Content Blocked (Safety Filter) — Fix & Live Status",
+        metaTitle: "Content Blocked by Safety Filter [Status]",
         description:
           "When {service} blocks your content, the safety filter has flagged your prompt or uploaded image as potentially violating the content policy. This can happen with perfectly innocent prompts that contain ambiguous terms.",
         causes: [
@@ -516,7 +516,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "generation-failed",
         title: "Video Generation Failed",
-        metaTitle: "Video Generation Failed — Fix & Live Status",
+        metaTitle: "Video Generation Failed [Server Status]",
         description:
           "When {service} fails to generate a video, the rendering process encountered an error. Video generation is GPU-intensive and more prone to failures than image generation, especially for longer clips or complex prompts.",
         causes: [
@@ -563,7 +563,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "render-stuck",
         title: "Rendering Stuck / Processing Timeout",
-        metaTitle: "Rendering Stuck — Fix & Live Status",
+        metaTitle: "Rendering Stuck / Timeout [Status]",
         description:
           "When {service} video rendering gets stuck, the progress bar stops moving or the processing time far exceeds the expected duration. This is common during peak usage when GPU resources are constrained.",
         causes: [
@@ -610,7 +610,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "upload-failed",
         title: "Video Upload Failed",
-        metaTitle: "Upload Failed — Fix & Live Status",
+        metaTitle: "Upload Failed [Server Status]",
         description:
           "When {service} fails to accept your video upload, the file could not be received or processed. Video files are large, making uploads more prone to network timeouts and format issues.",
         causes: [
@@ -655,7 +655,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "export-error",
         title: "Export Failed / Download Error",
-        metaTitle: "Export Failed — Fix & Live Status",
+        metaTitle: "Export / Download Failed [Status]",
         description:
           "When {service} fails to export or download your generated video, the file is ready but can't be delivered to you. This is usually a server-side or browser issue.",
         causes: [
@@ -707,7 +707,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "transcription-failed",
         title: "Transcription Failed / Audio Not Recognized",
-        metaTitle: "Transcription Failed — Fix & Live Status",
+        metaTitle: "Transcription Failed [Live Status]",
         description:
           "When {service} fails to transcribe audio, the speech-to-text engine could not process your file. This can be due to audio quality, unsupported languages, format issues, or service problems.",
         causes: [
@@ -753,7 +753,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "voice-generation-error",
         title: "Voice Generation Error / TTS Failed",
-        metaTitle: "Voice Generation Error — Fix & Live Status",
+        metaTitle: "Voice Generation Error [Live Status]",
         description:
           "When {service} fails to generate voice or speech, the text-to-speech engine encountered an error. This can relate to the selected voice, input text, API issues, or service capacity.",
         causes: [
@@ -799,7 +799,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "upload-failed",
         title: "Audio Upload Failed / Format Error",
-        metaTitle: "Audio Upload Failed — Fix & Live Status",
+        metaTitle: "Audio Upload Failed [Live Status]",
         description:
           "When {service} can't accept your audio upload, the file format, size, or encoding may be incompatible, or the upload service is experiencing issues.",
         causes: [
@@ -844,7 +844,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-processing",
         title: "Slow Processing / Queue Delay",
-        metaTitle: "Slow Processing — Fix & Live Status",
+        metaTitle: "Slow Processing [Live Status]",
         description:
           "When {service} is processing audio slowly, your request is in a queue or the servers are handling heavy load. Audio processing time depends on file length, task complexity, and current demand.",
         causes: [
@@ -896,7 +896,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "extension-not-working",
         title: "IDE Extension Not Responding",
-        metaTitle: "Extension Not Working — Fix & Live Status",
+        metaTitle: "Extension Not Working [Live Status]",
         description:
           "When {service}'s IDE extension stops working, code completions, suggestions, and AI features become unavailable in your editor. This can be caused by extension crashes, authentication issues, or service outages.",
         causes: [
@@ -944,7 +944,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "completion-failed",
         title: "Code Completion Not Working",
-        metaTitle: "Code Completion Not Working — Fix & Live Status",
+        metaTitle: "Code Completion Not Working [Live Status]",
         description:
           "When {service} stops providing code completions or suggestions, the AI assistant is failing to generate or deliver predictions to your editor. This reduces productivity significantly.",
         causes: [
@@ -989,7 +989,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error / SDK Error",
-        metaTitle: "API / SDK Error — Fix & Live Status",
+        metaTitle: "API / SDK Error [Live Status]",
         description:
           "When {service}'s API or SDK returns an error, your programmatic integration with the service has encountered a problem. This can affect CI/CD pipelines, automated workflows, and custom integrations.",
         causes: [
@@ -1036,7 +1036,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "auth-error",
         title: "Authentication or License Error",
-        metaTitle: "Auth / License Error — Fix & Live Status",
+        metaTitle: "Auth / License Error [Live Status]",
         description:
           "When {service} rejects your authentication, your license, API key, or login credentials are invalid or expired. For dev tools, this often relates to subscription status or organization permissions.",
         causes: [
@@ -1083,7 +1083,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "webhook-failed",
         title: "Webhook Failed / Integration Error",
-        metaTitle: "Webhook / Integration Error — Fix & Live Status",
+        metaTitle: "Webhook / Integration Error [Live Status]",
         description:
           "When {service}'s webhooks or integrations fail, automated workflows, notifications, and connected services stop receiving updates. This breaks CI/CD pipelines and team collaboration tools.",
         causes: [
@@ -1136,7 +1136,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "gpu-unavailable",
         title: "GPU Unavailable / No Capacity",
-        metaTitle: "GPU Unavailable — Fix & Live Status",
+        metaTitle: "GPU Unavailable [Live Status]",
         description:
           "When {service} reports no GPU availability, it means all compute resources of the requested type are currently allocated to other workloads. This error is one of the most common pain points in AI infrastructure and affects developers, researchers, and production systems alike. GPU scarcity — particularly for high-end accelerators like NVIDIA A100, H100, and L40S — is a structural challenge: demand from AI training and inference workloads consistently outpaces the supply that cloud providers can provision. When you hit this error on {service}, your request has been rejected before any computation begins. Understanding the underlying cause helps you choose the fastest resolution: switching GPU types, changing regions, adjusting your instance strategy, or queuing your job for when capacity frees up.",
         causes: [
@@ -1201,7 +1201,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "deployment-failed",
         title: "Deployment Failed / Build Error",
-        metaTitle: "Deployment Failed — Fix & Live Status",
+        metaTitle: "Deployment Failed [Live Status]",
         description:
           "When {service} fails to deploy your model or application, the build, packaging, or startup process encountered an error. This can block your production pipeline.",
         causes: [
@@ -1248,7 +1248,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "inference-timeout",
         title: "Inference Timeout / Model Loading Error",
-        metaTitle: "Inference Timeout — Fix & Live Status",
+        metaTitle: "Inference Timeout [Live Status]",
         description:
           "When {service} inference times out, the model took too long to load, initialize, or generate a response. Large models can have cold start times of 30-120 seconds, and inference itself can timeout under load.",
         causes: [
@@ -1295,7 +1295,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "region-unavailable",
         title: "Region Unavailable / Endpoint Down",
-        metaTitle: "Region Unavailable — Fix & Live Status",
+        metaTitle: "Region Unavailable [Live Status]",
         description:
           "When a {service} region or endpoint is unavailable, the specific data center or geographic zone you're targeting is down or unreachable. Other regions may still be operational.",
         causes: [
@@ -1341,7 +1341,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "billing-suspended",
         title: "Account / Billing Suspended",
-        metaTitle: "Billing Suspended — Fix & Live Status",
+        metaTitle: "Billing Suspended [Live Status]",
         description:
           "When {service} suspends your account due to billing issues, all your deployments, API access, and resources are paused or terminated. This can happen silently and cause production outages.",
         causes: [
@@ -1396,7 +1396,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "Search API Error / Query Failed",
-        metaTitle: "API Error — Fix & Live Status",
+        metaTitle: "API Error 500/502/503 [Server Status]",
         description:
           "When {service}'s search API returns an error, your query could not be processed. This affects both direct searches and applications built on {service}'s API.",
         causes: [
@@ -1442,7 +1442,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "rate-limit-exceeded",
         title: "Rate Limit / Quota Exceeded",
-        metaTitle: "Rate Limit / Quota — Fix & Live Status",
+        metaTitle: "Rate Limit / Quota [Live Status]",
         description:
           "When {service} rate limits your searches, you've exceeded the allowed number of queries per time period. This is common for both free and paid tiers.",
         causes: [
@@ -1487,7 +1487,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "auth-error",
         title: "API Key Invalid / Authentication Error",
-        metaTitle: "Auth Error — Fix & Live Status",
+        metaTitle: "Auth Error [Live Status]",
         description:
           "When {service} rejects your API key or credentials, your authentication is invalid. This blocks all API access until resolved.",
         causes: [
@@ -1540,7 +1540,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "login-issue",
         title: "Login Failed / SSO Error",
-        metaTitle: "Login Issue — Fix & Live Status",
+        metaTitle: "Login Issue [Live Status]",
         description:
           "When you can't log into {service}, the authentication system is rejecting your credentials or the SSO/OAuth flow is broken. This blocks access to all AI features.",
         causes: [
@@ -1587,7 +1587,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "sync-error",
         title: "Sync Failed / Data Not Updating",
-        metaTitle: "Sync Error — Fix & Live Status",
+        metaTitle: "Sync Error [Live Status]",
         description:
           "When {service} stops syncing, changes you make aren't saved or propagated across devices. AI features may use stale data or produce inconsistent results.",
         causes: [
@@ -1633,7 +1633,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "ai-feature-broken",
         title: "AI Feature Not Available / Disabled",
-        metaTitle: "AI Feature Broken — Fix & Live Status",
+        metaTitle: "AI Feature Broken [Live Status]",
         description:
           "When {service}'s AI features stop working, the AI-powered capabilities (writing, summarizing, generating, etc.) are unavailable while the rest of the app may work fine.",
         causes: [
@@ -1686,7 +1686,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "task-failed",
         title: "Agent Task Failed / Execution Error",
-        metaTitle: "Task Failed — Fix & Live Status",
+        metaTitle: "Task Failed [Live Status]",
         description:
           "When {service} agent fails a task, the automated workflow or AI agent could not complete the assigned action. Agent failures can cascade and affect dependent workflows.",
         causes: [
@@ -1733,7 +1733,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error / Webhook Failed",
-        metaTitle: "API / Webhook Error — Fix & Live Status",
+        metaTitle: "API / Webhook Error [Live Status]",
         description:
           "When {service}'s API or webhooks fail, triggers don't fire, data doesn't flow, and automated workflows stop running.",
         causes: [
@@ -1779,7 +1779,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "timeout",
         title: "Task Timeout / Agent Stuck",
-        metaTitle: "Agent Stuck / Timeout — Fix & Live Status",
+        metaTitle: "Agent Stuck / Timeout [Live Status]",
         description:
           "When a {service} agent gets stuck or times out, the AI is running indefinitely without completing or has exceeded the maximum allowed execution time.",
         causes: [
@@ -1825,7 +1825,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "auth-integration-error",
         title: "Integration Auth Failed / Connection Lost",
-        metaTitle: "Integration Auth Error — Fix & Live Status",
+        metaTitle: "Integration Auth Error [Live Status]",
         description:
           "When {service} loses connection to an integrated service (Slack, GitHub, Gmail, etc.), the authentication between the two services has expired or been revoked.",
         causes: [
@@ -1878,7 +1878,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "export-failed",
         title: "Export Failed / Download Error",
-        metaTitle: "Export Failed — Fix & Live Status",
+        metaTitle: "Export / Download Failed [Status]",
         description:
           "When {service} can't export your design, the rendering or file generation process failed. This can block deliverables and deadlines.",
         causes: [
@@ -1923,7 +1923,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "ai-feature-broken",
         title: "AI Feature Not Responding",
-        metaTitle: "AI Feature Broken — Fix & Live Status",
+        metaTitle: "AI Feature Broken [Live Status]",
         description:
           "When {service}'s AI features (auto-layout, AI generation, remove background, etc.) stop working, the AI backend is unavailable while the core design tool continues to function.",
         causes: [
@@ -1968,7 +1968,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-rendering",
         title: "Slow Rendering / Preview Lag",
-        metaTitle: "Slow Rendering — Fix & Live Status",
+        metaTitle: "Slow Rendering [Live Status]",
         description:
           "When {service} renders slowly, the design preview, canvas, or AI-generated elements take too long to load or update.",
         causes: [
@@ -2020,7 +2020,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "generation-failed",
         title: "3D Generation Failed / Model Error",
-        metaTitle: "3D Generation Failed — Fix & Live Status",
+        metaTitle: "3D Generation Failed [Live Status]",
         description:
           "When {service} fails to generate a 3D model, the AI could not create the requested object. 3D generation is computationally intensive and more prone to failures than 2D generation.",
         causes: [
@@ -2065,7 +2065,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-rendering",
         title: "Slow 3D Rendering / Processing",
-        metaTitle: "Slow 3D Rendering — Fix & Live Status",
+        metaTitle: "Slow 3D Rendering [Live Status]",
         description:
           "When {service} 3D rendering is slow, the model generation or processing is taking longer than expected. 3D generation typically takes 1-10 minutes depending on complexity.",
         causes: [
@@ -2110,7 +2110,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "export-error",
         title: "3D Export Failed / Format Error",
-        metaTitle: "3D Export Failed — Fix & Live Status",
+        metaTitle: "3D Export Failed [Live Status]",
         description:
           "When {service} can't export your 3D model, the file conversion or download process failed. Common formats include OBJ, FBX, GLB, and STL.",
         causes: [
@@ -2162,7 +2162,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error (500 / 502 / 503)",
-        metaTitle: "MLOps API Error — Fix & Live Status",
+        metaTitle: "MLOps API Error [Live Status]",
         description:
           "{service} is returning API errors (HTTP 500, 502, or 503), indicating the platform's backend is experiencing issues. MLOps platforms handle complex workloads — model training, experiment tracking, pipeline orchestration — making server errors particularly disruptive to active workflows.",
         causes: [
@@ -2209,7 +2209,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "pipeline-failed",
         title: "Pipeline / Training Run Failed",
-        metaTitle: "Pipeline Failed on {service} — Fix & Live Status",
+        metaTitle: "Pipeline Failed on {service} [Live Status]",
         description:
           "Your ML pipeline or training run on {service} has failed unexpectedly. This can be caused by platform-side issues (compute unavailability, orchestration bugs) or configuration problems on your end. Distinguishing between the two is key to a fast resolution.",
         causes: [
@@ -2256,7 +2256,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "model-registry-error",
         title: "Model Registry / Artifact Store Error",
-        metaTitle: "Model Registry Error on {service} — Fix & Live Status",
+        metaTitle: "Model Registry Error on {service} [Live Status]",
         description:
           "You cannot push, pull, or access model artifacts in {service}'s model registry. This blocks model deployment and versioning workflows. Registry errors are often caused by storage backend issues or permission problems.",
         causes: [
@@ -2309,7 +2309,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error (500 / 502 / 503)",
-        metaTitle: "Vector DB API Error — Fix & Live Status",
+        metaTitle: "Vector DB API Error [Live Status]",
         description:
           "{service} is returning server errors (HTTP 500, 502, or 503). Vector databases power real-time search and retrieval-augmented generation (RAG) applications — an outage directly impacts your AI product's ability to retrieve context, answer questions, or perform semantic search.",
         causes: [
@@ -2355,7 +2355,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-response",
         title: "Slow Query Response / High Latency",
-        metaTitle: "Slow Vector DB Queries on {service} — Fix & Live Status",
+        metaTitle: "Slow Vector DB Queries on {service} [Live Status]",
         description:
           "Queries to {service} are taking much longer than usual, degrading the performance of your semantic search or RAG pipeline. High latency in vector databases is often caused by index size, query complexity, or infrastructure load.",
         causes: [
@@ -2400,7 +2400,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "index-unavailable",
         title: "Index / Collection Unavailable",
-        metaTitle: "Index Unavailable on {service} — Fix & Live Status",
+        metaTitle: "Index Unavailable on {service} [Live Status]",
         description:
           "Your vector index or collection on {service} is returning errors or appears to be missing. This can happen after index recreation, namespace issues, or platform-side storage problems.",
         causes: [
@@ -2453,7 +2453,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "not-working",
         title: "Service Down / Not Responding",
-        metaTitle: "{service} Down — Fix & Live Status",
+        metaTitle: "{service} Down [Live Status]",
         description:
           "{service} is not loading or responding to requests. Roleplay and entertainment AI platforms rely on large language models and real-time conversation infrastructure — any backend issue will make the service completely inaccessible.",
         causes: [
@@ -2500,7 +2500,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "login-issue",
         title: "Login / Authentication Issues",
-        metaTitle: "Can't Log In to {service} — Fix & Live Status",
+        metaTitle: "Can't Log In to {service} [Live Status]",
         description:
           "You're unable to log in to {service}, or you're being repeatedly logged out. Authentication issues can affect access to your characters, subscription, and conversation history.",
         causes: [
@@ -2546,7 +2546,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-response",
         title: "Slow / Laggy Responses",
-        metaTitle: "{service} Slow Responses — Fix & Live Status",
+        metaTitle: "{service} Slow Responses [Live Status]",
         description:
           "Responses from {service} are taking much longer than usual, breaking the immersion of roleplay conversations. Slow AI response times are typically caused by server overload or model inference bottlenecks.",
         causes: [
@@ -2598,7 +2598,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error (500 / 502 / 503)",
-        metaTitle: "Marketing AI API Error — Fix & Live Status",
+        metaTitle: "Marketing AI API Error [Live Status]",
         description:
           "{service} is returning server errors (HTTP 500, 502, or 503). Marketing and writing AI tools rely on both LLM inference APIs and their own content management infrastructure — errors can block content generation, scheduling, and publishing workflows.",
         causes: [
@@ -2644,7 +2644,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "generation-failed",
         title: "Content Generation Failed",
-        metaTitle: "Content Generation Failed on {service} — Fix & Live Status",
+        metaTitle: "Content Generation Failed on {service} [Live Status]",
         description:
           "Your content generation request on {service} has failed or returned an empty/incomplete result. This could be caused by prompt issues, content policy filters, or platform-side infrastructure problems.",
         causes: [
@@ -2690,7 +2690,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-response",
         title: "Slow Generation / High Latency",
-        metaTitle: "{service} Slow Generation — Fix & Live Status",
+        metaTitle: "{service} Slow Generation [Live Status]",
         description:
           "Content generation on {service} is taking much longer than usual. Slow response times disrupt content creation workflows and can indicate underlying infrastructure strain on the platform.",
         causes: [
@@ -2741,7 +2741,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "api-error",
         title: "API Error (500 / 502 / 503)",
-        metaTitle: "Customer Support AI API Error — Fix & Live Status",
+        metaTitle: "Customer Support AI API Error [Live Status]",
         description:
           "{service} is returning server errors (HTTP 500, 502, or 503). Customer support and sales AI platforms are mission-critical — an outage means your chatbot, live chat, or AI assist features stop working, directly impacting customer service quality.",
         causes: [
@@ -2787,7 +2787,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "ai-feature-broken",
         title: "AI Feature Not Working (Suggestions / Summarization / Auto-Reply)",
-        metaTitle: "AI Features Broken on {service} — Fix & Live Status",
+        metaTitle: "AI Features Broken on {service} [Live Status]",
         description:
           "AI-powered features in {service} — such as suggested replies, ticket summarization, sentiment analysis, or auto-routing — have stopped working or are producing incorrect results. This often indicates a partial platform degradation affecting the AI layer.",
         causes: [
@@ -2832,7 +2832,7 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
       {
         slug: "slow-response",
         title: "Slow Response Times / Lag",
-        metaTitle: "{service} Slow Response — Fix & Live Status",
+        metaTitle: "{service} Slow Response [Live Status]",
         description:
           "Response times from {service} are elevated — whether for your chatbot replies, agent AI suggestions, or API calls. In customer support contexts, slow responses directly impact customer satisfaction (CSAT) scores.",
         causes: [
@@ -2873,6 +2873,324 @@ export const ERROR_PLAYBOOKS: CategoryPlaybook[] = [
           },
         ],
         hasHowToSchema: false,
+      },
+    ],
+  },
+
+  // ==================== EDUCATION ====================
+  {
+    category: "EDUCATION",
+    errors: [
+      {
+        slug: "quiz-generation-failed",
+        title: "Quiz Generation Failed",
+        metaTitle: "Quiz Generation Failed [AI Tutor Status]",
+        description:
+          "When {service} fails to generate a quiz, it usually means the AI backend is overloaded or a temporary processing error occurred. Quiz generation relies on complex AI inference that can be interrupted by server-side issues.",
+        causes: [
+          "Server overload or high demand during peak study hours",
+          "Temporary service maintenance on AI inference infrastructure",
+          "Network connectivity issues between client and server",
+          "API quota exceeded for the underlying language model",
+          "Backend processing error during content generation",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try again in a few minutes",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "failed to load", "quiz generation failed", "could not generate"],
+        faq: [
+          {
+            q: "Why did quiz generation fail on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "course-loading-error",
+        title: "Course Content Not Loading",
+        metaTitle: "Course Content Error [Status]",
+        description:
+          "When {service} fails to load course content, it usually means there is a CDN issue, backend storage error, or the service is under heavy load. This prevents students from accessing lessons and materials.",
+        causes: [
+          "CDN or content delivery network outage",
+          "Backend storage or database connectivity issues",
+          "Server overload during peak learning hours",
+          "Network connectivity issues on the user's end",
+          "Temporary service maintenance or deployment",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try a different browser or device",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "failed to load", "content unavailable", "course not found"],
+        faq: [
+          {
+            q: "Why is course content not loading on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "ai-tutor-unavailable",
+        title: "AI Tutor Unavailable",
+        metaTitle: "AI Tutor Down [Live Status]",
+        description:
+          "When {service}'s AI tutor becomes unavailable, it usually means the underlying language model API is experiencing issues or the service has exceeded its capacity. Students cannot receive personalized guidance during this time.",
+        causes: [
+          "Underlying LLM API outage or rate limiting",
+          "Server overload or high demand on the AI infrastructure",
+          "Temporary service maintenance",
+          "API quota exceeded for the AI backend",
+          "Backend processing error in the tutoring system",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try again in a few minutes",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "tutor unavailable", "AI unavailable", "service down"],
+        faq: [
+          {
+            q: "Why is the AI tutor unavailable on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+    ],
+  },
+
+  // ==================== HR_AI ====================
+  {
+    category: "HR_AI",
+    errors: [
+      {
+        slug: "candidate-screening-failed",
+        title: "Candidate Screening Failed",
+        metaTitle: "Candidate Screening Error [Status]",
+        description:
+          "When {service} fails to screen candidates, it usually means the AI processing pipeline encountered an error or the service is under heavy load. This can delay hiring workflows and candidate evaluation.",
+        causes: [
+          "Server overload or high demand during hiring peaks",
+          "Temporary service maintenance on AI infrastructure",
+          "Network connectivity issues",
+          "API quota exceeded for the underlying AI model",
+          "Backend processing error in the screening pipeline",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try again in a few minutes",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "screening failed", "failed to process", "candidate error"],
+        faq: [
+          {
+            q: "Why did candidate screening fail on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "interview-error",
+        title: "AI Interview Error",
+        metaTitle: "AI Interview Error [Live Status]",
+        description:
+          "When {service} encounters an AI interview error, it usually means the video or audio processing system is experiencing issues. This can prevent candidates from completing their interview sessions.",
+        causes: [
+          "Video or audio processing infrastructure failure",
+          "Server overload or high demand",
+          "Temporary service maintenance",
+          "Network connectivity issues on the candidate's end",
+          "Backend error in the interview analysis pipeline",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Ensure camera and microphone permissions are granted",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "interview failed", "recording error", "processing failed"],
+        faq: [
+          {
+            q: "Why did the AI interview fail on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "talent-match-unavailable",
+        title: "Talent Matching Unavailable",
+        metaTitle: "Talent Match Down [Status]",
+        description:
+          "When {service}'s talent matching system becomes unavailable, it usually means the AI recommendation engine is experiencing an outage or is under excessive load. Recruiters cannot receive candidate matches during this time.",
+        causes: [
+          "AI recommendation engine outage or overload",
+          "Database connectivity issues affecting talent pool access",
+          "Temporary service maintenance",
+          "API quota exceeded for the matching algorithm",
+          "Backend processing error in the talent intelligence pipeline",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try again in a few minutes",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "matching unavailable", "talent match failed", "no results"],
+        faq: [
+          {
+            q: "Why is talent matching unavailable on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+    ],
+  },
+
+  // ==================== LEGAL_AI ====================
+  {
+    category: "LEGAL_AI",
+    errors: [
+      {
+        slug: "document-review-failed",
+        title: "Document Review Failed",
+        metaTitle: "Document Review Error [Legal AI Status]",
+        description:
+          "When {service} fails to review a document, it usually means the AI processing pipeline is overloaded or encountered an error while analyzing the legal content. Large documents may also exceed processing limits.",
+        causes: [
+          "Server overload or high demand",
+          "Document size exceeding processing limits",
+          "Temporary service maintenance on AI infrastructure",
+          "Network connectivity issues during upload",
+          "Backend processing error in the document analysis pipeline",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try uploading a smaller or simplified version of the document",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "review failed", "document processing error", "failed to analyze"],
+        faq: [
+          {
+            q: "Why did document review fail on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "contract-analysis-error",
+        title: "Contract Analysis Error",
+        metaTitle: "Contract Analysis Error [Status]",
+        description:
+          "When {service} encounters a contract analysis error, it usually means the AI model is unable to process the contract structure or the service is temporarily unavailable. This prevents legal teams from getting automated insights.",
+        causes: [
+          "Server overload or high demand",
+          "Complex contract format not supported by the AI parser",
+          "Temporary service maintenance",
+          "API quota exceeded for the analysis backend",
+          "Backend processing error in the contract intelligence engine",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try converting the contract to a supported format (e.g., PDF or DOCX)",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "analysis failed", "contract error", "parsing failed"],
+        faq: [
+          {
+            q: "Why did contract analysis fail on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
+      },
+      {
+        slug: "case-research-unavailable",
+        title: "Case Research Unavailable",
+        metaTitle: "Case Research Down [Live Status]",
+        description:
+          "When {service}'s case research feature becomes unavailable, it usually means the legal database or AI search index is experiencing an outage. Attorneys and legal researchers cannot access case law and precedents during this time.",
+        causes: [
+          "Legal database connectivity issues",
+          "AI search index failure or rebuild in progress",
+          "Server overload or high demand",
+          "Temporary service maintenance",
+          "Backend processing error in the research pipeline",
+        ],
+        fixSteps: [
+          "Refresh the page and try again",
+          "Check {service} status page for known issues",
+          "Clear browser cache and cookies",
+          "Try again in a few minutes",
+          "Contact {service} support if the issue persists",
+        ],
+        errorSignatures: ["503", "500", "timeout", "research unavailable", "search failed", "database error"],
+        faq: [
+          {
+            q: "Why is case research unavailable on {service}?",
+            a: "This usually happens due to server overload or temporary maintenance. Check the status page for updates.",
+          },
+          {
+            q: "How long will {service} be down?",
+            a: "Most issues are resolved within 15-60 minutes. Monitor the official status page for updates.",
+          },
+        ],
+        hasHowToSchema: true,
       },
     ],
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -20,45 +20,56 @@ interface LatencyChartProps {
 }
 
 export function LatencyChart({ observations }: LatencyChartProps) {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
+
   const chartData = useMemo(() => {
-    if (observations.length === 0) {
-      return [];
+    if (!isClient) return [];
+
+    const now = Date.now();
+    const SLOT_MS = 30 * 60 * 1000; // 30 minutes
+
+    // Generate 48 fixed slots covering the last 24h, ending at now
+    const currentSlot = Math.floor(now / SLOT_MS) * SLOT_MS;
+    const slots: { timestamp: number; time: string; latency: number | null }[] = [];
+
+    for (let i = 47; i >= 0; i--) {
+      const slotStart = currentSlot - i * SLOT_MS;
+      const date = new Date(slotStart);
+      const h = date.getHours().toString().padStart(2, "0");
+      const m = date.getMinutes().toString().padStart(2, "0");
+      slots.push({
+        timestamp: slotStart,
+        time: `${h}:${m}`,
+        latency: null,
+      });
     }
 
-    // Aggregate by 30-minute intervals
-    const grouped: Record<string, number[]> = {};
-
+    // Fill slots with observation data
     observations.forEach((obs) => {
       if (obs.latencyMs === null) return;
-
-      const time = new Date(obs.observedAt);
-      const bucket = new Date(Math.floor(time.getTime() / (30 * 60 * 1000)) * (30 * 60 * 1000));
-      const key = bucket.toISOString();
-
-      if (!grouped[key]) {
-        grouped[key] = [];
+      const time = new Date(obs.observedAt).getTime();
+      const bucketTs = Math.floor(time / SLOT_MS) * SLOT_MS;
+      const slot = slots.find((s) => s.timestamp === bucketTs);
+      if (slot) {
+        // Average if multiple observations in same slot
+        if (slot.latency === null) {
+          slot.latency = obs.latencyMs;
+        } else {
+          slot.latency = Math.round((slot.latency + obs.latencyMs) / 2);
+        }
       }
-      grouped[key].push(obs.latencyMs);
     });
 
-    // Calculate averages and sort chronologically
-    return Object.entries(grouped)
-      .map(([time, latencies]) => {
-        const date = new Date(time);
-        return {
-          time: date.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false, // Force 24h format
-          }),
-          timestamp: date.getTime(),
-          latency: Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length),
-        };
-      })
-      .sort((a, b) => a.timestamp - b.timestamp);
-  }, [observations]);
+    return slots;
+  }, [observations, isClient]);
 
-  if (chartData.length === 0) {
+  if (!isClient) {
+    return <div style={{ height: "300px" }} />;
+  }
+
+  const hasData = chartData.some((d) => d.latency !== null);
+  if (!hasData) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "256px", color: "#a3a3a3" }}>
         Latency data not available for this service
@@ -80,6 +91,7 @@ export function LatencyChart({ observations }: LatencyChartProps) {
           dataKey="time"
           stroke="#a3a3a3"
           style={{ fontSize: "11px" }}
+          interval={5}
         />
         <YAxis
           stroke="#a3a3a3"
@@ -93,7 +105,7 @@ export function LatencyChart({ observations }: LatencyChartProps) {
             borderRadius: "8px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           }}
-          formatter={(value) => formatLatency(value as number)}
+          formatter={(value) => value !== null ? formatLatency(value as number) : "No data"}
           cursor={{ stroke: "#e5e5e5" }}
         />
         <Area
@@ -103,6 +115,7 @@ export function LatencyChart({ observations }: LatencyChartProps) {
           fillOpacity={1}
           fill="url(#colorLatency)"
           dot={false}
+          connectNulls={false}
         />
       </AreaChart>
     </ResponsiveContainer>

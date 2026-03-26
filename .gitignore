@@ -39,3 +39,4 @@ lerna-debug.log*
 .prisma/
 generated/
 .vercel
+.env*.local
