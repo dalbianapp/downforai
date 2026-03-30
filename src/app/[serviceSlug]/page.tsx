@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ServiceStatus } from "@prisma/client";
-import { generateWebApplicationJsonLd } from "@/lib/seo";
+import { generateWebApplicationJsonLd, generateFAQJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 import { calculateWorstStatus, formatDate } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { QuickReport } from "@/components/status/QuickReport";
@@ -35,22 +35,29 @@ export async function generateMetadata({
   const { serviceSlug } = await params;
   const service = await prisma.service.findUnique({ where: { slug: serviceSlug } });
   if (!service) return {};
+
+  const fullTitle = `Is ${service.name} Down? Live Status & Outage Reports`;
+  const title = truncateTitle(fullTitle, `Is ${service.name} Down? Live Status`);
+  const description = truncateDescription(
+    `Check ${service.name} real-time server status and community outage reports. Is ${service.name} down for everyone or just you? Live monitoring and incident tracking.`
+  );
+
   return {
-    title: `${service.name} Status: Down Right Now? [Live Check]`,
-    description: `Is ${service.name} down? Real-time server status, outage map, and live monitoring. Check ${service.name} issues today.`,
+    title,
+    description,
     alternates: {
       canonical: `/${serviceSlug}`,
     },
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${service.name} Status: Down Right Now? [Live Check]`,
-      description: `Is ${service.name} down? Real-time server status, outage map, and live monitoring. Check ${service.name} issues today.`,
+      title,
+      description,
       url: `https://downforai.com/${serviceSlug}`,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${service.name} Status: Down Right Now? [Live Check]`,
+      title,
     },
   };
 }
@@ -202,6 +209,17 @@ export default async function ServicePage({
 
   const jsonLd = generateWebApplicationJsonLd(service.name, service.websiteUrl || "");
 
+  const faqJsonLd = generateFAQJsonLd([
+    {
+      q: `Is ${service.name} down right now?`,
+      a: `Check our real-time outage chart above to see current user reports for ${service.name}. A spike in reports usually indicates an ongoing outage.`,
+    },
+    {
+      q: `How do I report a ${service.name} outage?`,
+      a: `Click the 'Report a Problem' button at the top of this page to let other users know about the issues you're experiencing.`,
+    },
+  ]);
+
   // Uptime data pour la barre
   const uptimeSlots: { status: string; time: Date }[] = [];
   const allObs = service.surfaces.flatMap((s) => s.observations).sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime());
@@ -231,6 +249,7 @@ export default async function ServicePage({
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       {/* Breadcrumb */}
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "24px" }}>

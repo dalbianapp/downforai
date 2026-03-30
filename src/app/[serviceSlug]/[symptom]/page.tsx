@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
+import { truncateTitle, truncateDescription } from "@/lib/seo";
 import Link from "next/link";
 import { TIER_1_SERVICES, getSymptomInfo, getSymptomsForCategory } from "@/lib/ai-symptoms";
 
@@ -41,8 +42,11 @@ export async function generateMetadata({
   const symptomInfo = getSymptomInfo(symptom);
   if (!symptomInfo) return {};
 
-  const title = `${service.name} ${symptomInfo.title}? Check Status & Solutions | DownForAI`;
-  const description = `Experiencing ${symptomInfo.title.toLowerCase()} with ${service.name}? ${symptomInfo.description} Get real-time status updates, common causes, and step-by-step solutions.`;
+  const fullTitle = `Is ${service.name} ${symptomInfo.title} Right Now? Live Status`;
+  const title = truncateTitle(fullTitle, `Is ${service.name} ${symptomInfo.title}? Live Status`);
+  const description = truncateDescription(
+    `Check if ${service.name} is ${symptomInfo.title.toLowerCase()} right now. See real-time outage reports from other users and track the current status.`
+  );
 
   return {
     title,

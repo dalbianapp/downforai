@@ -12,9 +12,12 @@ export function HeroSection({ operational, degraded, outage, total }: HeroSectio
 
   return (
     <div className="text-center py-6 mb-4">
-      <h1 className="text-5xl font-extrabold mb-6" style={{ letterSpacing: '-3px', color: 'var(--text)' }}>
+      <h1 className="text-5xl font-extrabold mb-4" style={{ letterSpacing: '-3px', color: 'var(--text)' }}>
         Is your AI <span className="gradient-text">down</span>?
       </h1>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+        Community-Driven AI Outage Monitor — We detect what official status pages hide
+      </p>
 
       <div className="flex items-center justify-center gap-3 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
         <span>

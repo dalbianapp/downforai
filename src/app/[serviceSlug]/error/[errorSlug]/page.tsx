@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
+import { truncateTitle, truncateDescription } from "@/lib/seo";
 import Link from "next/link";
 import { getErrorsForCategory, getErrorInfo, getServiceLinks, getRelevantReportTypes } from "@/lib/error-playbooks";
 import { BackToServiceButton } from "@/components/ui/BackToServiceButton";
@@ -43,8 +44,11 @@ export async function generateMetadata({
   const errorInfo = getErrorInfo(service.category, errorSlug);
   if (!errorInfo) return {};
 
-  const title = `${service.name}: ${errorInfo.metaTitle}`;
-  const description = `Getting "${errorInfo.title}" on ${service.name}? Check if it's a server outage or an issue on your end. Live status & reports.`;
+  const fullTitle = `${service.name} ${errorInfo.title}: API Outage or Your Code?`;
+  const title = truncateTitle(fullTitle, `${service.name} ${errorInfo.title}: Outage?`);
+  const description = truncateDescription(
+    `Getting a ${errorInfo.title} on ${service.name}? Check our live monitoring to see if it's a global API outage affecting all users or a local issue.`
+  );
 
   return {
     title,
