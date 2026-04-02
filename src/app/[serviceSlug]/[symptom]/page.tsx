@@ -6,7 +6,7 @@ import { truncateTitle, truncateDescription, generateBreadcrumbJsonLd } from "@/
 import Link from "next/link";
 import { TIER_1_SERVICES, getSymptomInfo, getSymptomsForCategory } from "@/lib/ai-symptoms";
 
-export const revalidate = 60;
+export const revalidate = 300; // 5 minutes — symptom guides are mostly static content
 
 export async function generateStaticParams() {
   // Get all services from database to match slugs with categories
@@ -80,7 +80,7 @@ async function getServiceStatus(slug: string) {
         include: {
           observations: {
             orderBy: { observedAt: "desc" },
-            take: 96, // 24h of data
+            take: 3, // Only need latest status per surface
           },
         },
       },

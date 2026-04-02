@@ -26,7 +26,7 @@ async function getServicesStatus() {
         include: {
           observations: {
             orderBy: { observedAt: "desc" },
-            take: 72, // Get last 72 observations for performance baseline
+            take: 24, // Sparkline needs 24 points, performance baseline needs ≥24
           },
         },
       },

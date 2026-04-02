@@ -60,7 +60,7 @@ async function getServiceStatus(slug: string) {
         include: {
           observations: {
             orderBy: { observedAt: "desc" },
-            take: 96, // 24h of data
+            take: 3, // Only need latest status per surface
           },
         },
       },

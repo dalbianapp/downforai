@@ -72,6 +72,7 @@ async function getServiceDetails(slug: string) {
           observations: {
             where: { observedAt: { gte: since25h } },
             orderBy: { observedAt: "desc" },
+            take: 150, // Safety cap: ~75 obs per surface in 25h at normal cron rate
           },
         },
       },

@@ -8,7 +8,7 @@ import { getErrorsForCategory, getErrorInfo, getServiceLinks, getRelevantReportT
 import { BackToServiceButton } from "@/components/ui/BackToServiceButton";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
-export const revalidate = 60;
+export const revalidate = 300; // 5 minutes — error guides are mostly static content
 
 export async function generateStaticParams() {
   // Generate pages for each service × their category's errors
@@ -81,7 +81,7 @@ async function getServiceErrorData(slug: string, errorSlug: string) {
         include: {
           observations: {
             orderBy: { observedAt: "desc" },
-            take: 96, // 24h
+            take: 3, // Only need latest status per surface
           },
         },
       },
