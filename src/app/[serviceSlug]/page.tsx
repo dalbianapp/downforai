@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ServiceStatus } from "@prisma/client";
-import { generateWebApplicationJsonLd, generateFAQJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
-import { calculateWorstStatus, formatDate } from "@/lib/utils";
+import { generateWebApplicationJsonLd, generateFAQJsonLd, generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
+import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { QuickReport } from "@/components/status/QuickReport";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
@@ -209,6 +209,12 @@ export default async function ServicePage({
 
   const jsonLd = generateWebApplicationJsonLd(service.name, service.websiteUrl || "");
 
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://downforai.com" },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: service.name, url: `https://downforai.com/${service.slug}` },
+  ]);
+
   const faqJsonLd = generateFAQJsonLd([
     {
       q: `Is ${service.name} down right now?`,
@@ -249,6 +255,7 @@ export default async function ServicePage({
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       {/* Breadcrumb */}
@@ -263,9 +270,23 @@ export default async function ServicePage({
       </nav>
 
       {/* H1 */}
-      <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", letterSpacing: "-1.5px", marginBottom: "24px", lineHeight: 1.2 }}>
+      <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", letterSpacing: "-1.5px", marginBottom: "16px", lineHeight: 1.2 }}>
         {service.name} Status — Is {service.name} Down?
       </h1>
+
+      {/* Dynamic intro paragraph — unique per service */}
+      <p style={{ fontSize: "14px", color: "#525252", lineHeight: 1.6, marginBottom: "24px" }}>
+        {service.name} is {service.description ? "a " + service.category.toLowerCase() + " AI tool. " + service.description : `an AI service in the ${formatCategoryLabel(service.category)} category`}.
+        {" "}We monitor {service.surfaces.length} endpoint{service.surfaces.length > 1 ? "s" : ""} every 20 minutes
+        {reportsCount24h > 0
+          ? ` — ${reportsCount24h} user report${reportsCount24h > 1 ? "s" : ""} in the past 24 hours.`
+          : " — no issues reported in the past 24 hours."
+        }
+        {service.incidents.length > 0
+          ? ` Last incident: "${service.incidents[0].title}" (${formatDate(service.incidents[0].startedAt)}).`
+          : " No recent incidents."
+        }
+      </p>
 
       {/* Status Card */}
       <div

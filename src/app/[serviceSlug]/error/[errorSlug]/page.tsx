@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
-import { truncateTitle, truncateDescription } from "@/lib/seo";
+import { truncateTitle, truncateDescription, generateBreadcrumbJsonLd } from "@/lib/seo";
 import Link from "next/link";
 import { getErrorsForCategory, getErrorInfo, getServiceLinks, getRelevantReportTypes } from "@/lib/error-playbooks";
 import { BackToServiceButton } from "@/components/ui/BackToServiceButton";
@@ -226,31 +226,12 @@ export default async function ServiceErrorPage({
   const latestIncident = service.incidents[0];
 
   // BreadcrumbList JSON-LD
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://downforai.com" },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: formatCategoryLabel(service.category),
-        item: `https://downforai.com/category/${service.category.toLowerCase()}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: service.name,
-        item: `https://downforai.com/${serviceSlug}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 4,
-        name: errorInfo.title,
-        item: `https://downforai.com/${serviceSlug}/error/${errorSlug}`,
-      },
-    ],
-  };
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://downforai.com" },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: service.name, url: `https://downforai.com/${serviceSlug}` },
+    { name: errorInfo.title, url: `https://downforai.com/${serviceSlug}/error/${errorSlug}` },
+  ]);
 
   // FAQPage JSON-LD
   const faqJsonLd = {

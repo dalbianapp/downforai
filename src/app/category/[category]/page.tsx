@@ -4,6 +4,7 @@ import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { calculateWorstStatus, formatCategoryLabel } from "@/lib/utils";
 import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
+import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
 export const revalidate = 120;
 
@@ -21,9 +22,19 @@ export async function generateMetadata({
   const { category } = await params;
   const categoryLabel = formatCategoryLabel(category.toUpperCase());
 
+  const count = await prisma.service.count({
+    where: { category: category.toUpperCase() as ServiceCategory },
+  });
+
+  const fullTitle = `${count} ${categoryLabel} AI Tools Monitored Live | DownForAI`;
+  const title = truncateTitle(fullTitle, `${count} ${categoryLabel} AI Tools Monitored Live`);
+  const description = truncateDescription(
+    `Track ${count} ${categoryLabel} AI services in real-time. Live uptime monitoring, latency tracking, and community outage reports for every major ${categoryLabel} tool.`
+  );
+
   return {
-    title: `${categoryLabel} AI Services — Real-Time Status Monitor | DownForAI`,
-    description: `Real-time status monitoring for ${categoryLabel} AI services. Check uptime and incidents.`,
+    title,
+    description,
     robots: { index: true, follow: true },
     alternates: {
       canonical: `/category/${category}`,
@@ -108,8 +119,14 @@ export default async function CategoryPage({
   const services = await getCategoryServices(category);
   const categoryLabel = formatCategoryLabel(category.toUpperCase());
 
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://downforai.com" },
+    { name: categoryLabel, url: `https://downforai.com/category/${category}` },
+  ]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div>
         <h1 style={{ fontSize: "36px", fontWeight: 800, color: "#171717", marginBottom: "8px", letterSpacing: "-1px" }}>
           {categoryLabel} AI Services

@@ -94,6 +94,23 @@ export function generateFAQJsonLd(
   };
 }
 
+// ==================== BREADCRUMB JSON-LD ====================
+
+export function generateBreadcrumbJsonLd(
+  items: Array<{ name: string; url: string }>
+) {
+  return {
+    "@context": "https://schema.org" as const,
+    "@type": "BreadcrumbList" as const,
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem" as const,
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
 export function generateWebSiteJsonLd(
   siteName: string,
   siteUrl: string

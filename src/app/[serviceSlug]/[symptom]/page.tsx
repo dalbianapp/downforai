@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
-import { truncateTitle, truncateDescription } from "@/lib/seo";
+import { truncateTitle, truncateDescription, generateBreadcrumbJsonLd } from "@/lib/seo";
 import Link from "next/link";
 import { TIER_1_SERVICES, getSymptomInfo, getSymptomsForCategory } from "@/lib/ai-symptoms";
 
@@ -148,8 +148,17 @@ export default async function SymptomPage({
 
   const info = statusInfo[overallStatus] || statusInfo.UNKNOWN;
 
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://downforai.com" },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: service.name, url: `https://downforai.com/${service.slug}` },
+    { name: symptomInfo.title, url: `https://downforai.com/${service.slug}/${symptom}` },
+  ]);
+
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+
       {/* Breadcrumb */}
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "24px" }}>
         <Link href="/" style={{ color: "#a3a3a3", textDecoration: "none" }}>

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
+import { generateBreadcrumbJsonLd } from "@/lib/seo";
 import Link from "next/link";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
@@ -132,8 +133,17 @@ export default async function ServiceDownPage({
   const { service, overallStatus, latestObs, reportsCount24h } = data;
   const info = statusInfo[overallStatus] || statusInfo.UNKNOWN;
 
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://downforai.com" },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: service.name, url: `https://downforai.com/${service.slug}` },
+    { name: "Down Status", url: `https://downforai.com/${service.slug}/down` },
+  ]);
+
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+
       {/* Breadcrumb */}
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "24px" }}>
         <Link href="/" style={{ color: "#a3a3a3", textDecoration: "none" }}>
@@ -200,6 +210,17 @@ export default async function ServiceDownPage({
           </div>
         )}
       </div>
+
+      {/* Dynamic intro paragraph — unique per service */}
+      <p style={{ fontSize: "14px", color: "#525252", lineHeight: 1.6, marginBottom: "24px" }}>
+        {service.name} {info.description}
+        {" "}DownForAI monitors {service.name} with automated checks every 20 minutes across {service.surfaces.length} endpoint{service.surfaces.length > 1 ? "s" : ""}.
+        {reportsCount24h > 0
+          ? ` Currently ${reportsCount24h} user${reportsCount24h > 1 ? "s have" : " has"} reported issues in the past 24 hours.`
+          : " No user reports in the past 24 hours."
+        }
+        {" "}If you&apos;re experiencing problems with {service.name}, you can report it below to help the community.
+      </p>
 
       {/* Active Incidents */}
       {service.incidents.length > 0 && (
