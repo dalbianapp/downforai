@@ -218,28 +218,54 @@ async function handleCheckStatus(request: NextRequest) {
     // ==========================================
 
     // Get surfaces that need checking (oldest first = round-robin)
-    const surfacesWithData = await prisma.serviceSurface.findMany({
-      where: { isEnabled: true },
-      include: {
-        service: { select: { websiteUrl: true, slug: true } },
-        observations: {
-          orderBy: { observedAt: "desc" },
-          take: 1,
-          select: { observedAt: true, status: true, confidence: true, httpStatus: true },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    // Raw SQL: sort + limit in DB instead of loading all ~2400 surfaces in memory
+    const batchRaw = await prisma.$queryRaw<Array<{
+      id: string;
+      checkUrl: string | null;
+      serviceId: string;
+      websiteUrl: string | null;
+      slug: string;
+      lastObservedAt: Date | null;
+      lastStatus: string | null;
+      lastConfidence: string | null;
+      lastHttpStatus: number | null;
+    }>>`
+      SELECT
+        ss.id,
+        ss."checkUrl",
+        ss."serviceId",
+        s."websiteUrl",
+        s.slug,
+        o."observedAt" AS "lastObservedAt",
+        o.status AS "lastStatus",
+        o.confidence AS "lastConfidence",
+        o."httpStatus" AS "lastHttpStatus"
+      FROM "ServiceSurface" ss
+      INNER JOIN "Service" s ON s.id = ss."serviceId"
+      LEFT JOIN LATERAL (
+        SELECT "observedAt", status, confidence, "httpStatus"
+        FROM "Observation"
+        WHERE "serviceSurfaceId" = ss.id
+        ORDER BY "observedAt" DESC
+        LIMIT 1
+      ) o ON true
+      WHERE ss."isEnabled" = true
+      ORDER BY o."observedAt" ASC NULLS FIRST
+      LIMIT ${BATCH_SIZE}
+    `;
 
-    // Sort by oldest observation (surfaces not checked recently first)
-    const sorted = surfacesWithData.sort((a, b) => {
-      const aTime = a.observations[0]?.observedAt?.getTime() || 0;
-      const bTime = b.observations[0]?.observedAt?.getTime() || 0;
-      return aTime - bTime;
-    });
-
-    // Take BATCH_SIZE surfaces to check this run
-    const batch = sorted.slice(0, BATCH_SIZE);
+    const batch = batchRaw.map((row) => ({
+      id: row.id,
+      checkUrl: row.checkUrl,
+      serviceId: row.serviceId,
+      service: { websiteUrl: row.websiteUrl, slug: row.slug },
+      observations: row.lastObservedAt ? [{
+        observedAt: row.lastObservedAt,
+        status: row.lastStatus,
+        confidence: row.lastConfidence,
+        httpStatus: row.lastHttpStatus,
+      }] : [],
+    }));
 
     // Group by service URL to avoid hitting same domain multiple times
     const urlToSurfaces = new Map<string, typeof batch>();
@@ -373,7 +399,7 @@ async function handleCheckStatus(request: NextRequest) {
       mode,
       checked: observations.length,
       batch_size: BATCH_SIZE,
-      total_surfaces: surfacesWithData.length,
+      total_surfaces: batch.length,
       unique_urls_checked: urlToSurfaces.size,
       elapsed_ms: checkElapsedMs,
       results: {

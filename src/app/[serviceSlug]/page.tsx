@@ -387,7 +387,13 @@ export default async function ServicePage({
       {/* Latency Chart */}
       <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>Latency (24h)</h2>
-        <LatencyChart observations={service.surfaces.flatMap((s) => s.observations).filter((o) => o.observedAt.getTime() > Date.now() - 24 * 60 * 60 * 1000)} />
+        <LatencyChart
+          observations={service.surfaces
+            .flatMap((s) => s.observations)
+            .filter((o) => o.observedAt.getTime() > Date.now() - 24 * 60 * 60 * 1000)
+            .map((o) => ({ observedAt: o.observedAt, latencyMs: o.latencyMs }))
+          }
+        />
       </div>
 
       {/* Recent Incidents */}
