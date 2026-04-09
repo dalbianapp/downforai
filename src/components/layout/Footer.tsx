@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/admin")) return null;
+
   return (
     <footer style={{ borderTop: "1px solid #e5e5e5", marginTop: "48px", padding: "40px 0" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 16px" }}>

@@ -28,11 +28,8 @@ export function middleware(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // Admin auth + x-admin-page header injection
+  // Admin auth
   if (pathname.startsWith("/admin")) {
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-admin-page", "1");
-
     if (!pathname.startsWith("/admin/login")) {
       const token = request.cookies.get("admin_token")?.value;
       const adminPassword = process.env.ADMIN_PASSWORD;
@@ -42,7 +39,7 @@ export function middleware(request: NextRequest) {
       }
     }
 
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return NextResponse.next();
   }
 
   return NextResponse.next();
