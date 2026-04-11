@@ -89,7 +89,7 @@ export default function AffiliateBlock({ serviceName, category }: AffiliateBlock
   return (
     <aside style={{ margin: '16px 0' }}>
       <a
-        href="https://go.nordvpn.net/aff_c?aff_id=2495&offer_id=314&url_id=7264"
+        href="https://www.tkqlhce.com/click-101711531-16968809"
         target="_blank"
         rel="noopener noreferrer sponsored"
         onClick={handleClick}
