@@ -20,21 +20,90 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function getServicesStatus() {
-  const services = await prisma.service.findMany({
-    include: {
-      surfaces: {
-        include: {
-          observations: {
-            orderBy: { observedAt: "desc" },
-            take: 24, // Sparkline needs 24 points, performance baseline needs ≥24
-          },
-        },
-      },
-    },
-  });
+  type RawRow = {
+    service_id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    category: string;
+    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    surface_id: string;
+    observedAt: Date | null;
+    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    latencyMs: number | null;
+  };
 
-  return services.map((service) => {
-    const allObservations = service.surfaces.flatMap((s) => s.observations);
+  const rows = await prisma.$queryRaw<RawRow[]>`
+    SELECT
+      s.id            AS service_id,
+      s.slug,
+      s.name,
+      s.description,
+      s.category,
+      s."defaultBadge",
+      ss.id           AS surface_id,
+      o."observedAt",
+      o.status,
+      o."latencyMs"
+    FROM "Service" s
+    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
+    LEFT JOIN LATERAL (
+      SELECT "observedAt", status, "latencyMs"
+      FROM "Observation"
+      WHERE "serviceSurfaceId" = ss.id
+      ORDER BY "observedAt" DESC
+      LIMIT 24
+    ) o ON true
+  `;
+
+  // Regroupe : service → surfaces → observations
+  type SurfaceAccum = {
+    id: string;
+    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null }[];
+  };
+  type ServiceAccum = {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    category: string;
+    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    surfaces: Map<string, SurfaceAccum>;
+  };
+
+  const serviceMap = new Map<string, ServiceAccum>();
+
+  for (const row of rows) {
+    if (!serviceMap.has(row.service_id)) {
+      serviceMap.set(row.service_id, {
+        id: row.service_id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        defaultBadge: row.defaultBadge,
+        surfaces: new Map(),
+      });
+    }
+
+    const svc = serviceMap.get(row.service_id)!;
+
+    if (!svc.surfaces.has(row.surface_id)) {
+      svc.surfaces.set(row.surface_id, { id: row.surface_id, observations: [] });
+    }
+
+    if (row.observedAt && row.status) {
+      svc.surfaces.get(row.surface_id)!.observations.push({
+        observedAt: row.observedAt,
+        status: row.status,
+        latencyMs: row.latencyMs,
+      });
+    }
+  }
+
+  return Array.from(serviceMap.values()).map((service) => {
+    const surfaces = Array.from(service.surfaces.values());
+    const allObservations = surfaces.flatMap((s) => s.observations);
 
     // Filter recent observations (last 6 hours) for status determination
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
@@ -56,7 +125,7 @@ async function getServicesStatus() {
       .slice(-24); // Keep last 24 points max
 
     // Compute performance level
-    const surfacePerformances = service.surfaces.map((surface) => {
+    const surfacePerformances = surfaces.map((surface) => {
       const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
