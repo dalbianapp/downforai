@@ -45,22 +45,87 @@ export async function generateMetadata({
 async function getCategoryServices(category: string) {
   const categoryUpper = category.toUpperCase() as ServiceCategory;
 
-  const services = await prisma.service.findMany({
-    where: { category: categoryUpper },
-    include: {
-      surfaces: {
-        include: {
-          observations: {
-            orderBy: { observedAt: "desc" },
-            take: 24, // Sparkline needs 24 points, performance baseline needs ≥24
-          },
-        },
-      },
-    },
-  });
+  type RawRow = {
+    slug: string;
+    name: string;
+    description: string | null;
+    category: string;
+    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    surface_id: string;
+    observedAt: Date | null;
+    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    latencyMs: number | null;
+  };
 
-  return services.map((service) => {
-    const allObservations = service.surfaces.flatMap((s) => s.observations);
+  const rows = await prisma.$queryRaw<RawRow[]>`
+    SELECT
+      s.slug,
+      s.name,
+      s.description,
+      s.category,
+      s."defaultBadge",
+      ss.id           AS surface_id,
+      o."observedAt",
+      o.status,
+      o."latencyMs"
+    FROM "Service" s
+    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
+    LEFT JOIN LATERAL (
+      SELECT "observedAt", status, "latencyMs"
+      FROM "Observation"
+      WHERE "serviceSurfaceId" = ss.id
+      ORDER BY "observedAt" DESC
+      LIMIT 24
+    ) o ON true
+    WHERE s.category = ${categoryUpper}::"ServiceCategory"
+  `;
+
+  // Regroupe : service (par slug) → surfaces → observations
+  type SurfaceAccum = {
+    id: string;
+    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null }[];
+  };
+  type ServiceAccum = {
+    slug: string;
+    name: string;
+    description: string | null;
+    category: string;
+    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    surfaces: Map<string, SurfaceAccum>;
+  };
+
+  const serviceMap = new Map<string, ServiceAccum>();
+
+  for (const row of rows) {
+    if (!serviceMap.has(row.slug)) {
+      serviceMap.set(row.slug, {
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        defaultBadge: row.defaultBadge,
+        surfaces: new Map(),
+      });
+    }
+
+    const svc = serviceMap.get(row.slug)!;
+
+    if (!svc.surfaces.has(row.surface_id)) {
+      svc.surfaces.set(row.surface_id, { id: row.surface_id, observations: [] });
+    }
+
+    if (row.observedAt && row.status) {
+      svc.surfaces.get(row.surface_id)!.observations.push({
+        observedAt: row.observedAt,
+        status: row.status,
+        latencyMs: row.latencyMs,
+      });
+    }
+  }
+
+  return Array.from(serviceMap.values()).map((service) => {
+    const surfaces = Array.from(service.surfaces.values());
+    const allObservations = surfaces.flatMap((s) => s.observations);
 
     // Filter recent observations (last 6 hours) for status determination
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
@@ -82,7 +147,7 @@ async function getCategoryServices(category: string) {
       .slice(-24);
 
     // Compute performance level
-    const surfacePerformances = service.surfaces.map((surface) => {
+    const surfacePerformances = surfaces.map((surface) => {
       const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
