@@ -17,7 +17,7 @@ export function Footer() {
           <div>
             <div style={{ fontSize: "14px", fontWeight: 700, color: "#171717", marginBottom: "12px" }}>DownForAI</div>
             <p style={{ fontSize: "13px", color: "#a3a3a3", lineHeight: 1.6 }}>
-              Free, real-time status monitoring for 200+ AI services. Independent and community-driven.
+              Free, real-time status monitoring for 800+ AI services. Independent and community-driven.
             </p>
           </div>
 
@@ -61,7 +61,7 @@ export function Footer() {
             © {new Date().getFullYear()} DownForAI. Not affiliated with any AI service provider.
           </div>
           <div style={{ fontSize: "12px", color: "#a3a3a3" }}>
-            Monitoring 200+ AI services · 100% free · Open data
+            Monitoring 800+ AI services · 100% free · Open data
           </div>
         </div>
       </div>

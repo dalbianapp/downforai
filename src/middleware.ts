@@ -17,6 +17,7 @@ const BLOCKED_BOTS = [
   "pageanalyzer",
   "sogou",
   "yandexbot",
+  "amazonbot",
 ];
 
 export function middleware(request: NextRequest) {
