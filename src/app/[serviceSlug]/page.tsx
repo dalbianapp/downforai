@@ -64,26 +64,91 @@ export async function generateMetadata({
 
 async function getServiceDetails(slug: string) {
   const since25h = new Date(Date.now() - 25 * 60 * 60 * 1000);
-  const service = await prisma.service.findUnique({
-    where: { slug },
-    include: {
-      surfaces: {
-        include: {
-          observations: {
-            where: { observedAt: { gte: since25h } },
-            orderBy: { observedAt: "desc" },
-            take: 150, // Safety cap: ~75 obs per surface in 25h at normal cron rate
-          },
-        },
-      },
-      incidents: {
-        where: { status: { in: ["OPEN", "MONITORING", "RESOLVED"] } },
-        orderBy: { startedAt: "desc" },
-        take: 5,
-      },
+
+  type RawRow = {
+    service_id: string;
+    slug: string;
+    name: string;
+    category: string;
+    description: string | null;
+    websiteUrl: string | null;
+    surface_id: string;
+    displayName: string;
+    observedAt: Date | null;
+    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    latencyMs: number | null;
+  };
+
+  const rows = await prisma.$queryRaw<RawRow[]>`
+    SELECT
+      s.id            AS service_id,
+      s.slug,
+      s.name,
+      s.category,
+      s.description,
+      s."websiteUrl",
+      ss.id           AS surface_id,
+      ss."displayName",
+      o."observedAt",
+      o.status,
+      o."latencyMs"
+    FROM "Service" s
+    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
+    LEFT JOIN LATERAL (
+      SELECT "observedAt", status, "latencyMs"
+      FROM "Observation"
+      WHERE "serviceSurfaceId" = ss.id
+        AND "observedAt" >= ${since25h}
+      ORDER BY "observedAt" DESC
+      LIMIT 75
+    ) o ON true
+    WHERE s.slug = ${slug}
+  `;
+
+  if (rows.length === 0) return null;
+
+  // Reconstruct service → surfaces → observations
+  const firstRow = rows[0];
+  const surfaceMap = new Map<string, {
+    id: string;
+    displayName: string;
+    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null }[];
+  }>();
+
+  for (const row of rows) {
+    if (!surfaceMap.has(row.surface_id)) {
+      surfaceMap.set(row.surface_id, { id: row.surface_id, displayName: row.displayName, observations: [] });
+    }
+    if (row.observedAt && row.status) {
+      surfaceMap.get(row.surface_id)!.observations.push({
+        observedAt: row.observedAt,
+        status: row.status,
+        latencyMs: row.latencyMs,
+      });
+    }
+  }
+
+  const surfaces = Array.from(surfaceMap.values());
+
+  const incidents = await prisma.incident.findMany({
+    where: {
+      serviceId: firstRow.service_id,
+      status: { in: ["OPEN", "MONITORING", "RESOLVED"] },
     },
+    orderBy: { startedAt: "desc" },
+    take: 5,
   });
-  if (!service) return null;
+
+  const service = {
+    id: firstRow.service_id,
+    slug: firstRow.slug,
+    name: firstRow.name,
+    category: firstRow.category,
+    description: firstRow.description,
+    websiteUrl: firstRow.websiteUrl,
+    surfaces,
+    incidents,
+  };
 
   const surfaceStatuses = service.surfaces.map((surface) => {
     const lastObs = surface.observations[0];
@@ -130,7 +195,7 @@ async function getServiceDetails(slug: string) {
     orderBy: { _count: { surfaceId: "desc" } },
   });
 
-  // Map surface names from already-loaded service.surfaces (NO extra DB queries)
+  // Map surface names from already-loaded surfaces (NO extra DB queries)
   const surfaceNameMap = new Map(
     service.surfaces.map((s) => [s.id, s.displayName])
   );
