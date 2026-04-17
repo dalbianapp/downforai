@@ -52,7 +52,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: `/${serviceSlug}/${symptom}`,
+      canonical: `/${serviceSlug}`,
     },
     openGraph: {
       title,
@@ -66,7 +66,7 @@ export async function generateMetadata({
       description,
     },
     robots: {
-      index: true,
+      index: false,
       follow: true,
     },
   };
@@ -158,6 +158,30 @@ export default async function SymptomPage({
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+
+      {/* Moved notice */}
+      <div
+        style={{
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+          borderRadius: "12px",
+          padding: "12px 16px",
+          marginBottom: "20px",
+          fontSize: "13px",
+          color: "#1e40af",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <span>ℹ️</span>
+        <span>
+          This page has moved.{" "}
+          <Link href={`/${service.slug}`} style={{ color: "#1d4ed8", fontWeight: 600 }}>
+            View full {service.name} status →
+          </Link>
+        </span>
+      </div>
 
       {/* Breadcrumb */}
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "24px" }}>

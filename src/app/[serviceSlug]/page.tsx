@@ -1,20 +1,29 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { ServiceStatus } from "@prisma/client";
-import { generateWebApplicationJsonLd, generateFAQJsonLd, generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
-import { calculateWorstStatus, formatDate, formatCategoryLabel } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import { QuickReport } from "@/components/status/QuickReport";
+import { truncateTitle, truncateDescription } from "@/lib/seo";
+import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
+import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
-import { getErrorsForCategory } from "@/lib/error-playbooks";
-import { UptimeBarWithHours } from "@/components/status/UptimeBar";
+import { QuickReport } from "@/components/status/QuickReport";
 import { CommentSection } from "@/components/status/CommentSection";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
-const LatencyChart = dynamic(
-  () => import("@/components/status/LatencyChart").then((mod) => ({ default: mod.LatencyChart }))
-);
+// Service page components
+import ServiceHeroHeader from "@/components/service/ServiceHeroHeader";
+import ServiceSignalStrip from "@/components/service/ServiceSignalStrip";
+import SurfaceHealthGrid from "@/components/service/SurfaceHealthGrid";
+import UptimeHeatStrip from "@/components/service/UptimeHeatStrip";
+import LatencySparklinePanel from "@/components/service/LatencySparklinePanel";
+import DiagnosisPanel from "@/components/service/DiagnosisPanel";
+import IncidentTimelinePanel from "@/components/service/IncidentTimelinePanel";
+import SymptomsPanel from "@/components/service/SymptomsPanel";
+import CommunityEvidencePanel from "@/components/service/CommunityEvidencePanel";
+import ErrorSignaturesPanel from "@/components/service/ErrorSignaturesPanel";
+import ProviderSpecificPanel from "@/components/service/ProviderSpecificPanel";
+import FallbackAlternativesPanel from "@/components/service/FallbackAlternativesPanel";
+import MethodologyPanel from "@/components/service/MethodologyPanel";
 
 const WorldReportMap = dynamic(
   () => import("@/components/status/WorldReportMap").then((mod) => ({ default: mod.WorldReportMap }))
@@ -62,619 +71,160 @@ export async function generateMetadata({
   };
 }
 
-async function getServiceDetails(slug: string) {
-  const since25h = new Date(Date.now() - 25 * 60 * 60 * 1000);
-
-  type RawRow = {
-    service_id: string;
-    slug: string;
-    name: string;
-    category: string;
-    description: string | null;
-    websiteUrl: string | null;
-    surface_id: string;
-    displayName: string;
-    observedAt: Date | null;
-    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    latencyMs: number | null;
-  };
-
-  const rows = await prisma.$queryRaw<RawRow[]>`
-    SELECT
-      s.id            AS service_id,
-      s.slug,
-      s.name,
-      s.category,
-      s.description,
-      s."websiteUrl",
-      ss.id           AS surface_id,
-      ss."displayName",
-      o."observedAt",
-      o.status,
-      o."latencyMs"
-    FROM "Service" s
-    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
-    LEFT JOIN LATERAL (
-      SELECT "observedAt", status, "latencyMs"
-      FROM "Observation"
-      WHERE "serviceSurfaceId" = ss.id
-        AND "observedAt" >= ${since25h}
-      ORDER BY "observedAt" DESC
-      LIMIT 75
-    ) o ON true
-    WHERE s.slug = ${slug}
-  `;
-
-  if (rows.length === 0) return null;
-
-  // Reconstruct service → surfaces → observations
-  const firstRow = rows[0];
-  const surfaceMap = new Map<string, {
-    id: string;
-    displayName: string;
-    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null }[];
-  }>();
-
-  for (const row of rows) {
-    if (!surfaceMap.has(row.surface_id)) {
-      surfaceMap.set(row.surface_id, { id: row.surface_id, displayName: row.displayName, observations: [] });
-    }
-    if (row.observedAt && row.status) {
-      surfaceMap.get(row.surface_id)!.observations.push({
-        observedAt: row.observedAt,
-        status: row.status,
-        latencyMs: row.latencyMs,
-      });
-    }
-  }
-
-  const surfaces = Array.from(surfaceMap.values());
-
-  const incidents = await prisma.incident.findMany({
-    where: {
-      serviceId: firstRow.service_id,
-      status: { in: ["OPEN", "MONITORING", "RESOLVED"] },
-    },
-    orderBy: { startedAt: "desc" },
-    take: 5,
-  });
-
-  const service = {
-    id: firstRow.service_id,
-    slug: firstRow.slug,
-    name: firstRow.name,
-    category: firstRow.category,
-    description: firstRow.description,
-    websiteUrl: firstRow.websiteUrl,
-    surfaces,
-    incidents,
-  };
-
-  const surfaceStatuses = service.surfaces.map((surface) => {
-    const lastObs = surface.observations[0];
-    return {
-      displayName: surface.displayName,
-      status: lastObs?.status || "UNKNOWN",
-      latencyMs: lastObs?.latencyMs || null,
-    };
-  });
-
-  const reportsCount24h = await prisma.communityReport.count({
-    where: {
-      serviceId: service.id,
-      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    },
-  });
-
-  // Latest community reports with comments (min 10 chars)
-  const latestReports = await prisma.communityReport.findMany({
-    where: {
-      serviceId: service.id,
-      comment: { not: null },
-      isVisible: true, // Only show visible comments
-    },
-    include: {
-      surface: { select: { displayName: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
-
-  // Filter reports with comments >= 10 chars
-  const filteredReports = latestReports.filter((r) => r.comment && r.comment.length >= 10);
-
-  // Reports grouped by surface (last 24h)
-  const reportsBySurface = await prisma.communityReport.groupBy({
-    by: ["surfaceId"],
-    where: {
-      serviceId: service.id,
-      surfaceId: { not: null },
-      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    },
-    _count: { surfaceId: true },
-    orderBy: { _count: { surfaceId: "desc" } },
-  });
-
-  // Map surface names from already-loaded surfaces (NO extra DB queries)
-  const surfaceNameMap = new Map(
-    service.surfaces.map((s) => [s.id, s.displayName])
-  );
-
-  const surfaceBreakdown = reportsBySurface.map((r) => ({
-    surfaceName: surfaceNameMap.get(r.surfaceId!) || "Unknown",
-    count: r._count.surfaceId,
-  }));
-
-  const latestObs = service.surfaces
-    .flatMap((s) => s.observations)
-    .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
-
-  return { service, surfaceStatuses, reportsCount24h, latestObs, latestCommunityReports: filteredReports, surfaceBreakdown };
-}
-
-// Helper couleurs
-const statusColors: Record<string, { color: string; bg: string; border: string; label: string }> = {
-  OPERATIONAL: { color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", label: "Operational" },
-  DEGRADED: { color: "#ca8a04", bg: "#fefce8", border: "#fef08a", label: "Degraded" },
-  OUTAGE: { color: "#dc2626", bg: "#fef2f2", border: "#fecaca", label: "Major Outage" },
-  UNKNOWN: { color: "#737373", bg: "#f5f5f5", border: "#e5e5e5", label: "Checking..." },
-};
-
-// Report type icons and labels
-const reportTypeInfo: Record<string, { icon: string; label: string }> = {
-  DOWN: { icon: "🔴", label: "Down" },
-  SLOW: { icon: "🐢", label: "Slow" },
-  LOGIN: { icon: "🔐", label: "Login" },
-  API_ERROR: { icon: "⚡", label: "API Error" },
-  OTHER: { icon: "❓", label: "Other" },
-};
-
-// Country code to flag emoji
-function getCountryFlag(countryCode: string | null): string {
-  if (!countryCode || countryCode.length !== 2) return "";
-  const codePoints = countryCode
-    .toUpperCase()
-    .split("")
-    .map((char) => 127397 + char.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
-}
-
-// Relative time formatter
-function getRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins} min ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
 export default async function ServicePage({
   params,
 }: {
   params: Promise<{ serviceSlug: string }>;
 }) {
   const { serviceSlug } = await params;
-  const data = await getServiceDetails(serviceSlug);
-  if (!data) notFound();
+  const dashboard = await getServiceDashboard(serviceSlug);
+  if (!dashboard) notFound();
 
-  const { service, surfaceStatuses, reportsCount24h, latestObs, latestCommunityReports, surfaceBreakdown } = data;
+  const { service, overallStatus, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
 
-  // Use only the LATEST observation per surface for overall status
-  const statuses = service.surfaces
-    .map((s) => s.observations[0]?.status)
-    .filter((s): s is ServiceStatus => !!s && s !== "UNKNOWN");
-  const overallStatus = statuses.length > 0 ? calculateWorstStatus(statuses) : "UNKNOWN";
-  const sc = statusColors[overallStatus] || statusColors.UNKNOWN;
-
-  const jsonLd = generateWebApplicationJsonLd(service.name, service.websiteUrl || "");
-
-  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
-    { name: "Home", url: "https://downforai.com" },
-    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
-    { name: service.name, url: `https://downforai.com/${service.slug}` },
-  ]);
-
-  const faqJsonLd = generateFAQJsonLd([
-    {
-      q: `Is ${service.name} down right now?`,
-      a: `Check our real-time outage chart above to see current user reports for ${service.name}. A spike in reports usually indicates an ongoing outage.`,
-    },
-    {
-      q: `How do I report a ${service.name} outage?`,
-      a: `Click the 'Report a Problem' button at the top of this page to let other users know about the issues you're experiencing.`,
-    },
-  ]);
-
-  // Uptime data pour la barre
-  const uptimeSlots: { status: string; time: Date }[] = [];
-  const allObs = service.surfaces.flatMap((s) => s.observations).sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime());
-  // Diviser en 48 slots (30 min chacun sur 24h)
-  const now = Date.now();
-  for (let i = 47; i >= 0; i--) {
-    const slotStart = now - (i + 1) * 30 * 60 * 1000;
-    const slotEnd = now - i * 30 * 60 * 1000;
-    const slotObs = allObs.filter((o) => o.observedAt.getTime() >= slotStart && o.observedAt.getTime() < slotEnd);
-
-    let status = "UNKNOWN";
-    if (slotObs.length > 0) {
-      if (slotObs.some((o) => o.status === "OUTAGE")) {
-        status = "OUTAGE";
-      } else if (slotObs.some((o) => o.status === "DEGRADED")) {
-        status = "DEGRADED";
-      } else {
-        status = "OPERATIONAL";
-      }
-    }
-
-    uptimeSlots.push({ status, time: new Date(slotStart) });
-  }
-
-  const uptimePercent = Math.round((uptimeSlots.filter((s) => s.status === "OPERATIONAL").length / uptimeSlots.length) * 100);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(service);
+  const softwareAppJsonLd = buildSoftwareApplicationJsonLd(service, dashboard);
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
 
       {/* Breadcrumb */}
-      <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "24px" }}>
+      <nav
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "13px",
+          color: "#a3a3a3",
+          marginBottom: "24px",
+        }}
+      >
         <InteractiveLink href="/">Home</InteractiveLink>
         <span>/</span>
-        <InteractiveLink href={`/category/${service.category.toLowerCase()}`}>
-          {service.category}
+        <InteractiveLink href={`/category/${service.category.toLowerCase().replace(/_/g, "-")}`}>
+          {service.category.replace(/_/g, " ")}
         </InteractiveLink>
         <span>/</span>
         <span style={{ color: "#525252" }}>{service.name}</span>
       </nav>
 
-      {/* H1 */}
-      <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", letterSpacing: "-1.5px", marginBottom: "16px", lineHeight: 1.2 }}>
-        {service.name} Status — Is {service.name} Down?
-      </h1>
-
-      {/* Dynamic intro paragraph — unique per service */}
-      <p style={{ fontSize: "14px", color: "#525252", lineHeight: 1.6, marginBottom: "24px" }}>
-        {service.name} is {service.description ? "a " + service.category.toLowerCase() + " AI tool. " + service.description : `an AI service in the ${formatCategoryLabel(service.category)} category`}.
-        {" "}We monitor {service.surfaces.length} endpoint{service.surfaces.length > 1 ? "s" : ""} every 20 minutes
-        {reportsCount24h > 0
-          ? ` — ${reportsCount24h} user report${reportsCount24h > 1 ? "s" : ""} in the past 24 hours.`
-          : " — no issues reported in the past 24 hours."
-        }
-        {service.incidents.length > 0
-          ? ` Last incident: "${service.incidents[0].title}" (${formatDate(service.incidents[0].startedAt)}).`
-          : " No recent incidents."
-        }
-      </p>
-
-      {/* Status Card */}
-      <div
-        style={{
-          background: sc.bg,
-          border: `1px solid ${sc.border}`,
-          borderRadius: "16px",
-          padding: "24px",
-          marginBottom: "24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRadius: "50%",
-              backgroundColor: sc.color,
-              boxShadow: overallStatus !== "OPERATIONAL" ? `0 0 8px ${sc.color}40` : "none",
-            }}
-          />
-          <div>
-            <div style={{ fontSize: "18px", fontWeight: 700, color: sc.color }}>{sc.label}</div>
-            {latestObs && (
-              <div style={{ fontSize: "12px", color: "#a3a3a3", marginTop: "2px" }}>
-                Last checked: {formatDate(latestObs.observedAt)}
-              </div>
-            )}
-          </div>
-        </div>
-        {reportsCount24h > 0 && (
-          <div style={{ fontSize: "12px", color: "#525252", background: "#ffffff", padding: "6px 12px", borderRadius: "8px", border: "1px solid #e5e5e5" }}>
-            👥 {reportsCount24h} report{reportsCount24h > 1 ? "s" : ""} in 24h
-          </div>
-        )}
-      </div>
-
-      {/* Quick Report Section - Positioned high for visibility */}
-      <QuickReport
-        serviceSlug={service.slug}
-        serviceName={service.name}
-        initialCount={reportsCount24h}
-        surfaces={service.surfaces.map((s) => ({ id: s.id, displayName: s.displayName }))}
+      {/* Hero: H1 + status card + diagnosis badge + provider chips */}
+      <ServiceHeroHeader
+        service={service}
+        overallStatus={overallStatus}
+        diagnosis={diagnosis}
+        surfaces={surfaces}
+        reportSummary={reportSummary}
+        topContent={topContent}
       />
 
-      {/* Surfaces Table */}
-      {surfaceStatuses.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", marginBottom: "24px", overflow: "hidden" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", margin: 0 }}>Service Status</h2>
-          </div>
-          {surfaceStatuses.map((surface, idx) => {
-            const ssc = statusColors[surface.status] || statusColors.UNKNOWN;
-            return (
-              <div
-                key={surface.displayName}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "12px 20px",
-                  borderBottom: idx < surfaceStatuses.length - 1 ? "1px solid #f0f0f0" : "none",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: ssc.color }} />
-                  <span style={{ fontSize: "14px", color: "#171717" }}>{surface.displayName}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: ssc.color }}>{ssc.label}</span>
-                  <span style={{ fontSize: "12px", color: "#a3a3a3", fontFamily: "monospace" }}>
-                    {surface.latencyMs ? `${surface.latencyMs}ms` : "—"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Uptime Bar */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", margin: 0 }}>24-Hour Uptime</h2>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: uptimePercent >= 99 ? "#16a34a" : uptimePercent >= 90 ? "#ca8a04" : "#dc2626" }}>{uptimePercent}%</span>
-        </div>
-        <UptimeBarWithHours slots={uptimeSlots} uptimePercent={uptimePercent} />
-      </div>
-
-      <AffiliateBlock serviceName={service.name} category={service.category} />
-
-      {/* Latency Chart */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>Latency (24h)</h2>
-        <LatencyChart
-          observations={service.surfaces
-            .flatMap((s) => s.observations)
-            .filter((o) => o.observedAt.getTime() > Date.now() - 24 * 60 * 60 * 1000)
-            .map((o) => ({ observedAt: o.observedAt, latencyMs: o.latencyMs }))
-          }
+      {/* 4 KPI tiles */}
+      <div style={{ marginTop: "24px" }}>
+        <ServiceSignalStrip
+          uptime24h={uptime24h}
+          surfaces={surfaces}
+          incidents30d={incidents30d}
         />
       </div>
 
-      {/* Recent Incidents */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>Recent Incidents</h2>
-        {service.incidents.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "16px", color: "#a3a3a3", fontSize: "13px" }}>
-            No incidents in the past 30 days
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {service.incidents.map((inc) => {
-              const sevColor = inc.severity === "CRITICAL" ? "#dc2626" : inc.severity === "MAJOR" ? "#dc2626" : "#ca8a04";
-              const sevBg = inc.severity === "CRITICAL" ? "#fef2f2" : inc.severity === "MAJOR" ? "#fef2f2" : "#fefce8";
-              return (
-                <div key={inc.id} style={{ padding: "12px 16px", borderRadius: "10px", border: "1px solid #f0f0f0", background: "#fafafa" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "10px", fontWeight: 700, color: sevColor, backgroundColor: sevBg, padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase" as const, letterSpacing: "0.5px" }}>
-                      {inc.severity}
-                    </span>
-                    {inc.status === "RESOLVED" && (
-                      <span style={{ fontSize: "11px", color: "#16a34a" }}>✓ Resolved</span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#171717" }}>{inc.title}</div>
-                  {inc.summary && <div style={{ fontSize: "12px", color: "#525252", marginTop: "4px" }}>{inc.summary}</div>}
-                  <div style={{ fontSize: "11px", color: "#a3a3a3", marginTop: "6px" }}>
-                    {formatDate(inc.startedAt)}
-                    {inc.resolvedAt && ` → ${formatDate(inc.resolvedAt)}`}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Quick report — high for visibility */}
+      <div style={{ marginTop: "24px" }}>
+        <QuickReport
+          serviceSlug={service.slug}
+          serviceName={service.name}
+          initialCount={reportSummary.total24h}
+          surfaces={surfaces.map((s) => ({ id: s.surfaceId, displayName: s.displayName }))}
+        />
       </div>
 
-      {/* Most Affected Components */}
-      {surfaceBreakdown.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
-            Most Affected Components (24h)
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {surfaceBreakdown.map((item, idx) => {
-              const maxCount = surfaceBreakdown[0].count;
-              const percentage = (item.count / maxCount) * 100;
-              return (
-                <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ minWidth: "120px", fontSize: "13px", color: "#171717", fontWeight: 500 }}>
-                    {item.surfaceName}
-                  </div>
-                  <div style={{ flex: 1, background: "#f3f4f6", borderRadius: "4px", height: "24px", position: "relative", overflow: "hidden" }}>
-                    <div
-                      style={{
-                        width: `${percentage}%`,
-                        height: "100%",
-                        background: "#2563eb",
-                        borderRadius: "4px",
-                        transition: "width 0.3s",
-                      }}
-                    />
-                  </div>
-                  <div style={{ minWidth: "80px", fontSize: "13px", color: "#6b7280", textAlign: "right" }}>
-                    {item.count} report{item.count > 1 ? "s" : ""}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Surface health grid */}
+      <div style={{ marginTop: "24px" }}>
+        <SurfaceHealthGrid surfaces={surfaces} />
+      </div>
+
+      {/* Uptime heat strip (client — fetches sparkline) */}
+      <div style={{ marginTop: "24px" }}>
+        <UptimeHeatStrip serviceId={service.id} uptime24h={uptime24h} />
+      </div>
+
+      {/* Latency sparkline (client — fetches sparkline) */}
+      <div style={{ marginTop: "24px" }}>
+        <LatencySparklinePanel serviceId={service.id} />
+      </div>
+
+      {/* Affiliate block */}
+      <div style={{ marginTop: "24px" }}>
+        <AffiliateBlock serviceName={service.name} category={service.category} />
+      </div>
+
+      {/* Diagnosis: "Is X down for everyone?" */}
+      <div style={{ marginTop: "24px" }}>
+        <DiagnosisPanel
+          serviceName={service.name}
+          diagnosis={diagnosis}
+          surfaces={surfaces}
+          reportSummary={reportSummary}
+        />
+      </div>
+
+      {/* Incident timeline */}
+      <div style={{ marginTop: "24px" }}>
+        <IncidentTimelinePanel incidents={incidents30d} />
+      </div>
+
+      {/* World report map */}
+      <div style={{ marginTop: "24px" }}>
+        <WorldReportMap serviceSlug={service.slug} />
+      </div>
+
+      {/* Reported symptoms */}
+      <div style={{ marginTop: "24px" }}>
+        <SymptomsPanel reportSummary={reportSummary} serviceName={service.name} />
+      </div>
+
+      {/* Community reports */}
+      <div style={{ marginTop: "24px" }}>
+        <CommunityEvidencePanel recentComments={reportSummary.recentComments} />
+      </div>
+
+      {/* Known error signatures (client accordion) */}
+      {topContent && topContent.knownFailurePatterns.length > 0 && (
+        <div style={{ marginTop: "24px" }}>
+          <ErrorSignaturesPanel patterns={topContent.knownFailurePatterns} />
         </div>
       )}
 
-      {/* Latest Community Reports */}
-      {latestCommunityReports.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
-            Latest Community Reports
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {latestCommunityReports.map((report) => {
-              const typeInfo = reportTypeInfo[report.reportType] || { icon: "❓", label: "Other" };
-              const flag = getCountryFlag(report.countryCode);
-              const timeAgo = getRelativeTime(report.createdAt);
-
-              return (
-                <div key={report.id}>
-                  <div
-                    style={{
-                      padding: "12px 16px",
-                      borderRadius: "10px",
-                      border: "1px solid #f0f0f0",
-                      background: "#fafafa",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "13px", color: "#6b7280" }}>
-                      <span>{typeInfo.icon}</span>
-                      <span style={{ fontWeight: 600, color: "#171717" }}>{typeInfo.label}</span>
-                      {report.surface?.displayName && (
-                        <>
-                          <span>·</span>
-                          <span>{report.surface.displayName}</span>
-                        </>
-                      )}
-                      {flag && (
-                        <>
-                          <span>·</span>
-                          <span>{flag}</span>
-                        </>
-                      )}
-                      <span>·</span>
-                      <span>{timeAgo}</span>
-                    </div>
-                    <div style={{ fontSize: "14px", color: "#171717", fontStyle: "italic", lineHeight: 1.5 }}>
-                      &ldquo;{report.comment}&rdquo;
-                    </div>
-                  </div>
-
-                  {/* Admin Reply */}
-                  {report.adminReply && (
-                    <div
-                      style={{
-                        marginTop: "8px",
-                        padding: "12px 16px",
-                        borderRadius: "10px",
-                        background: "#eff6ff",
-                        borderLeft: "3px solid #3b82f6",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e3a5f" }}>🛡️ DownForAI Team</span>
-                        {report.adminReplyAt && (
-                          <span style={{ fontSize: "11px", color: "#64748b" }}>
-                            · {getRelativeTime(report.adminReplyAt)}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#1e40af", lineHeight: 1.5 }}>
-                        {report.adminReply}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+      {/* Provider-specific details */}
+      {topContent && (
+        <div style={{ marginTop: "24px" }}>
+          <ProviderSpecificPanel topContent={topContent} />
         </div>
       )}
 
-      {/* World Report Map */}
-      <WorldReportMap serviceSlug={service.slug} />
-
-      {/* Common Issues */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginTop: "24px" }}>
-        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "12px" }}>Common Issues with {service.name}</h2>
-        <p style={{ fontSize: "13px", color: "#737373", marginBottom: "16px", lineHeight: 1.5 }}>
-          See detailed troubleshooting guides for the most common {service.name} errors:
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {getErrorsForCategory(service.category).map((error) => (
-            <div
-              key={error.slug}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "10px",
-                border: "1px solid #e5e5e5",
-                background: "#fafafa",
-                transition: "all 0.15s",
-              }}
-            >
-              <InteractiveLink href={`/${service.slug}/error/${error.slug}`}>
-                <div style={{ fontWeight: 600, marginBottom: "2px", fontSize: "14px" }}>{error.title}</div>
-                <div style={{ fontSize: "12px", color: "#737373" }}>{error.description.replace(/{service}/g, service.name)}</div>
-              </InteractiveLink>
-            </div>
-          ))}
+      {/* Fallback alternatives */}
+      {topContent && topContent.fallbackAlternatives.length > 0 && (
+        <div style={{ marginTop: "24px" }}>
+          <FallbackAlternativesPanel topContent={topContent} />
         </div>
+      )}
+
+      {/* Methodology */}
+      <div style={{ marginTop: "24px" }}>
+        <MethodologyPanel />
       </div>
 
-      {/* About */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "20px", marginTop: "24px" }}>
-        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#171717", marginBottom: "12px" }}>About {service.name}</h2>
-        {service.description && (
-          <p style={{ fontSize: "14px", color: "#525252", marginBottom: "12px", lineHeight: 1.6 }}>{service.description}</p>
-        )}
-        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-          {service.websiteUrl && (
-            <div>
-              <div style={{ fontSize: "12px", color: "#a3a3a3", marginBottom: "4px" }}>Official Website</div>
-              <a href={service.websiteUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "none" }}>
-                Visit →
-              </a>
-            </div>
-          )}
-          <div>
-            <div style={{ fontSize: "12px", color: "#a3a3a3", marginBottom: "4px" }}>Category</div>
-            <a href={`/category/${service.category.toLowerCase()}`} style={{ fontSize: "13px", color: "#2563eb", textDecoration: "none" }}>
-              {service.category}
-            </a>
-          </div>
-        </div>
-        {service.surfaces.length > 0 && (
-          <div style={{ marginTop: "12px" }}>
-            <div style={{ fontSize: "12px", color: "#a3a3a3", marginBottom: "6px" }}>Monitored Surfaces</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {service.surfaces.map((s) => (
-                <span key={s.id} style={{ fontSize: "12px", padding: "4px 10px", borderRadius: "6px", background: "#f5f5f5", color: "#525252", border: "1px solid #e5e5e5" }}>
-                  {s.displayName}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Comment section */}
+      <div style={{ marginTop: "24px" }}>
+        <CommentSection serviceSlug={service.slug} serviceName={service.name} />
       </div>
-
-      <CommentSection serviceSlug={service.slug} serviceName={service.name} />
     </div>
   );
 }

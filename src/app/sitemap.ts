@@ -137,13 +137,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Note: /[slug]/down, /[slug]/error/*, /[slug]/[symptom] are intentionally
+  // excluded — those pages are noindexed and canonical points to /[slug].
+  void serviceErrorRoutes;
+  void downRoutes;
+  void symptomRoutes;
+
   return [
     ...staticRoutes,
     ...serviceRoutes,
     ...categoryRoutes,
     ...errorRoutes,
-    ...serviceErrorRoutes,
-    ...downRoutes,
-    ...symptomRoutes,
   ];
 }
