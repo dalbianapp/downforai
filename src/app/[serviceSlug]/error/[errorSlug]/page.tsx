@@ -54,7 +54,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: `/${serviceSlug}/error/${errorSlug}`,
+      canonical: `/${serviceSlug}`,
     },
     openGraph: {
       title,
@@ -67,7 +67,7 @@ export async function generateMetadata({
       title,
     },
     robots: {
-      index: true,
+      index: false,
       follow: true,
     },
   };
@@ -279,6 +279,30 @@ export default async function ServiceErrorPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
         />
       )}
+
+      {/* Moved notice */}
+      <div
+        style={{
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+          borderRadius: "12px",
+          padding: "12px 16px",
+          marginBottom: "20px",
+          fontSize: "13px",
+          color: "#1e40af",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <span>ℹ️</span>
+        <span>
+          This content has moved.{" "}
+          <Link href={`/${service.slug}`} style={{ color: "#1d4ed8", fontWeight: 600 }}>
+            View full {service.name} status →
+          </Link>
+        </span>
+      </div>
 
       {/* 1. Breadcrumb */}
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#a3a3a3", marginBottom: "16px" }}>
