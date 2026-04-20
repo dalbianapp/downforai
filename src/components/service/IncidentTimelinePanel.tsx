@@ -1,21 +1,21 @@
+import Link from "next/link";
 import type { IncidentSummary } from "@/lib/service-page/types";
 
 interface Props {
   incidents: IncidentSummary[];
+  serviceSlug?: string;
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
   CRITICAL: "#dc2626",
-  HIGH: "#ea580c",
-  MEDIUM: "#ca8a04",
-  LOW: "#6b7280",
+  MAJOR: "#dc2626",
+  MINOR: "#ca8a04",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   OPEN: "Ongoing",
-  RESOLVED: "Resolved",
-  INVESTIGATING: "Investigating",
   MONITORING: "Monitoring",
+  RESOLVED: "Resolved",
 };
 
 function formatDuration(minutes: number): string {
@@ -35,7 +35,7 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-export default function IncidentTimelinePanel({ incidents }: Props) {
+export default function IncidentTimelinePanel({ incidents, serviceSlug }: Props) {
   if (incidents.length === 0) {
     return (
       <div
@@ -132,7 +132,7 @@ export default function IncidentTimelinePanel({ incidents }: Props) {
           />
 
           {displayed.map((incident, i) => {
-            const isOpen = incident.status === "OPEN" || incident.status === "INVESTIGATING";
+            const isOpen = incident.status === "OPEN" || incident.status === "MONITORING";
             const severityColor = SEVERITY_COLOR[incident.severity] ?? "#6b7280";
 
             return (
@@ -252,6 +252,24 @@ export default function IncidentTimelinePanel({ incidents }: Props) {
             }}
           >
             Showing 5 of {incidents.length} incidents
+          </div>
+        )}
+
+        {serviceSlug && (
+          <div
+            style={{
+              marginTop: "16px",
+              paddingTop: "16px",
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "center",
+            }}
+          >
+            <Link
+              href={`/incidents/service/${serviceSlug}`}
+              style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}
+            >
+              View full incident history →
+            </Link>
           </div>
         )}
       </div>

@@ -177,7 +177,7 @@ export default async function ServicePage({
 
       {/* Incident timeline */}
       <div style={{ marginTop: "24px" }}>
-        <IncidentTimelinePanel incidents={incidents30d} />
+        <IncidentTimelinePanel incidents={incidents30d} serviceSlug={service.slug} />
       </div>
 
       {/* World report map */}

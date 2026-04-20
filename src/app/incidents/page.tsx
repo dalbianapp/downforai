@@ -1,155 +1,192 @@
-import { Metadata } from "next";
-import { prisma } from "@/lib/db";
+import Link from "next/link";
+import type { Metadata } from "next";
+import {
+  getPublishableIncidents,
+  getIncidentMonthSummaries,
+  getIncidentArchiveStats,
+} from "@/lib/incidents/queries";
+import { IncidentCard } from "@/components/incidents/IncidentCard";
+import { IncidentStatsBar } from "@/components/incidents/IncidentStatsBar";
+import { MonthArchiveGrid } from "@/components/incidents/MonthArchiveGrid";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "AI Service Incidents — Latest Outages & Issues | DownForAI",
+  title: "AI Incidents Archive — Real outages across 800+ AI services | DownForAI",
   description:
-    "Timeline of recent AI service incidents, outages, and degraded performance across 200+ AI services.",
+    "Public archive of AI service incidents detected by DownForAI monitoring. Browse by month, by service, or by severity. Independent, data-driven, updated hourly.",
+  alternates: { canonical: "/incidents" },
   robots: { index: true, follow: true },
-  alternates: {
-    canonical: "/incidents",
-  },
 };
 
-export const revalidate = 60;
-
-const severityConfig = {
-  MINOR: { label: "Minor", bgColor: "#fefce8", textColor: "#854d0e", borderColor: "#fef9c3" },
-  MAJOR: { label: "Major", bgColor: "#fef2f2", textColor: "#991b1b", borderColor: "#fde8e8" },
-  CRITICAL: { label: "Critical", bgColor: "#fef2f2", textColor: "#7f1d1d", borderColor: "#fde8e8" },
+type SearchParams = {
+  page?: string;
+  month?: string;
 };
 
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+export default async function IncidentsArchivePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const perPage = 20;
 
-function formatDuration(start: Date, end: Date | null): string {
-  if (!end) return "Ongoing";
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  const minutes = Math.floor(ms / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${mins}m`;
-}
+  const [incidentsResult, months, stats] = await Promise.all([
+    getPublishableIncidents({ page, perPage }),
+    getIncidentMonthSummaries(),
+    getIncidentArchiveStats(),
+  ]);
 
-export default async function IncidentsPage() {
-  const incidents = await prisma.incident.findMany({
-    include: {
-      service: {
-        select: { name: true, slug: true },
-      },
+  const totalPages = Math.ceil(incidentsResult.total / perPage);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "AI Incidents Archive",
+    description: "Archive of AI service incidents detected by DownForAI monitoring.",
+    url: "https://downforai.com/incidents",
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://downforai.com" },
+        { "@type": "ListItem", position: 2, name: "Incidents", item: "https://downforai.com/incidents" },
+      ],
     },
-    orderBy: { startedAt: "desc" },
-    take: 30,
-  });
-
-  const open = incidents.filter((i) => i.status !== "RESOLVED");
-  const resolved = incidents.filter((i) => i.status === "RESOLVED");
+  };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      {/* Page header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#171717', letterSpacing: '-1.5px', marginBottom: '8px' }}>
-          Incidents
-        </h1>
-        <p style={{ fontSize: '14px', color: '#a3a3a3' }}>
-          Latest outages and issues affecting AI services
-        </p>
-      </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-      {/* Active incidents */}
-      {open.length > 0 && (
-        <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-            🔴 Active ({open.length})
+      <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+        {/* Header */}
+        <header style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <nav style={{ fontSize: "13px", color: "#525252" }}>
+            <Link href="/" style={{ textDecoration: "none", color: "#525252" }}>
+              Home
+            </Link>
+            <span style={{ margin: "0 8px" }}>/</span>
+            <span style={{ color: "#171717" }}>Incidents</span>
+          </nav>
+          <h1 style={{ fontSize: "30px", fontWeight: 800, color: "#171717", letterSpacing: "-1px", margin: 0 }}>
+            AI Incidents Archive
+          </h1>
+          <p style={{ fontSize: "15px", color: "#525252", maxWidth: "680px", lineHeight: 1.6, margin: 0 }}>
+            Public archive of significant incidents detected across 800+ AI services.
+            Automated probes run every 2–5 minutes from multiple locations. Updated hourly.{" "}
+            <Link href="/methodology" style={{ color: "#2563eb", textDecoration: "underline" }}>
+              See our methodology
+            </Link>
+            .
+          </p>
+        </header>
+
+        {/* Stats bar */}
+        <IncidentStatsBar stats={stats} />
+
+        {/* Month archive grid */}
+        <section>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
+            Browse by month
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {open.map((incident) => {
-              const config = severityConfig[incident.severity];
-              return (
-                <div
-                  key={incident.id}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #fde8e8',
-                    borderRadius: '12px',
-                    padding: '16px 20px',
-                    borderLeft: '3px solid #dc2626',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: config.textColor, backgroundColor: config.bgColor, padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {config.label}
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#a3a3a3' }}>{incident.service.name}</span>
-                  </div>
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#171717', marginBottom: '4px' }}>
-                    {incident.title}
-                  </div>
-                  {incident.summary && (
-                    <div style={{ fontSize: '13px', color: '#525252', marginBottom: '6px', lineHeight: 1.5 }}>
-                      {incident.summary}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '12px', color: '#a3a3a3' }}>
-                    Started {formatDate(incident.startedAt)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+          <MonthArchiveGrid months={months} activeMonth={params.month} />
+        </section>
 
-      {/* Resolved incidents */}
-      <div>
-        <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-          ✓ Resolved ({resolved.length})
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {resolved.map((incident) => {
-            const config = severityConfig[incident.severity];
-            return (
-              <div
-                key={incident.id}
+        {/* Incident list */}
+        <section>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
+            Latest incidents{" "}
+            <span style={{ fontSize: "14px", fontWeight: 400, color: "#525252" }}>
+              ({incidentsResult.total} total)
+            </span>
+          </h2>
+
+          {incidentsResult.incidents.length === 0 ? (
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid #e5e5e5",
+                borderRadius: "12px",
+                padding: "32px",
+                textAlign: "center",
+                color: "#525252",
+              }}
+            >
+              No incidents match the current filters.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {incidentsResult.incidents.map((incident) => (
+                <IncidentCard key={incident.id} incident={incident} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <nav
+            aria-label="Pagination"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "8px",
+              paddingTop: "24px",
+              borderTop: "1px solid #e5e5e5",
+            }}
+          >
+            {page > 1 && (
+              <Link
+                href={`/incidents?page=${page - 1}`}
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e5e5",
+                  fontSize: "13px",
+                  color: "#171717",
+                  textDecoration: "none",
+                  background: "#ffffff",
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: config.textColor, backgroundColor: config.bgColor, padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {config.label}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#a3a3a3' }}>{incident.service.name}</span>
-                </div>
-                <div style={{ fontSize: '15px', fontWeight: 600, color: '#171717', marginBottom: '4px' }}>
-                  {incident.title}
-                </div>
-                {incident.summary && (
-                  <div style={{ fontSize: '13px', color: '#525252', marginBottom: '6px', lineHeight: 1.5 }}>
-                    {incident.summary}
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#a3a3a3' }}>
-                  <span>{formatDate(incident.startedAt)} → {incident.resolvedAt ? formatDate(incident.resolvedAt) : '—'}</span>
-                  <span>({formatDuration(incident.startedAt, incident.resolvedAt)})</span>
-                  <span style={{ color: '#16a34a', marginLeft: 'auto' }}>✓ Resolved</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                ← Previous
+              </Link>
+            )}
+            <span style={{ padding: "8px 16px", fontSize: "13px", color: "#525252" }}>
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages && (
+              <Link
+                href={`/incidents?page=${page + 1}`}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e5e5",
+                  fontSize: "13px",
+                  color: "#171717",
+                  textDecoration: "none",
+                  background: "#ffffff",
+                }}
+              >
+                Next →
+              </Link>
+            )}
+          </nav>
+        )}
+
+        {/* Footer link */}
+        <footer style={{ paddingTop: "24px", borderTop: "1px solid #e5e5e5", fontSize: "13px", color: "#525252" }}>
+          Looking for a specific service?{" "}
+          <Link href="/" style={{ color: "#2563eb", textDecoration: "underline" }}>
+            Browse all 800+ monitored AI services →
+          </Link>
+        </footer>
       </div>
-    </div>
+    </>
   );
 }

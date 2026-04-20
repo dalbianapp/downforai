@@ -11,9 +11,10 @@ import { computeSurfacePerformance, aggregateServicePerformance, computePerforma
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "DownForAI — Is Your AI Tool Down? Real-Time AI Outage Tracker",
+  title: "DownForAI — Real-time status & diagnostics for 800+ AI tools",
   description:
-    "Real-time outage monitoring for 810+ AI tools. ChatGPT, Claude, Gemini, Midjourney and more. Community-driven reports detect outages before official status pages.",
+    "Independent real-time monitoring for AI APIs, chat interfaces, and dev tools. Faster than official status pages, cleaner than Reddit. Incidents, latency, fallback alternatives.",
+  alternates: { canonical: "/" },
   robots: { index: true, follow: true },
 };
 

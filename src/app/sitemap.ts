@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { ServiceCategory } from "@prisma/client";
 import { GLOBAL_ERRORS, TIER_1_SERVICES, getSymptomsForCategory } from "@/lib/ai-symptoms";
 import { getErrorsForCategory } from "@/lib/error-playbooks";
+import { getIncidentMonthSummaries, getIncidentServiceSummaries } from "@/lib/incidents/queries";
 
 // Date de déploiement stable pour les pages statiques
 const DEPLOY_DATE = new Date("2026-03-01T00:00:00Z");
@@ -10,12 +11,13 @@ const DEPLOY_DATE = new Date("2026-03-01T00:00:00Z");
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://downforai.com";
 
-  // Get all services from database
-  const services = await prisma.service.findMany({
-    select: { slug: true, category: true, updatedAt: true },
-  });
+  // Get all services and incident summaries in parallel
+  const [services, months, serviceSummaries] = await Promise.all([
+    prisma.service.findMany({ select: { slug: true, category: true, updatedAt: true } }),
+    getIncidentMonthSummaries(),
+    getIncidentServiceSummaries(100),
+  ]);
 
-  // Get all categories from Prisma enum (not hardcoded)
   const categories = Object.values(ServiceCategory).map((c) => c.toLowerCase());
 
   // Static pages
@@ -40,9 +42,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/incidents`,
-      lastModified: new Date(), // Incidents page changes with new incidents
+      lastModified: new Date(),
       changeFrequency: "hourly",
       priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/methodology`,
+      lastModified: new Date("2026-04-20T00:00:00Z"),
+      changeFrequency: "monthly",
+      priority: 0.4,
     },
     {
       url: `${baseUrl}/report`,
@@ -137,16 +145,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Note: /[slug]/down, /[slug]/error/*, /[slug]/[symptom] are intentionally
-  // excluded — those pages are noindexed and canonical points to /[slug].
+  // /[slug]/down, /[slug]/error/*, /[slug]/[symptom] intentionally excluded
+  // (noindexed, canonical points to /[slug])
   void serviceErrorRoutes;
   void downRoutes;
   void symptomRoutes;
+
+  // Monthly incident archive routes
+  const monthlyIncidentRoutes: MetadataRoute.Sitemap = months.map((m) => ({
+    url: `${baseUrl}/incidents/${m.monthKey}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
+  // Per-service incident routes (only services with >= 1 publishable incident)
+  const serviceIncidentRoutes: MetadataRoute.Sitemap = serviceSummaries.map((s) => ({
+    url: `${baseUrl}/incidents/service/${s.serviceSlug}`,
+    lastModified: s.lastIncidentAt ?? new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
 
   return [
     ...staticRoutes,
     ...serviceRoutes,
     ...categoryRoutes,
     ...errorRoutes,
+    ...monthlyIncidentRoutes,
+    ...serviceIncidentRoutes,
   ];
 }
