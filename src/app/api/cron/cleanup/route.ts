@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log("[cleanup] Starting at " + new Date().toISOString());
+
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     // Supprimer les observations de plus de 7 jours
@@ -40,14 +42,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[cleanup] Resolved ${resolvedIncidents.count} stale incidents`);
+    console.log(`[cleanup] Deleted ${deletedObs.count} observations, ${deletedReports.count} community reports`);
+    console.log("[cleanup] Done at " + new Date().toISOString());
+
     return NextResponse.json({
-      success: true,
+      ok: true,
+      resolved: resolvedIncidents.count,
       deletedObservations: deletedObs.count,
       deletedReports: deletedReports.count,
-      resolvedIncidents: resolvedIncidents.count,
     });
   } catch (error) {
-    console.error("Cleanup error:", error);
+    console.error("[cleanup] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

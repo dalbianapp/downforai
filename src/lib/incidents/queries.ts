@@ -7,7 +7,7 @@ import type {
   IncidentStatus,
   IncidentSeverity,
 } from "./types";
-import { MIN_DURATION_MINUTES_FOR_PUBLIC, EXCLUDED_SERVICE_SLUGS } from "./filters";
+import { MIN_DURATION_MINUTES_FOR_PUBLIC, EXCLUDED_SERVICE_SLUGS, MAX_OPEN_INCIDENT_HOURS } from "./filters";
 import { generateEnrichedDescription } from "./enrichment";
 
 // Safe SQL literal for the excluded slugs IN clause
@@ -21,6 +21,7 @@ const BASE_WHERE = `
   i.severity IN ('MAJOR','CRITICAL')
   AND s.slug NOT IN (${excludedSlugsSql()})
   AND (i."resolvedAt" IS NULL OR EXTRACT(EPOCH FROM (i."resolvedAt" - i."startedAt")) / 60 >= ${MIN_DURATION_MINUTES_FOR_PUBLIC})
+  AND (i.status = 'RESOLVED' OR EXTRACT(EPOCH FROM (NOW() - i."startedAt")) / 3600 <= ${MAX_OPEN_INCIDENT_HOURS})
 `;
 
 type RawIncidentRow = {
@@ -56,12 +57,23 @@ function toPublishableIncident(row: RawIncidentRow): PublishableIncident {
   const monthKey = row.startedAt.toISOString().slice(0, 7);
   const dayKey = row.startedAt.toISOString().slice(0, 10);
 
+  const hoursSinceStart = (Date.now() - row.startedAt.getTime()) / 3600000;
+  let displayStatus: "OPEN" | "STALE" | "RESOLVED";
+  if (row.status === "RESOLVED") {
+    displayStatus = "RESOLVED";
+  } else if (hoursSinceStart > 24) {
+    displayStatus = "STALE";
+  } else {
+    displayStatus = "OPEN";
+  }
+
   return {
     ...row,
     durationMinutes,
     enrichedDescription,
     monthKey,
     dayKey,
+    displayStatus,
   };
 }
 

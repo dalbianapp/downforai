@@ -9,7 +9,7 @@ const SEVERITY_CONFIG = {
 
 const STATUS_CONFIG = {
   OPEN: { label: "Ongoing", color: "#dc2626" },
-  MONITORING: { label: "Monitoring", color: "#ca8a04" },
+  STALE: { label: "Unresolved — service still offline", color: "#737373" },
   RESOLVED: { label: "Resolved", color: "#16a34a" },
 } as const;
 
@@ -33,9 +33,16 @@ function formatDuration(minutes: number | null): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function formatStaleDuration(startedAt: Date): string {
+  const totalMinutes = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export function IncidentCard({ incident }: { incident: PublishableIncident }) {
   const sev = SEVERITY_CONFIG[incident.severity];
-  const stat = STATUS_CONFIG[incident.status];
+  const stat = STATUS_CONFIG[incident.displayStatus];
 
   return (
     <article
@@ -64,8 +71,8 @@ export function IncidentCard({ incident }: { incident: PublishableIncident }) {
             >
               {sev.label}
             </span>
-            <span style={{ fontSize: "12px", fontWeight: 500, color: stat.color }}>
-              • {stat.label}
+            <span style={{ fontSize: "12px", fontWeight: 500, color: stat?.color }}>
+              • {stat?.label}
             </span>
           </div>
           <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#171717", marginBottom: "6px" }}>
@@ -79,7 +86,15 @@ export function IncidentCard({ incident }: { incident: PublishableIncident }) {
           <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "12px", color: "#737373", flexWrap: "wrap" }}>
             <span>Started: {formatDate(incident.startedAt)}</span>
             {incident.resolvedAt && <span>Resolved: {formatDate(incident.resolvedAt)}</span>}
-            <span>Duration: {formatDuration(incident.durationMinutes)}</span>
+            {incident.displayStatus === "OPEN" && (
+              <span>Duration: ongoing</span>
+            )}
+            {incident.displayStatus === "STALE" && (
+              <span>Still offline after {formatStaleDuration(incident.startedAt)}</span>
+            )}
+            {incident.displayStatus === "RESOLVED" && (
+              <span>Duration: {formatDuration(incident.durationMinutes)}</span>
+            )}
             <Link
               href={`/${incident.serviceSlug}`}
               style={{ color: "#2563eb", textDecoration: "underline" }}

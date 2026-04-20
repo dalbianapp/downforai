@@ -20,6 +20,7 @@ export type PublishableIncident = {
   enrichedDescription: string;
   monthKey: string; // "2026-04"
   dayKey: string;   // "2026-04-20"
+  displayStatus: "OPEN" | "STALE" | "RESOLVED";
 };
 
 export type IncidentMonthSummary = {

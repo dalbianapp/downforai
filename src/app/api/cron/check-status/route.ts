@@ -371,7 +371,8 @@ async function handleCheckStatus(request: NextRequest) {
       }
 
       // Auto-resolve incidents when back to OPERATIONAL
-      if (newObs?.status === "OPERATIONAL" && prevObs?.status === "OUTAGE") {
+      // Fix: no longer requires prevObs === "OUTAGE" — resolves whenever service returns OPERATIONAL
+      if (newObs?.status === "OPERATIONAL") {
         const openIncident = await prisma.incident.findFirst({
           where: {
             serviceId: surface.serviceId,
