@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendTelegramAlert } from "@/lib/notifications/telegram";
+import { isTier1 } from "@/lib/notifications/tier1";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check
@@ -356,7 +358,7 @@ async function handleCheckStatus(request: NextRequest) {
         });
 
         if (!existingIncident) {
-          await prisma.incident.create({
+          const newIncident = await prisma.incident.create({
             data: {
               serviceId: surface.serviceId,
               title: `${surface.service.slug} experiencing issues`,
@@ -367,6 +369,15 @@ async function handleCheckStatus(request: NextRequest) {
               startedAt: now,
             },
           });
+
+          if (isTier1(surface.service.slug)) {
+            await sendTelegramAlert(
+              `🔴 <b>INCIDENT — ${surface.service.slug}</b>\n\n` +
+              `Status: ${newIncident.severity}\n` +
+              `Started: ${now.toISOString().slice(0, 16)} UTC\n\n` +
+              `→ https://downforai.com/${surface.service.slug}`
+            );
+          }
         }
       }
 
@@ -391,6 +402,21 @@ async function handleCheckStatus(request: NextRequest) {
                 status: "RESOLVED"
               },
             });
+
+            if (isTier1(surface.service.slug)) {
+              const durationMinutes = Math.round(
+                (now.getTime() - openIncident.startedAt.getTime()) / 60000
+              );
+              const durationStr =
+                durationMinutes < 60
+                  ? `${durationMinutes}m`
+                  : `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}m`;
+              await sendTelegramAlert(
+                `🟢 <b>RESOLVED — ${surface.service.slug}</b>\n\n` +
+                `Duration: ${durationStr}\n\n` +
+                `→ https://downforai.com/${surface.service.slug}`
+              );
+            }
           }
         }
       }

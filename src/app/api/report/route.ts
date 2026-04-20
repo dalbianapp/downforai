@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { sendTelegramAlert } from "@/lib/notifications/telegram";
+import { isTier1 } from "@/lib/notifications/tier1";
 
 // Database-based rate limiting (works on Vercel serverless)
 async function checkRateLimitDB(
@@ -182,6 +184,25 @@ export async function POST(request: NextRequest) {
         comment: sanitizedComment,
       },
     });
+
+    // Tier 1 spike detection: alert at exactly 3 reports in 10 min (fire once, not on every report after)
+    if (isTier1(serviceSlug)) {
+      const recentReports = await prisma.communityReport.count({
+        where: {
+          serviceId: service.id,
+          createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+        },
+      });
+
+      if (recentReports === 3) {
+        await sendTelegramAlert(
+          `⚠️ <b>REPORT SPIKE — ${service.name}</b>\n\n` +
+          `${recentReports} reports in 10 minutes\n` +
+          `Probes may not have detected yet\n\n` +
+          `→ https://downforai.com/${serviceSlug}`
+        );
+      }
+    }
 
     // Count reports in last 24h for this service
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
