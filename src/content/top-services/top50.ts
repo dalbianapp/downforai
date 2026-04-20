@@ -3815,4 +3815,2292 @@ export const TOP_SERVICE_CONTENT: Record<string, TopServiceContent> = {
       "Luma Labs ships multiple products under the Luma brand (Dream Machine for video, Genie for 3D, Capture for NeRF) — disambiguate which product users mean",
     ],
   },
+
+  civitai: {
+    slug: "civitai",
+    providerSummary:
+      "Community hub for sharing and discovering Stable Diffusion models, LoRAs, embeddings, and workflows. Popular with image gen enthusiasts and creators.",
+    docsUrl: "https://wiki.civitai.com",
+    pricingUrl: "https://civitai.com/pricing",
+    communityLinks: [
+      { type: "discord", url: "https://discord.gg/civitai", label: "Discord", verified: true },
+      { type: "reddit", url: "https://reddit.com/r/civitai", label: "r/civitai", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "civitai.com", description: "Web interface", criticality: "critical" },
+      { name: "Model Downloads", description: "CDN model download delivery", criticality: "critical" },
+      { name: "On-site Generation", description: "In-browser AI generation", criticality: "high" },
+      { name: "API", description: "Civitai API endpoint", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "CDN download slowness during peak",
+        scope: "global",
+        signal: "Slow or failed model downloads",
+        quickCheck: "Try at off-peak hours or use HuggingFace mirror",
+      },
+      {
+        pattern: "On-site generation queue backed up",
+        scope: "global",
+        signal: "Long wait times for in-browser generation",
+        quickCheck: "Download model and run locally via ComfyUI/A1111",
+      },
+      {
+        pattern: "NSFW filter changes perceived as outage",
+        scope: "partial",
+        signal: "Previously accessible content suddenly blocked",
+        quickCheck: "Check Civitai announcements for policy changes",
+      },
+      {
+        pattern: "Model upload processing delays",
+        scope: "global",
+        signal: "Uploads stuck in processing state",
+        quickCheck: "Check Civitai Discord for known processing queue issues",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Civitai is degraded",
+        alternative:
+          "Hugging Face (model hub), Tensor.Art, or direct ComfyUI with local models can reduce downtime",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Civitai is primarily a model sharing platform — generation is secondary. If downloads work but on-site gen is down, users can still pull models for local use.",
+    ],
+  },
+
+  "krea-ai": {
+    slug: "krea-ai",
+    providerSummary:
+      "Real-time AI image generation and enhancement. Canvas-style editor with generative AI, upscaling, and design tools.",
+    docsUrl: "https://www.krea.ai/docs",
+    pricingUrl: "https://www.krea.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "krea.ai", description: "Web canvas editor", criticality: "critical" },
+      { name: "Real-time Generation", description: "Real-time generation backend", criticality: "critical" },
+      { name: "Upscale API", description: "Image upscaling endpoint", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Real-time canvas lag or freeze",
+        scope: "global",
+        signal: "Generation backend overloaded",
+        quickCheck: "Reload the canvas; try non-real-time mode",
+      },
+      {
+        pattern: "Credit depletion",
+        scope: "local",
+        signal: "User exhausted generation credits",
+        quickCheck: "Check credit balance in account settings",
+      },
+      {
+        pattern: "Specific model unavailable",
+        scope: "partial",
+        signal: "One style or model fails while others work",
+        quickCheck: "Switch to a different generation model",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Krea AI is degraded",
+        alternative:
+          "Magnific (upscaling), Leonardo AI (generation), or Ideogram can reduce downtime for specific workflows",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  lmarena: {
+    slug: "lmarena",
+    providerSummary:
+      "LLM benchmarking platform via crowd-sourced blind comparisons (Elo ranking). Used by researchers and devs to evaluate model quality.",
+    docsUrl: "https://lmarena.ai/docs",
+    communityLinks: [
+      { type: "x", url: "https://x.com/laborai_lmsys", label: "@laborai_lmsys", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "lmarena.ai", description: "Web arena interface", criticality: "critical" },
+      { name: "Arena Battle Backend", description: "Model comparison execution", criticality: "critical" },
+      { name: "Leaderboard API", description: "Elo ranking data", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "High traffic during model launches",
+        scope: "global",
+        signal: "Queue timeouts spike around major model releases",
+        quickCheck: "Try again at off-peak hours — expected behavior, not a hard outage",
+      },
+      {
+        pattern: "Queue timeout on battle request",
+        scope: "global",
+        signal: "Battle initiation fails or hangs",
+        quickCheck: "Retry; check LMArena Twitter for capacity notices",
+      },
+      {
+        pattern: "Specific model backend unavailable",
+        scope: "partial",
+        signal: "One model in a comparison fails to respond",
+        quickCheck: "Restart the arena battle to get a different model pair",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "LMArena is degraded",
+        alternative:
+          "Artificial Analysis or open leaderboard data can provide benchmark comparisons",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Traffic spikes massively around major model releases — queue delays during launch events are expected, not outages.",
+    ],
+  },
+
+  "nvidia-nim": {
+    slug: "nvidia-nim",
+    providerSummary:
+      "NVIDIA's managed inference microservices. Deploy optimized models (Llama, Mistral, etc.) on NVIDIA hardware via containers.",
+    officialStatusUrl: "https://status.nvidia.com",
+    docsUrl: "https://docs.nvidia.com/nim",
+    pricingUrl: "https://build.nvidia.com/nim",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "build.nvidia.com", description: "NIM catalog and console", criticality: "critical" },
+      { name: "NIM Containers", description: "Container pull and run", criticality: "critical" },
+      { name: "NVIDIA API Endpoint", description: "Hosted inference API", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Container pull rate limits",
+        scope: "global",
+        signal: "Docker pull from nvcr.io fails or is throttled",
+        quickCheck: "Check NGC registry status; retry with authenticated pull",
+      },
+      {
+        pattern: "GPU availability for specific models",
+        scope: "partial",
+        signal: "Some models unavailable due to GPU capacity",
+        quickCheck: "Try a different model or region endpoint",
+      },
+      {
+        pattern: "API quota limits",
+        scope: "local",
+        signal: "429 errors from hosted inference endpoint",
+        quickCheck: "Check quota in NVIDIA developer console",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "NVIDIA NIM is degraded",
+        alternative:
+          "Together AI, Groq, or Fireworks AI host similar open models with an OpenAI-compatible API swap",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "NIM runs on NVIDIA infra — separate from cloud provider managed services like Bedrock or Vertex.",
+    ],
+  },
+
+  "moonshot-kimi": {
+    slug: "moonshot-kimi",
+    providerSummary:
+      "Chinese AI lab Moonshot's assistant. Strong long-context capabilities. Popular in China and expanding internationally.",
+    docsUrl: "https://platform.moonshot.cn/docs",
+    pricingUrl: "https://platform.moonshot.cn/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "kimi.moonshot.cn", description: "Consumer web chat", criticality: "critical" },
+      { name: "Moonshot API", description: "Developer API (platform.moonshot.cn)", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Regional access variability",
+        scope: "partial",
+        signal: "Access differs by country or network",
+        quickCheck: "Test from different region; check for geo-restrictions",
+      },
+      {
+        pattern: "Capacity constraints during Chinese business hours",
+        scope: "global",
+        signal: "Slow responses or queuing during peak hours (UTC+8 9–18h)",
+        quickCheck: "Retry off-peak; switch to API with retry logic",
+      },
+      {
+        pattern: "Long-context requests slower",
+        scope: "local",
+        signal: "Very long prompts (100k+ tokens) take significantly longer",
+        quickCheck: "Expected behavior — not an outage; reduce context if latency-sensitive",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Moonshot Kimi is degraded",
+        alternative:
+          "DeepSeek or Qwen are Chinese-native alternatives at low cost; Claude or Gemini for international long-context use",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  synthesia: {
+    slug: "synthesia",
+    providerSummary:
+      "Enterprise AI avatar video creation. Training videos, marketing, localization. SOC 2 compliant.",
+    officialStatusUrl: "https://status.synthesia.io",
+    docsUrl: "https://docs.synthesia.io",
+    pricingUrl: "https://www.synthesia.io/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "synthesia.io", description: "Web editor and dashboard", criticality: "critical" },
+      { name: "Render Pipeline", description: "Video generation and rendering", criticality: "critical" },
+      { name: "Avatar Library", description: "Avatar asset delivery", criticality: "high" },
+      { name: "API", description: "Synthesia REST API", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Long render times",
+        scope: "global",
+        signal: "Videos stuck in rendering for more than 10 minutes",
+        quickCheck: "Check status.synthesia.io for render pipeline health",
+      },
+      {
+        pattern: "Avatar-specific glitches",
+        scope: "partial",
+        signal: "Specific avatar produces artifacts or fails",
+        quickCheck: "Switch to a different avatar to isolate the issue",
+      },
+      {
+        pattern: "Voice cloning delays",
+        scope: "global",
+        signal: "Custom voice generation queued",
+        quickCheck: "Use a standard voice as fallback while custom voice processes",
+      },
+      {
+        pattern: "Enterprise SSO issues",
+        scope: "local",
+        signal: "Login fails for enterprise users via SSO",
+        quickCheck: "Check with IT; try direct email login as fallback",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Synthesia is degraded",
+        alternative:
+          "HeyGen, D-ID, or Colossyan can reduce downtime for avatar video (different avatar libraries)",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  gamma: {
+    slug: "gamma",
+    providerSummary:
+      "AI-powered presentation and document generator. Creates slides, docs, and webpages from prompts.",
+    docsUrl: "https://gamma.app/help",
+    pricingUrl: "https://gamma.app/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "gamma.app", description: "Web editor and generator", criticality: "critical" },
+      { name: "Generation Backend", description: "AI presentation generation", criticality: "critical" },
+      { name: "Export Pipeline", description: "PPTX, PDF, and link export", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Credit depletion",
+        scope: "local",
+        signal: "User runs out of AI generation credits",
+        quickCheck: "Check credit balance; upgrade plan or wait for monthly reset",
+      },
+      {
+        pattern: "Export format issues (PPTX, PDF)",
+        scope: "global",
+        signal: "Exported file is corrupted or missing slides",
+        quickCheck: "Try a different export format; check status for export pipeline",
+      },
+      {
+        pattern: "Template rendering glitches",
+        scope: "partial",
+        signal: "Layout breaks on specific templates",
+        quickCheck: "Switch template; reload the presentation",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Gamma is degraded",
+        alternative:
+          "Beautiful.ai, Tome, or SlidesAI can reduce downtime for AI presentation generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  descript: {
+    slug: "descript",
+    providerSummary:
+      "AI video and audio editor. Text-based editing (edit video by editing transcript), screen recording, podcast editing.",
+    officialStatusUrl: "https://status.descript.com",
+    docsUrl: "https://help.descript.com",
+    pricingUrl: "https://www.descript.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "descript.com", description: "Web editor", criticality: "critical" },
+      { name: "Desktop App", description: "Mac and Windows desktop client", criticality: "critical" },
+      { name: "Transcription Backend", description: "AI speech-to-text pipeline", criticality: "high" },
+      { name: "Rendering Pipeline", description: "Video export and rendering", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Transcription backend delays",
+        scope: "global",
+        signal: "Transcription stuck in processing",
+        quickCheck: "Check status.descript.com for transcription service health",
+      },
+      {
+        pattern: "Desktop app sync issues",
+        scope: "local",
+        signal: "Changes not syncing between devices",
+        quickCheck: "Force sync from app menu; check network connectivity",
+      },
+      {
+        pattern: "Rendering failures on long projects",
+        scope: "global",
+        signal: "Export fails or produces corrupted output on large files",
+        quickCheck: "Try exporting a shorter clip to isolate; check render pipeline status",
+      },
+      {
+        pattern: "Collaboration session drops",
+        scope: "partial",
+        signal: "Co-editors disconnected mid-session",
+        quickCheck: "Reload the project; check real-time collaboration backend status",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Descript is degraded",
+        alternative:
+          "Riverside (recording), Kapwing (editing), or Otter.ai (transcription) can reduce downtime for specific workflows",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  manus: {
+    slug: "manus",
+    providerSummary:
+      "Autonomous AI agent. Handles open-ended tasks (research, analysis, slide generation) end-to-end. Acquired by Meta in Dec 2025.",
+    docsUrl: "https://manus.im/docs",
+    pricingUrl: "https://manus.im/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "manus.im", description: "Web interface", criticality: "critical" },
+      { name: "Task Execution Backend", description: "Autonomous task runner", criticality: "critical" },
+      { name: "Output Delivery", description: "Task result delivery", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Long-running tasks stuck",
+        scope: "global",
+        signal: "Task execution hangs without completing",
+        quickCheck: "Cancel and retry; check for capacity issues",
+      },
+      {
+        pattern: "Output quality inconsistency",
+        scope: "local",
+        signal: "Task completed but output is low quality",
+        quickCheck: "Refine the task prompt; retry with more specific instructions",
+      },
+      {
+        pattern: "Capacity limits during peak",
+        scope: "global",
+        signal: "Task queue full — new tasks rejected",
+        quickCheck: "Retry later; check Manus status or announcements",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Manus is degraded",
+        alternative:
+          "Genspark, Devin (for coding tasks), or Claude Projects (manual) can reduce downtime",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  genspark: {
+    slug: "genspark",
+    providerSummary:
+      "AI agent platform for open-ended research and tasks. $300M Series B, $100M ARR run rate.",
+    docsUrl: "https://www.genspark.ai/help",
+    pricingUrl: "https://www.genspark.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "genspark.ai", description: "Web interface", criticality: "critical" },
+      { name: "Agent Execution Backend", description: "Research and task agent runner", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Agent task timeouts",
+        scope: "global",
+        signal: "Research tasks fail to complete within expected time",
+        quickCheck: "Retry with a narrower task scope",
+      },
+      {
+        pattern: "Research quality variability",
+        scope: "local",
+        signal: "Results inconsistent across similar queries",
+        quickCheck: "Rephrase query; not always an infrastructure issue",
+      },
+      {
+        pattern: "Capacity during peak hours",
+        scope: "global",
+        signal: "Slow task initiation or queue delays",
+        quickCheck: "Retry off-peak; check Genspark announcements",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Genspark is degraded",
+        alternative:
+          "Perplexity (research) or Manus (tasks) can reduce downtime",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  grammarly: {
+    slug: "grammarly",
+    providerSummary:
+      "AI writing assistant. Grammar, tone, clarity. Deeply integrated in browsers, Docs, email. Large enterprise footprint.",
+    officialStatusUrl: "https://status.grammarly.com",
+    docsUrl: "https://support.grammarly.com",
+    pricingUrl: "https://www.grammarly.com/plans",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "grammarly.com", description: "Web editor", criticality: "critical" },
+      { name: "Browser Extension", description: "Chrome/Firefox/Safari extension", criticality: "critical" },
+      { name: "Desktop App", description: "Mac and Windows app", criticality: "high" },
+      { name: "Enterprise API", description: "API for enterprise integrations", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Browser extension not activating",
+        scope: "local",
+        signal: "Extension icon missing or suggestions not showing",
+        quickCheck: "Disable and re-enable the extension; update to latest version",
+      },
+      {
+        pattern: "Document editor lag",
+        scope: "global",
+        signal: "Suggestions slow to appear or editor unresponsive",
+        quickCheck: "Check status.grammarly.com; try web app directly",
+      },
+      {
+        pattern: "Enterprise SSO issues",
+        scope: "local",
+        signal: "Enterprise login fails",
+        quickCheck: "Check with IT; try email login fallback",
+      },
+      {
+        pattern: "AI rewrite feature delays",
+        scope: "global",
+        signal: "Rewrite and rephrase take unusually long",
+        quickCheck: "Check status for AI features specifically",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Grammarly is degraded",
+        alternative:
+          "LanguageTool, Hemingway Editor, or ProWritingAid can reduce downtime for writing checks",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Most 'Grammarly is down' reports are browser extension issues — disabling and re-enabling the extension is the first troubleshoot step.",
+    ],
+  },
+
+  quillbot: {
+    slug: "quillbot",
+    providerSummary:
+      "AI paraphrasing, grammar checking, summarization. Strong in academic and student use cases.",
+    docsUrl: "https://help.quillbot.com",
+    pricingUrl: "https://quillbot.com/premium",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "quillbot.com", description: "Web paraphraser and tools", criticality: "critical" },
+      { name: "Chrome Extension", description: "Browser extension", criticality: "high" },
+      { name: "Paraphraser API", description: "Backend paraphrasing service", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Paraphraser quota limits on free tier",
+        scope: "local",
+        signal: "Word limit reached for the day",
+        quickCheck: "Upgrade to Premium or wait for daily reset",
+      },
+      {
+        pattern: "Chrome extension conflicts",
+        scope: "local",
+        signal: "Extension not working in specific browser context",
+        quickCheck: "Try the web app directly; update or reinstall extension",
+      },
+      {
+        pattern: "Slow processing on long texts",
+        scope: "global",
+        signal: "Paraphrasing hangs on large inputs",
+        quickCheck: "Break text into smaller chunks; check server load",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "QuillBot is degraded",
+        alternative:
+          "Grammarly, WordTune, or ChatGPT can reduce downtime for paraphrasing",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  phind: {
+    slug: "phind",
+    providerSummary:
+      "AI-powered search engine for developers. Code-focused answers with sources.",
+    docsUrl: "https://www.phind.com/about",
+    pricingUrl: "https://www.phind.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "phind.com", description: "Web search interface", criticality: "critical" },
+      { name: "Search Backend", description: "AI search and retrieval", criticality: "critical" },
+      { name: "Code Execution Sandbox", description: "In-browser code execution", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Search backend timeouts",
+        scope: "global",
+        signal: "Queries hang or return empty results",
+        quickCheck: "Retry; check if web search works as fallback",
+      },
+      {
+        pattern: "Code execution sandbox failures",
+        scope: "partial",
+        signal: "Code runner fails while search still works",
+        quickCheck: "Use search results without execution; check sandbox status",
+      },
+      {
+        pattern: "Source retrieval issues",
+        scope: "global",
+        signal: "Answers lack source links or sources fail to load",
+        quickCheck: "Try rephrasing the query; may be a crawling/index issue",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Phind is degraded",
+        alternative:
+          "Perplexity (general AI search) or Stack Overflow combined with ChatGPT can reduce downtime for developer search",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  photoroom: {
+    slug: "photoroom",
+    providerSummary:
+      "AI product photography. Background removal, scene generation, batch editing. Strong in e-commerce.",
+    docsUrl: "https://help.photoroom.com",
+    pricingUrl: "https://www.photoroom.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "photoroom.com", description: "Web editor", criticality: "critical" },
+      { name: "Mobile Apps", description: "iOS and Android apps", criticality: "critical" },
+      { name: "API", description: "Background removal and editing API", criticality: "high" },
+      { name: "Batch Processing", description: "Bulk image processing pipeline", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Batch processing queue delays",
+        scope: "global",
+        signal: "Bulk jobs take much longer than expected",
+        quickCheck: "Check API status; process smaller batches",
+      },
+      {
+        pattern: "Background removal quality on edge cases",
+        scope: "local",
+        signal: "Complex backgrounds not removed correctly",
+        quickCheck: "Try manual refinement tools; not always an outage",
+      },
+      {
+        pattern: "API rate limits",
+        scope: "local",
+        signal: "429 errors on high-volume API usage",
+        quickCheck: "Check API plan limits; implement exponential backoff",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Photoroom is degraded",
+        alternative:
+          "Remove.bg (background removal), Mokker AI, or Canva can reduce downtime",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  capcut: {
+    slug: "capcut",
+    providerSummary:
+      "ByteDance's video editor with AI features (auto-captions, background removal, AI effects, text-to-video). Massive mobile user base.",
+    docsUrl: "https://www.capcut.com/help",
+    pricingUrl: "https://www.capcut.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "capcut.com", description: "Web editor", criticality: "critical" },
+      { name: "Mobile Apps", description: "iOS and Android apps", criticality: "critical" },
+      { name: "Desktop App", description: "Mac and Windows desktop app", criticality: "high" },
+      { name: "AI Features Backend", description: "Auto-caption, background removal, effects", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Export failures on large projects",
+        scope: "global",
+        signal: "Export hangs or produces corrupted files",
+        quickCheck: "Try lower resolution export first; check render server status",
+      },
+      {
+        pattern: "AI caption sync issues",
+        scope: "global",
+        signal: "Auto-captions out of sync with audio",
+        quickCheck: "Regenerate captions; check AI feature backend status",
+      },
+      {
+        pattern: "Cloud save delays",
+        scope: "global",
+        signal: "Projects not saving or syncing",
+        quickCheck: "Save locally; check cloud sync status",
+      },
+      {
+        pattern: "Mobile app crashes",
+        scope: "local",
+        signal: "App crashes on specific devices or large projects",
+        quickCheck: "Update app; clear cache; try web editor instead",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "CapCut is degraded",
+        alternative:
+          "Descript, Canva Video, or InShot can reduce downtime for video editing",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "aws-bedrock": {
+    slug: "aws-bedrock",
+    providerSummary:
+      "AWS managed AI service. Access Claude, Llama, Mistral, Stable Diffusion, etc. via unified API on AWS infrastructure.",
+    officialStatusUrl: "https://health.aws.amazon.com/health/status",
+    docsUrl: "https://docs.aws.amazon.com/bedrock",
+    pricingUrl: "https://aws.amazon.com/bedrock/pricing/",
+    communityLinks: [
+      { type: "github", url: "https://github.com/aws-samples/amazon-bedrock-samples", label: "aws-samples/amazon-bedrock-samples", verified: false },
+      { type: "reddit", url: "https://reddit.com/r/aws", label: "r/aws", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "Bedrock API", description: "Model invocation API (per-region)", criticality: "critical" },
+      { name: "Bedrock Console", description: "AWS management console", criticality: "high" },
+      { name: "Knowledge Bases", description: "Bedrock Knowledge Bases RAG service", criticality: "high" },
+      { name: "Agents", description: "Bedrock Agents service", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Region-specific availability issues",
+        scope: "partial",
+        signal: "Failures in one AWS region while others work",
+        quickCheck: "Test us-west-2 vs us-east-1; check AWS Health Dashboard per-region",
+      },
+      {
+        pattern: "Model invocation throttling",
+        scope: "local",
+        signal: "ThrottlingException on API calls",
+        quickCheck: "Check service quotas in AWS console; implement exponential backoff",
+      },
+      {
+        pattern: "Knowledge Base indexing delays",
+        scope: "global",
+        signal: "New documents not appearing in KB queries",
+        quickCheck: "Check sync job status in Bedrock console",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Bedrock is degraded in one region",
+        alternative:
+          "Try another AWS region — low cost; if Bedrock is fully down, direct Anthropic API or Google Vertex AI as fallback",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Bedrock is regional — an us-east-1 outage doesn't mean us-west-2 is down. Always check per-region health.",
+      "Claude on Bedrock is a different infrastructure from the direct Anthropic API.",
+    ],
+  },
+
+  "azure-openai": {
+    slug: "azure-openai",
+    providerSummary:
+      "Microsoft's managed OpenAI models on Azure. Enterprise SLAs, data residency, private endpoints. Separate infrastructure from direct OpenAI.",
+    officialStatusUrl: "https://azure.status.microsoft/en-us/status",
+    docsUrl: "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
+    pricingUrl: "https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "Azure OpenAI API", description: "Model inference API (per-region)", criticality: "critical" },
+      { name: "Azure OpenAI Studio", description: "Studio and playground", criticality: "high" },
+      { name: "PTU Endpoints", description: "Provisioned throughput unit endpoints", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Regional capacity exhaustion",
+        scope: "partial",
+        signal: "Capacity errors in specific Azure region",
+        quickCheck: "Switch to another region; check Azure Service Health per-region",
+      },
+      {
+        pattern: "PTU provisioning delays",
+        scope: "local",
+        signal: "Provisioned capacity not available after purchase",
+        quickCheck: "Contact Azure support; PTU provisioning can take time",
+      },
+      {
+        pattern: "Content filter false positives",
+        scope: "global",
+        signal: "Legitimate requests rejected by content filter",
+        quickCheck: "Adjust content filter settings in Azure OpenAI Studio",
+      },
+      {
+        pattern: "Deployment quota limits",
+        scope: "local",
+        signal: "Cannot deploy new model version due to quota",
+        quickCheck: "Request quota increase in Azure portal",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Azure OpenAI is degraded",
+        alternative:
+          "Direct OpenAI API can reduce downtime with a base URL swap; Anthropic API or Google Gemini for alternate models",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Azure OpenAI is the key fallback for direct OpenAI users and vice versa — most production teams should have both provisioned.",
+      "Regional — check specific region health before declaring a global outage.",
+    ],
+  },
+
+  "google-vertex": {
+    slug: "google-vertex",
+    providerSummary:
+      "Google Cloud's enterprise AI platform. Access Gemini, Claude, Llama, custom models. MLOps, RAG, fine-tuning.",
+    officialStatusUrl: "https://status.cloud.google.com",
+    docsUrl: "https://cloud.google.com/vertex-ai/docs",
+    pricingUrl: "https://cloud.google.com/vertex-ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "Vertex AI API", description: "Model inference and prediction API", criticality: "critical" },
+      { name: "Model Garden", description: "Model catalog and deployment", criticality: "high" },
+      { name: "Vertex AI Search", description: "Managed RAG and search service", criticality: "high" },
+      { name: "Online Prediction Endpoints", description: "Custom model serving", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Quota exhaustion",
+        scope: "local",
+        signal: "RESOURCE_EXHAUSTED errors on API calls",
+        quickCheck: "Check quotas in GCP console; request increase",
+      },
+      {
+        pattern: "Specific model deployment delays",
+        scope: "partial",
+        signal: "New model versions slow to become available",
+        quickCheck: "Check Vertex Model Garden for deployment status",
+      },
+      {
+        pattern: "Regional outages",
+        scope: "partial",
+        signal: "Failures in one GCP region",
+        quickCheck: "Check GCP status per-region; try us-central1 as fallback",
+      },
+      {
+        pattern: "Vertex AI Search index build failures",
+        scope: "global",
+        signal: "Index updates fail or don't complete",
+        quickCheck: "Check index sync status in Vertex AI console",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Vertex AI is degraded",
+        alternative:
+          "Google AI Studio (different infra) can reduce downtime for Gemini; AWS Bedrock for managed model alternatives",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Vertex AI and AI Studio are separate infrastructures — Vertex can be down while AI Studio works.",
+      "Vertex also hosts Claude via Anthropic partnership — check both Vertex and Anthropic status for Claude on Vertex.",
+    ],
+  },
+
+  "google-ai-studio": {
+    slug: "google-ai-studio",
+    providerSummary:
+      "Free developer access to Gemini models. Prototyping, API key generation, prompt testing.",
+    officialStatusUrl: "https://status.cloud.google.com",
+    docsUrl: "https://ai.google.dev",
+    pricingUrl: "https://ai.google.dev/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "aistudio.google.com", description: "Web interface and prompt editor", criticality: "critical" },
+      { name: "Gemini API (AI Studio keys)", description: "API access via AI Studio keys", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Rate limits on free tier",
+        scope: "local",
+        signal: "429 errors after exceeding requests per minute",
+        quickCheck: "Implement exponential backoff; upgrade to paid tier for higher limits",
+      },
+      {
+        pattern: "Quota errors",
+        scope: "local",
+        signal: "Daily or monthly quota exhausted",
+        quickCheck: "Check quota usage in Google AI Studio dashboard",
+      },
+      {
+        pattern: "Model-specific unavailability",
+        scope: "partial",
+        signal: "One Gemini model fails while others work",
+        quickCheck: "Try Gemini Flash instead of Pro or vice versa",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Google AI Studio is degraded",
+        alternative:
+          "Vertex AI (enterprise path) can reduce downtime for Gemini; OpenAI or Anthropic API as model alternative",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "cloudflare-ai": {
+    slug: "cloudflare-ai",
+    providerSummary:
+      "Edge AI inference on Cloudflare Workers. Run open models at the edge (Llama, Mistral, Whisper, SD). Also AI Gateway for routing and caching.",
+    officialStatusUrl: "https://www.cloudflarestatus.com",
+    docsUrl: "https://developers.cloudflare.com/workers-ai/",
+    pricingUrl: "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "Workers AI API", description: "Edge inference API", criticality: "critical" },
+      { name: "AI Gateway", description: "LLM routing and caching layer", criticality: "high" },
+      { name: "Vectorize", description: "Edge vector database", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Edge location-specific availability",
+        scope: "partial",
+        signal: "Failures in specific Cloudflare PoPs",
+        quickCheck: "Test from different geographic locations; check Cloudflare status",
+      },
+      {
+        pattern: "Model cold start",
+        scope: "local",
+        signal: "First request after idle period is very slow",
+        quickCheck: "Expected behavior — retry; use keep-warm patterns in production",
+      },
+      {
+        pattern: "AI Gateway routing errors",
+        scope: "global",
+        signal: "Requests fail to route through AI Gateway",
+        quickCheck: "Test direct provider endpoint to isolate Gateway vs. model issue",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Cloudflare AI is degraded",
+        alternative:
+          "Groq or Together AI for inference; Vercel AI SDK as an alternative routing layer",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  langchain: {
+    slug: "langchain",
+    providerSummary:
+      "Most popular AI application framework. Chains, agents, RAG, tool use. Python and TypeScript.",
+    docsUrl: "https://python.langchain.com/docs/",
+    communityLinks: [
+      { type: "github", url: "https://github.com/langchain-ai/langchain", label: "langchain-ai/langchain", verified: true },
+      { type: "discord", url: "https://discord.gg/langchain", label: "Discord", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "PyPI / npm Package", description: "Package registry availability", criticality: "critical" },
+      { name: "LangChain Hub", description: "Prompt and chain sharing hub", criticality: "medium" },
+      { name: "Documentation Site", description: "python.langchain.com", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Breaking changes between versions",
+        scope: "global",
+        signal: "Imports fail after pip/npm upgrade",
+        quickCheck: "Pin to a specific version; check CHANGELOG for breaking changes",
+      },
+      {
+        pattern: "Dependency conflicts",
+        scope: "local",
+        signal: "Installation fails due to conflicting transitive deps",
+        quickCheck: "Use a fresh virtual environment; check GitHub issues for the version",
+      },
+      {
+        pattern: "LangChain Hub fetch failures",
+        scope: "global",
+        signal: "hub.pull() fails or returns stale prompts",
+        quickCheck: "Test direct API call without Hub; check Hub status",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "LangChain package is broken",
+        alternative:
+          "LlamaIndex is an alternative RAG framework at medium switching cost; direct Anthropic/OpenAI SDK calls bypass the framework at low cost",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "LangChain is a library, not a hosted service — 'down' usually means PyPI/npm issues or breaking API changes, not a server outage.",
+    ],
+  },
+
+  langsmith: {
+    slug: "langsmith",
+    providerSummary:
+      "LangChain's observability and evaluation platform. Trace LLM calls, run evals, monitor prod.",
+    officialStatusUrl: "https://status.smith.langchain.com",
+    docsUrl: "https://docs.smith.langchain.com",
+    pricingUrl: "https://www.langchain.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "smith.langchain.com", description: "Web dashboard", criticality: "critical" },
+      { name: "Tracing API", description: "LLM call ingestion endpoint", criticality: "critical" },
+      { name: "Eval Runner", description: "Dataset evaluation pipeline", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Tracing ingestion lag",
+        scope: "global",
+        signal: "Traces appear delayed or missing in dashboard",
+        quickCheck: "Check status.smith.langchain.com for ingestion pipeline health",
+      },
+      {
+        pattern: "Eval timeout on large datasets",
+        scope: "global",
+        signal: "Evaluation runs time out before completing",
+        quickCheck: "Run evals on smaller dataset splits; check eval runner status",
+      },
+      {
+        pattern: "Dashboard loading delays",
+        scope: "global",
+        signal: "Dashboard slow to load or traces not rendering",
+        quickCheck: "Hard refresh; filter to smaller time range to reduce data load",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "LangSmith is degraded",
+        alternative:
+          "Helicone, Braintrust, or Arize Phoenix can reduce downtime for LLM observability",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "continue-dev": {
+    slug: "continue-dev",
+    providerSummary:
+      "Open-source AI coding assistant for VS Code and JetBrains. Connects to any model (local Ollama, Claude, GPT, etc.).",
+    docsUrl: "https://docs.continue.dev",
+    communityLinks: [
+      { type: "github", url: "https://github.com/continuedev/continue", label: "continuedev/continue", verified: true },
+      { type: "discord", url: "https://discord.gg/continue", label: "Discord", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "VS Code Extension", description: "Continue VS Code extension", criticality: "critical" },
+      { name: "JetBrains Plugin", description: "Continue JetBrains plugin", criticality: "high" },
+      { name: "Model Routing Backend", description: "Hosted features routing (if used)", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Extension version conflicts",
+        scope: "local",
+        signal: "Extension fails after VS Code or Continue update",
+        quickCheck: "Check GitHub releases for known issues; try rolling back extension version",
+      },
+      {
+        pattern: "Model provider auth issues",
+        scope: "local",
+        signal: "Requests to configured model fail with auth errors",
+        quickCheck: "Verify API key in Continue config; test key directly with provider",
+      },
+      {
+        pattern: "Config file parsing errors",
+        scope: "local",
+        signal: "Continue fails to load with config error",
+        quickCheck: "Validate config.json against the schema in docs",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Continue.dev extension is broken",
+        alternative:
+          "Cursor, GitHub Copilot, or Codeium can reduce downtime for AI-assisted coding",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Continue routes to user-configured models — most 'down' reports are provider-side (Ollama, OpenAI, etc.), not Continue itself.",
+    ],
+  },
+
+  cline: {
+    slug: "cline",
+    providerSummary:
+      "Autonomous AI coding agent as a VS Code extension. Executes multi-step tasks, reads/writes files, runs terminal commands.",
+    docsUrl: "https://github.com/cline/cline",
+    communityLinks: [
+      { type: "github", url: "https://github.com/cline/cline", label: "cline/cline", verified: true },
+    ],
+    monitoredSurfaces: [
+      { name: "VS Code Extension", description: "Cline VS Code extension", criticality: "critical" },
+      { name: "Upstream Model Providers", description: "Anthropic, OpenAI, etc. (user-configured)", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Extension update breaking changes",
+        scope: "global",
+        signal: "Cline stops working after an extension update",
+        quickCheck: "Check GitHub releases; roll back to previous version if needed",
+      },
+      {
+        pattern: "Upstream provider rate limits",
+        scope: "local",
+        signal: "Tasks fail with rate limit errors from Anthropic or OpenAI",
+        quickCheck: "Check your API usage in the provider dashboard; reduce task frequency",
+      },
+      {
+        pattern: "Context window exceeded on large codebases",
+        scope: "local",
+        signal: "Task fails with context length error",
+        quickCheck: "Reduce the scope of files included; use .clineignore to exclude irrelevant files",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Cline is degraded",
+        alternative:
+          "Claude Code CLI, Cursor Composer, or Aider can reduce downtime for autonomous coding",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Cline uses your API keys — costs come from your Anthropic/OpenAI account, not Cline. 'Cline is slow' usually means the upstream model is slow.",
+    ],
+  },
+
+  "augment-code": {
+    slug: "augment-code",
+    providerSummary:
+      "AI coding assistant with deep codebase understanding. Focuses on large enterprise codebases. VS Code and JetBrains.",
+    docsUrl: "https://docs.augmentcode.com",
+    pricingUrl: "https://www.augmentcode.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "augmentcode.com", description: "Web dashboard", criticality: "high" },
+      { name: "IDE Extension", description: "VS Code and JetBrains extension", criticality: "critical" },
+      { name: "Codebase Indexing Backend", description: "Codebase understanding engine", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Codebase indexing delays on large repos",
+        scope: "local",
+        signal: "Context-aware suggestions missing or stale",
+        quickCheck: "Trigger manual re-index from extension settings",
+      },
+      {
+        pattern: "Auth/license issues",
+        scope: "local",
+        signal: "Extension prompts for login or license validation fails",
+        quickCheck: "Re-authenticate from extension; check license status in dashboard",
+      },
+      {
+        pattern: "IDE extension conflicts",
+        scope: "local",
+        signal: "Extension crashes or causes IDE instability",
+        quickCheck: "Disable other AI extensions; check Augment GitHub issues",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Augment Code is degraded",
+        alternative:
+          "Cursor, GitHub Copilot, or Sourcegraph Cody can reduce downtime for AI coding assistance",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "sourcegraph-cody": {
+    slug: "sourcegraph-cody",
+    providerSummary:
+      "AI coding assistant with Sourcegraph code intelligence. Code search + AI chat + autocomplete.",
+    officialStatusUrl: "https://sourcegraphstatus.com",
+    docsUrl: "https://docs.sourcegraph.com/cody",
+    pricingUrl: "https://sourcegraph.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "sourcegraph.com", description: "Web interface", criticality: "critical" },
+      { name: "Cody IDE Extensions", description: "VS Code and JetBrains extensions", criticality: "critical" },
+      { name: "Code Search API", description: "Sourcegraph code search backend", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Code index staleness",
+        scope: "global",
+        signal: "Search results outdated or missing recent commits",
+        quickCheck: "Trigger re-index from Sourcegraph admin; check indexing status",
+      },
+      {
+        pattern: "Enterprise instance sync delays",
+        scope: "local",
+        signal: "Self-hosted instance behind on code updates",
+        quickCheck: "Check repository sync status in site admin",
+      },
+      {
+        pattern: "Model backend issues",
+        scope: "global",
+        signal: "Cody chat fails (routes to Claude or GPT)",
+        quickCheck: "Check sourcegraphstatus.com; verify model provider status",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Sourcegraph Cody is degraded",
+        alternative:
+          "GitHub Copilot Chat, Cursor, or Continue.dev can reduce downtime for AI coding",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  aider: {
+    slug: "aider",
+    providerSummary:
+      "CLI-based AI pair programmer. Open source. Works with any model (Claude, GPT, local). Git-native workflow.",
+    docsUrl: "https://aider.chat",
+    communityLinks: [
+      { type: "github", url: "https://github.com/Aider-AI/aider", label: "Aider-AI/aider", verified: true },
+      { type: "discord", url: "https://discord.gg/aider", label: "Discord", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "PyPI Package", description: "aider-chat package on PyPI", criticality: "critical" },
+      { name: "Upstream Model Providers", description: "Anthropic, OpenAI, Ollama, etc.", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Breaking changes between versions",
+        scope: "global",
+        signal: "Aider behavior changes unexpectedly after update",
+        quickCheck: "Pin version with pip install aider-chat==x.y.z; check CHANGELOG",
+      },
+      {
+        pattern: "Upstream provider rate limits",
+        scope: "local",
+        signal: "API calls fail with rate limit errors mid-session",
+        quickCheck: "Check API usage in provider dashboard; use --model to switch providers",
+      },
+      {
+        pattern: "Git repo parsing issues on complex histories",
+        scope: "local",
+        signal: "Aider fails to parse repo context correctly",
+        quickCheck: "Use --no-git flag to isolate; check GitHub issues for the repo structure",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Aider is broken",
+        alternative:
+          "Claude Code CLI or Cline are alternatives for CLI/autonomous coding",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "alibaba-qwen": {
+    slug: "alibaba-qwen",
+    providerSummary:
+      "Alibaba Cloud's open-weight LLM family. Qwen 2.5 is among the best open models. Strong multilingual including Chinese.",
+    docsUrl: "https://qwen.readthedocs.io",
+    communityLinks: [
+      { type: "github", url: "https://github.com/QwenLM/Qwen2.5", label: "QwenLM/Qwen2.5", verified: true },
+    ],
+    monitoredSurfaces: [
+      { name: "DashScope API", description: "Alibaba Cloud hosted inference", criticality: "critical" },
+      { name: "HuggingFace Models", description: "Qwen model downloads on HuggingFace", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "DashScope regional availability",
+        scope: "partial",
+        signal: "Hosted inference unavailable in certain regions",
+        quickCheck: "Check Alibaba Cloud status; try self-hosting via Ollama",
+      },
+      {
+        pattern: "Model download rate limits on HuggingFace",
+        scope: "global",
+        signal: "Slow or failed model downloads from HF",
+        quickCheck: "Use HuggingFace mirror or direct Modelscope download",
+      },
+      {
+        pattern: "Version compatibility issues",
+        scope: "local",
+        signal: "Inference framework incompatible with model version",
+        quickCheck: "Check model card for compatible transformers/vllm versions",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Qwen API (DashScope) is degraded",
+        alternative:
+          "Self-host via Ollama, or use Qwen on Together AI or Groq",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "baidu-ernie": {
+    slug: "baidu-ernie",
+    providerSummary:
+      "Baidu's LLM family (ERNIE Bot). Strong in Chinese language tasks. Available via Baidu AI Cloud.",
+    officialStatusUrl: "https://cloud.baidu.com/status",
+    docsUrl: "https://cloud.baidu.com/doc/WENXINWORKSHOP",
+    pricingUrl: "https://cloud.baidu.com/product/wenxinworkshop",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "yiyan.baidu.com", description: "Consumer chat interface", criticality: "critical" },
+      { name: "Baidu AI Cloud API", description: "ERNIE API for developers", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Regional access limitations",
+        scope: "partial",
+        signal: "Service primarily available in China; international access may be limited",
+        quickCheck: "Verify geo-restrictions; check Baidu AI Cloud status",
+      },
+      {
+        pattern: "Capacity issues during peak Chinese hours",
+        scope: "global",
+        signal: "Slow responses during UTC+8 business hours",
+        quickCheck: "Retry off-peak; use API with retry logic",
+      },
+      {
+        pattern: "Cross-border latency",
+        scope: "local",
+        signal: "High latency for international users",
+        quickCheck: "Expected for China-hosted service; use CDN-accelerated endpoint if available",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Baidu ERNIE is degraded",
+        alternative:
+          "DeepSeek, Qwen, or Tencent Hunyuan are Chinese-native alternatives",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "zhipu-chatglm": {
+    slug: "zhipu-chatglm",
+    providerSummary:
+      "Zhipu AI's open-weight LLM (GLM-4 family). Strong coding and reasoning. Available via API and self-hosted.",
+    docsUrl: "https://open.bigmodel.cn/dev/api",
+    pricingUrl: "https://open.bigmodel.cn/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "chatglm.cn", description: "Consumer web interface", criticality: "critical" },
+      { name: "Zhipu API", description: "open.bigmodel.cn API endpoint", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "API rate limits",
+        scope: "local",
+        signal: "Rate limit errors on high-frequency API calls",
+        quickCheck: "Check quota in Zhipu developer console; implement backoff",
+      },
+      {
+        pattern: "Regional access variability",
+        scope: "partial",
+        signal: "Access differs by country or network path",
+        quickCheck: "Test from different regions; may require VPN for international access",
+      },
+      {
+        pattern: "Model version transitions",
+        scope: "global",
+        signal: "API behavior changes between GLM versions",
+        quickCheck: "Pin specific model version in API calls; check changelog",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "ChatGLM is degraded",
+        alternative:
+          "DeepSeek, Qwen, or Moonshot Kimi are comparable Chinese alternatives",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  stepfun: {
+    slug: "stepfun",
+    providerSummary:
+      "Chinese AI lab focused on multimodal and video generation (Step-1V, Step-Video). Rising player in AI video space.",
+    docsUrl: "https://platform.stepfun.com/docs",
+    pricingUrl: "https://platform.stepfun.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "stepfun.com", description: "Web interface", criticality: "critical" },
+      { name: "Step API", description: "Developer API endpoint", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Queue delays on video generation",
+        scope: "global",
+        signal: "Video jobs wait much longer than advertised",
+        quickCheck: "Check job status in platform; retry or reduce video length",
+      },
+      {
+        pattern: "Regional access limitations",
+        scope: "partial",
+        signal: "Service primarily China-accessible",
+        quickCheck: "Verify geo-restrictions; check StepFun platform announcements",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "StepFun video is degraded",
+        alternative:
+          "Kling AI, Runway, or Hailuo can reduce downtime for AI video generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "qwen-chat": {
+    slug: "qwen-chat",
+    providerSummary:
+      "Alibaba's consumer chat interface for Qwen models. Web-based, free tier available.",
+    docsUrl: "https://qwen.readthedocs.io",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "qwen.ai / tongyi.aliyun.com", description: "Consumer web chat", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Capacity during peak Chinese hours",
+        scope: "global",
+        signal: "Slow responses during UTC+8 business hours",
+        quickCheck: "Retry off-peak; use DashScope API for higher reliability",
+      },
+      {
+        pattern: "Regional access variability",
+        scope: "partial",
+        signal: "Inconsistent access from outside China",
+        quickCheck: "Test from different regions; may require VPN for some areas",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Qwen Chat is degraded",
+        alternative:
+          "Self-host Qwen via Ollama, or use the DashScope API directly",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  pixverse: {
+    slug: "pixverse",
+    providerSummary:
+      "Chinese AI video platform. Text/image-to-video generation. Featured in a16z top 100 Gen AI consumer apps.",
+    docsUrl: "https://www.pixverse.ai/help",
+    pricingUrl: "https://www.pixverse.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "pixverse.ai", description: "Web interface", criticality: "critical" },
+      { name: "Generation Queue", description: "Video generation backend", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generation queue delays",
+        scope: "global",
+        signal: "Jobs wait significantly longer than expected",
+        quickCheck: "Check queue position in the platform; retry during off-peak",
+      },
+      {
+        pattern: "Content filter rejections",
+        scope: "local",
+        signal: "Prompt rejected by content moderation",
+        quickCheck: "Rephrase prompt; check content policy guidelines",
+      },
+      {
+        pattern: "Regional access limitations",
+        scope: "partial",
+        signal: "Inconsistent access from certain regions",
+        quickCheck: "Test from different network; may have geo-restrictions",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "PixVerse is degraded",
+        alternative:
+          "Kling AI, Runway, or Pika can reduce downtime for AI video generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  haiper: {
+    slug: "haiper",
+    providerSummary:
+      "Video AI from former DeepMind researchers. High quality, fast generation.",
+    docsUrl: "https://haiper.ai/docs",
+    pricingUrl: "https://haiper.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "haiper.ai", description: "Web interface", criticality: "critical" },
+      { name: "Generation Queue", description: "Video generation pipeline", criticality: "critical" },
+      { name: "API", description: "Developer API", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generation queue during peak hours",
+        scope: "global",
+        signal: "Jobs wait unusually long",
+        quickCheck: "Retry off-peak; check Haiper announcements for capacity issues",
+      },
+      {
+        pattern: "Credit depletion",
+        scope: "local",
+        signal: "User runs out of generation credits",
+        quickCheck: "Check credit balance; upgrade plan or wait for reset",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Haiper is degraded",
+        alternative:
+          "Runway, Kling, or Pika can reduce downtime for AI video generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  veed: {
+    slug: "veed",
+    providerSummary:
+      "Online video editor with AI features (auto-subtitles, background removal, AI avatars, eye contact correction).",
+    officialStatusUrl: "https://status.veed.io",
+    docsUrl: "https://help.veed.io",
+    pricingUrl: "https://www.veed.io/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "veed.io", description: "Web editor", criticality: "critical" },
+      { name: "Render Pipeline", description: "Video rendering and export", criticality: "critical" },
+      { name: "Subtitle Engine", description: "Auto-subtitle generation", criticality: "high" },
+      { name: "AI Feature Backends", description: "Avatar, eye contact, background removal", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Render timeouts on long videos",
+        scope: "global",
+        signal: "Export hangs or fails on videos over 30 minutes",
+        quickCheck: "Check status.veed.io; export in shorter segments",
+      },
+      {
+        pattern: "Subtitle accuracy issues",
+        scope: "global",
+        signal: "Auto-generated subtitles are inaccurate",
+        quickCheck: "Not always an outage — try re-generating; use manual correction",
+      },
+      {
+        pattern: "Export failures",
+        scope: "global",
+        signal: "Export starts but produces corrupted or empty file",
+        quickCheck: "Check render pipeline status; retry with lower resolution",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "VEED is degraded",
+        alternative:
+          "Descript, Kapwing, or CapCut can reduce downtime for video editing",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  recraft: {
+    slug: "recraft",
+    providerSummary:
+      "AI design tool generating both vector and raster images. Strong for brand-consistent design output.",
+    docsUrl: "https://www.recraft.ai/docs",
+    pricingUrl: "https://www.recraft.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "recraft.ai", description: "Web design tool", criticality: "critical" },
+      { name: "Generation API", description: "Image generation API", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generation queue delays",
+        scope: "global",
+        signal: "Image generation takes much longer than usual",
+        quickCheck: "Retry; switch to raster mode if vector mode is slower",
+      },
+      {
+        pattern: "Vector export issues",
+        scope: "partial",
+        signal: "SVG export fails or is malformed",
+        quickCheck: "Export as PNG first; try vector export again after refresh",
+      },
+      {
+        pattern: "Style consistency on complex prompts",
+        scope: "local",
+        signal: "Style transfer produces inconsistent results",
+        quickCheck: "Simplify prompt; reapply brand style settings",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Recraft is degraded",
+        alternative:
+          "Figma AI, Canva AI, or Ideogram can reduce downtime for design workflows",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "freepik-ai": {
+    slug: "freepik-ai",
+    providerSummary:
+      "Freepik's AI image generator and design resource platform. Integrated AI tools for stock assets.",
+    docsUrl: "https://www.freepik.com/ai/help",
+    pricingUrl: "https://www.freepik.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "freepik.com", description: "Web platform", criticality: "critical" },
+      { name: "AI Image Generator", description: "Freepik AI generation tool", criticality: "critical" },
+      { name: "Pikaso", description: "Real-time generative canvas", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generation quota on free tier",
+        scope: "local",
+        signal: "Daily generation limit reached",
+        quickCheck: "Check quota in account; upgrade plan or wait for daily reset",
+      },
+      {
+        pattern: "Pikaso real-time canvas lag",
+        scope: "global",
+        signal: "Real-time generation slow or unresponsive",
+        quickCheck: "Use standard generation mode; check Freepik status",
+      },
+      {
+        pattern: "Download CDN issues",
+        scope: "global",
+        signal: "Asset downloads slow or failing",
+        quickCheck: "Retry download; check for CDN issues in status page",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Freepik AI is degraded",
+        alternative:
+          "Leonardo AI, Playground AI, or Canva AI can reduce downtime for AI image generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "adobe-firefly": {
+    slug: "adobe-firefly",
+    providerSummary:
+      "Adobe's AI image generator. Integrated in Photoshop, Illustrator, Express. Commercially safe (trained on licensed content).",
+    officialStatusUrl: "https://status.adobe.com",
+    docsUrl: "https://helpx.adobe.com/firefly",
+    pricingUrl: "https://www.adobe.com/products/firefly/plans.html",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "firefly.adobe.com", description: "Firefly web app", criticality: "critical" },
+      { name: "Firefly in Photoshop/Illustrator", description: "Creative Cloud integration", criticality: "critical" },
+      { name: "Firefly API", description: "Developer API for Firefly generation", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Credit depletion",
+        scope: "local",
+        signal: "Generative credits exhausted for the billing period",
+        quickCheck: "Check credit balance in Adobe account; purchase additional credits",
+      },
+      {
+        pattern: "Content filter rejections",
+        scope: "local",
+        signal: "Prompt rejected by Adobe content policy",
+        quickCheck: "Rephrase prompt; review Adobe Firefly content guidelines",
+      },
+      {
+        pattern: "Creative Cloud sync issues",
+        scope: "global",
+        signal: "Firefly results not syncing to CC Libraries",
+        quickCheck: "Check Creative Cloud status; force CC sync from desktop app",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Adobe Firefly is degraded",
+        alternative:
+          "Midjourney (web), Ideogram, or Stability AI can reduce downtime for image generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Firefly's commercial safety (trained on licensed content) is its differentiator — alternatives may not offer the same IP indemnification for enterprise use.",
+    ],
+  },
+
+  "figma-ai": {
+    slug: "figma-ai",
+    providerSummary:
+      "Figma's native AI features. Auto-layout suggestions, component generation, text editing, prototype generation.",
+    officialStatusUrl: "https://status.figma.com",
+    docsUrl: "https://help.figma.com/hc/en-us/categories/360002051613-AI",
+    pricingUrl: "https://www.figma.com/pricing/",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "figma.com", description: "Figma web and desktop editor", criticality: "critical" },
+      { name: "AI Features Backend", description: "Figma AI generation and suggestions", criticality: "high" },
+      { name: "FigJam AI", description: "FigJam AI features (separate from Design)", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Figma platform outages cascade to AI features",
+        scope: "global",
+        signal: "Figma core editor down — AI features also unavailable",
+        quickCheck: "Check status.figma.com; editor outages affect AI features too",
+      },
+      {
+        pattern: "AI feature-specific failures while editor works",
+        scope: "partial",
+        signal: "Figma loads but AI generation/suggestions fail",
+        quickCheck: "Check status for AI features specifically; editor still usable without AI",
+      },
+      {
+        pattern: "FigJam AI separate from Design AI",
+        scope: "partial",
+        signal: "FigJam AI down while Design AI works or vice versa",
+        quickCheck: "Test both products separately; check status breakdown by product",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Figma AI is degraded",
+        alternative:
+          "Figma core editor still works without AI; Canva AI or Framer AI for specific workflows",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "play-ht": {
+    slug: "play-ht",
+    providerSummary:
+      "Voice AI platform. Text-to-speech, voice cloning, streaming TTS API.",
+    officialStatusUrl: "https://status.play.ht",
+    docsUrl: "https://docs.play.ht",
+    pricingUrl: "https://play.ht/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "play.ht", description: "Web interface", criticality: "critical" },
+      { name: "Streaming TTS API", description: "Real-time text-to-speech endpoint", criticality: "critical" },
+      { name: "Voice Cloning Backend", description: "Custom voice creation", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Voice cloning queue delays",
+        scope: "global",
+        signal: "Custom voice training takes much longer than expected",
+        quickCheck: "Check status.play.ht; use a standard voice while custom voice processes",
+      },
+      {
+        pattern: "TTS latency spikes",
+        scope: "global",
+        signal: "Streaming TTS response time degrades significantly",
+        quickCheck: "Check API status; try a different voice or model",
+      },
+      {
+        pattern: "Specific voice unavailability",
+        scope: "partial",
+        signal: "One voice fails while others work",
+        quickCheck: "Switch to a different voice; check if specific voice is deprecated",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Play.ht is degraded",
+        alternative:
+          "ElevenLabs, Cartesia (low-latency), or OpenAI TTS can reduce downtime for voice generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "cartesia-ai": {
+    slug: "cartesia-ai",
+    providerSummary:
+      "Ultra-low latency voice AI. Sub-100ms streaming TTS. Strong for real-time conversational AI applications.",
+    docsUrl: "https://docs.cartesia.ai",
+    pricingUrl: "https://cartesia.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "api.cartesia.ai", description: "Streaming TTS API endpoint", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Latency spikes",
+        scope: "global",
+        signal: "p95 latency exceeds 200ms (defeats the core value prop)",
+        quickCheck: "Monitor p50/p95 latency via API metrics; check status page",
+      },
+      {
+        pattern: "Capacity issues during peak",
+        scope: "global",
+        signal: "Increased queuing or errors under load",
+        quickCheck: "Check Cartesia status; implement retry with backoff",
+      },
+      {
+        pattern: "Voice model availability",
+        scope: "partial",
+        signal: "Specific voice model unavailable",
+        quickCheck: "Switch to alternate voice model; check model list via API",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Cartesia AI is degraded",
+        alternative:
+          "ElevenLabs (slightly higher latency), Play.ht, or OpenAI TTS can reduce downtime",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Cartesia's value prop is sub-100ms latency — if p95 exceeds 200ms, it's a meaningful degradation even without hard errors.",
+    ],
+  },
+
+  jasper: {
+    slug: "jasper",
+    providerSummary:
+      "AI content platform for marketing teams. Blog posts, social media, ad copy, brand voice.",
+    officialStatusUrl: "https://status.jasper.ai",
+    docsUrl: "https://support.jasper.ai",
+    pricingUrl: "https://www.jasper.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "jasper.ai", description: "Web editor", criticality: "critical" },
+      { name: "Chrome Extension", description: "Jasper browser extension", criticality: "high" },
+      { name: "API", description: "Jasper content generation API", criticality: "high" },
+      { name: "Brand Voice Engine", description: "Brand voice training and application", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Upstream model failures",
+        scope: "global",
+        signal: "Jasper generation fails (uses OpenAI/Anthropic underneath)",
+        quickCheck: "Check status.jasper.ai; also check OpenAI and Anthropic status",
+      },
+      {
+        pattern: "Brand voice inconsistency",
+        scope: "local",
+        signal: "Generated content doesn't match trained brand voice",
+        quickCheck: "Retrain brand voice; may be a model update issue",
+      },
+      {
+        pattern: "Chrome extension sync issues",
+        scope: "local",
+        signal: "Extension not loading or out of sync",
+        quickCheck: "Reinstall extension; update to latest version",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Jasper is degraded",
+        alternative:
+          "Copy.ai, Writer.com, or ChatGPT can reduce downtime for content generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "copy-ai": {
+    slug: "copy-ai",
+    providerSummary:
+      "AI marketing content generator. Sales copy, email, social media, workflow automation.",
+    docsUrl: "https://www.copy.ai/support",
+    pricingUrl: "https://www.copy.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "copy.ai", description: "Web editor", criticality: "critical" },
+      { name: "Workflow Automation Backend", description: "Automated content workflow runner", criticality: "high" },
+      { name: "Chrome Extension", description: "Browser extension", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Workflow execution failures",
+        scope: "global",
+        signal: "Automated workflows fail or produce no output",
+        quickCheck: "Check Copy.ai status; re-run workflow manually",
+      },
+      {
+        pattern: "Upstream model issues",
+        scope: "global",
+        signal: "Generation fails due to underlying model outage",
+        quickCheck: "Check OpenAI/Anthropic status as Copy.ai routes to their models",
+      },
+      {
+        pattern: "Credit depletion",
+        scope: "local",
+        signal: "Word or generation credits exhausted",
+        quickCheck: "Check account credit balance; upgrade plan",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Copy.ai is degraded",
+        alternative:
+          "Jasper, ChatGPT, or Writer.com can reduce downtime for AI content generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  "arc-search": {
+    slug: "arc-search",
+    providerSummary:
+      "The Browser Company's AI-native browser and search. 'Browse for me' feature summarizes pages with AI.",
+    docsUrl: "https://resources.arc.net",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "arc.net", description: "Arc browser and web interface", criticality: "critical" },
+      { name: "Arc Search Mobile App", description: "iOS mobile search app", criticality: "critical" },
+      { name: "AI Browsing Backend", description: "Browse for me AI summarization", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "'Browse for me' failures",
+        scope: "global",
+        signal: "AI summarization fails or returns empty",
+        quickCheck: "Fall back to standard browser view; check Arc status",
+      },
+      {
+        pattern: "AI summary inaccuracies",
+        scope: "local",
+        signal: "Summary doesn't reflect page content",
+        quickCheck: "Not always an outage — view original page to verify",
+      },
+      {
+        pattern: "Extension compatibility issues",
+        scope: "local",
+        signal: "Arc extensions conflict with AI features",
+        quickCheck: "Disable extensions; test in clean Arc profile",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Arc Search AI is degraded",
+        alternative:
+          "Perplexity, Kagi, or Brave Search AI can reduce downtime for AI-powered search",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  kagi: {
+    slug: "kagi",
+    providerSummary:
+      "Premium ad-free search engine with AI features. Summarizer, FastGPT, Universal Summarizer.",
+    officialStatusUrl: "https://status.kagi.com",
+    docsUrl: "https://help.kagi.com",
+    pricingUrl: "https://kagi.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "kagi.com", description: "Web search interface", criticality: "critical" },
+      { name: "Search Backend", description: "Search index and ranking", criticality: "critical" },
+      { name: "AI Summarizer", description: "Kagi Summarizer and FastGPT", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Search index staleness",
+        scope: "global",
+        signal: "Search results missing recent content",
+        quickCheck: "Check status.kagi.com; use Google as temporary fallback",
+      },
+      {
+        pattern: "AI Summarizer timeouts",
+        scope: "global",
+        signal: "Summarizer hangs or fails to return results",
+        quickCheck: "Check AI features status; use search results without summary",
+      },
+      {
+        pattern: "Session/auth issues",
+        scope: "local",
+        signal: "Login or session unexpectedly expires",
+        quickCheck: "Clear cookies; re-authenticate with Kagi account",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Kagi is degraded",
+        alternative:
+          "Perplexity, DuckDuckGo, or Brave Search can reduce downtime for private search",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  chroma: {
+    slug: "chroma",
+    providerSummary:
+      "Open-source embedding database. Popular for RAG applications. Simple API, Python-first.",
+    docsUrl: "https://docs.trychroma.com",
+    communityLinks: [
+      { type: "github", url: "https://github.com/chroma-core/chroma", label: "chroma-core/chroma", verified: true },
+      { type: "discord", url: "https://discord.gg/MMeYNTmh3x", label: "Discord", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "Chroma Cloud", description: "Managed cloud instance", criticality: "critical" },
+      { name: "PyPI Package", description: "chromadb package on PyPI", criticality: "critical" },
+      { name: "Documentation Site", description: "docs.trychroma.com", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Local instance memory issues on large collections",
+        scope: "local",
+        signal: "Chroma crashes or OOM on large vector sets",
+        quickCheck: "Reduce batch size; increase system memory; use persistent client mode",
+      },
+      {
+        pattern: "Chroma Cloud scaling delays",
+        scope: "global",
+        signal: "Managed cloud instance slow during high load",
+        quickCheck: "Check Chroma status; implement retry logic",
+      },
+      {
+        pattern: "Version upgrade breaking changes",
+        scope: "global",
+        signal: "Behavior or API changes after pip upgrade",
+        quickCheck: "Pin version; check MIGRATION.md for upgrade guide",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Chroma is degraded",
+        alternative:
+          "Qdrant, Pinecone, or pgvector can reduce downtime for vector storage (data migration required)",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  milvus: {
+    slug: "milvus",
+    providerSummary:
+      "Open-source vector database. Managed cloud version via Zilliz. Strong at scale with billions of vectors.",
+    officialStatusUrl: "https://status.zilliz.com",
+    docsUrl: "https://milvus.io/docs",
+    pricingUrl: "https://zilliz.com/pricing",
+    communityLinks: [
+      { type: "github", url: "https://github.com/milvus-io/milvus", label: "milvus-io/milvus", verified: true },
+    ],
+    monitoredSurfaces: [
+      { name: "Zilliz Cloud", description: "Managed Milvus cloud service", criticality: "critical" },
+      { name: "Milvus Self-Hosted", description: "Open-source self-hosted deployment", criticality: "critical" },
+      { name: "Attu GUI", description: "Milvus management UI", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Zilliz Cloud cluster scaling issues",
+        scope: "global",
+        signal: "Cloud instance unavailable or slow during scale events",
+        quickCheck: "Check status.zilliz.com; contact Zilliz support for cluster issues",
+      },
+      {
+        pattern: "Self-hosted etcd dependency issues",
+        scope: "local",
+        signal: "Milvus fails to start or loses metadata",
+        quickCheck: "Check etcd health first — it's a critical Milvus dependency",
+      },
+      {
+        pattern: "Collection loading on restart",
+        scope: "local",
+        signal: "Collections need manual load after restart",
+        quickCheck: "Run collection.load() after restart; use auto-load in config",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Zilliz Cloud is degraded",
+        alternative:
+          "Self-host Milvus or switch to Qdrant/Pinecone (data migration required)",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Milvus self-hosted has etcd as a critical dependency — etcd issues often manifest as Milvus failures. Check etcd first.",
+    ],
+  },
+
+  llamaindex: {
+    slug: "llamaindex",
+    providerSummary:
+      "AI framework for RAG and data-connected applications. Indexes, retrieval, agents. Python and TypeScript.",
+    docsUrl: "https://docs.llamaindex.ai",
+    communityLinks: [
+      { type: "github", url: "https://github.com/run-llama/llama_index", label: "run-llama/llama_index", verified: true },
+      { type: "discord", url: "https://discord.gg/dGcwcsnxhU", label: "Discord", verified: false },
+    ],
+    monitoredSurfaces: [
+      { name: "PyPI / npm Package", description: "llama-index package on PyPI/npm", criticality: "critical" },
+      { name: "LlamaCloud", description: "Managed RAG pipeline service", criticality: "high" },
+      { name: "Documentation Site", description: "docs.llamaindex.ai", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Breaking changes between versions",
+        scope: "global",
+        signal: "Imports fail after pip/npm upgrade (similar to LangChain)",
+        quickCheck: "Pin version; check CHANGELOG for migration guides",
+      },
+      {
+        pattern: "LlamaCloud indexing delays",
+        scope: "global",
+        signal: "Managed pipeline slow to ingest new documents",
+        quickCheck: "Check LlamaCloud dashboard for pipeline status",
+      },
+      {
+        pattern: "Dependency conflicts",
+        scope: "local",
+        signal: "Installation fails with conflicting packages",
+        quickCheck: "Use fresh virtual environment; check GitHub issues",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "LlamaIndex is broken",
+        alternative:
+          "LangChain is the main alternative RAG framework at medium cost; direct Anthropic/OpenAI SDK calls bypass the framework at low cost",
+        switchingCost: "medium",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+
+  cerebras: {
+    slug: "cerebras",
+    providerSummary:
+      "Ultra-fast AI inference on custom wafer-scale chips. Hosts open models (Llama, etc.) with extremely low latency.",
+    docsUrl: "https://inference-docs.cerebras.ai",
+    pricingUrl: "https://cerebras.ai/inference",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "api.cerebras.ai", description: "OpenAI-compatible inference API", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Capacity-driven rate limits",
+        scope: "global",
+        signal: "429 errors during peak demand",
+        quickCheck: "Implement exponential backoff; check Cerebras status",
+      },
+      {
+        pattern: "Specific model availability",
+        scope: "partial",
+        signal: "One model fails while others work",
+        quickCheck: "Switch to available model; check model list via /v1/models",
+      },
+      {
+        pattern: "Beta feature instability",
+        scope: "partial",
+        signal: "Newer or preview features fail",
+        quickCheck: "Use stable model versions; check release notes for beta caveats",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Cerebras is degraded",
+        alternative:
+          "Groq (also ultra-fast), Together AI, or Fireworks AI can reduce downtime with an OpenAI-compatible API swap",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Cerebras API is OpenAI-compatible — switching to Groq or Together AI is a base_url swap.",
+    ],
+  },
+
+  "descript-video": {
+    slug: "descript-video",
+    providerSummary:
+      "Descript's video-specific features. Screen recording, AI editing, clip generation. Shares infrastructure with main Descript.",
+    officialStatusUrl: "https://status.descript.com",
+    docsUrl: "https://help.descript.com",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "Descript Video Editor", description: "Video editing and recording (shared with Descript)", criticality: "critical" },
+      { name: "Screen Recording Backend", description: "Descript screen recorder", criticality: "high" },
+      { name: "Clip Generation", description: "AI clip creation from long-form video", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Video export failures",
+        scope: "global",
+        signal: "Video export hangs or produces corrupted output",
+        quickCheck: "Check status.descript.com — shared with main Descript platform",
+      },
+      {
+        pattern: "Screen recording fails to upload",
+        scope: "global",
+        signal: "Local recording saved but cloud upload fails",
+        quickCheck: "Keep local recording; retry upload when service recovers",
+      },
+      {
+        pattern: "Clip generation errors",
+        scope: "global",
+        signal: "AI clip selection or highlight generation fails",
+        quickCheck: "Retry; manually select clips as fallback",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Descript Video is degraded",
+        alternative:
+          "Loom (screen recording), Kapwing (editing), or CapCut can reduce downtime for specific workflows",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [
+      "Descript and Descript Video share the same backend — check status.descript.com for both products.",
+    ],
+  },
 };
