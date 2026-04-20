@@ -1,4 +1,4 @@
-export type StatusKey = "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
+export type StatusKey = "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
 
 export const STATUS_CONFIG: Record<
   StatusKey,
@@ -10,6 +10,13 @@ export const STATUS_CONFIG: Record<
     border: "#bbf7d0",
     text: "#166534",
     label: "Operational",
+  },
+  REPORTED_ISSUES: {
+    dot: "#f59e0b",
+    bg: "#fffbeb",
+    border: "#fef3c7",
+    text: "#92400e",
+    label: "Reported Issues",
   },
   DEGRADED: {
     dot: "#ca8a04",

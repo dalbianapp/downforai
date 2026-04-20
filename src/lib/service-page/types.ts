@@ -51,7 +51,7 @@ export type ServiceDashboardData = {
     websiteUrl: string | null;
     iconUrl: string | null;
   };
-  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
+  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   uptime24h: number | null;       // percentage

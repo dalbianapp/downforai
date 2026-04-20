@@ -4,7 +4,7 @@ import { getStatusConfig } from "./_statusConfig";
 
 interface Props {
   service: { slug: string; name: string };
-  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
+  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   reportSummary: ReportSummary;
@@ -100,26 +100,32 @@ export default function ServiceHeroHeader({
             >
               {sc.label}
             </div>
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#6b7280",
-                marginTop: "2px",
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              {lastProbeLabel && <span>Last probe {lastProbeLabel}</span>}
-              <span>·</span>
-              <span>{surfaces.length} surface{surfaces.length !== 1 ? "s" : ""}</span>
-              {reportSummary.total24h > 0 && (
-                <>
-                  <span>·</span>
-                  <span>{reportSummary.total24h} report{reportSummary.total24h !== 1 ? "s" : ""} / 24h</span>
-                </>
-              )}
-            </div>
+            {overallStatus === "REPORTED_ISSUES" ? (
+              <div style={{ fontSize: "12px", color: "#92400e", marginTop: "2px" }}>
+                Probes show normal responses, but users are reporting problems.
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  marginTop: "2px",
+                  display: "flex",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {lastProbeLabel && <span>Last probe {lastProbeLabel}</span>}
+                <span>·</span>
+                <span>{surfaces.length} surface{surfaces.length !== 1 ? "s" : ""}</span>
+                {reportSummary.total24h > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>{reportSummary.total24h} report{reportSummary.total24h !== 1 ? "s" : ""} / 24h</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

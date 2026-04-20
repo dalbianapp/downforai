@@ -147,7 +147,11 @@ export default async function ServicePage({
 
       {/* Surface health grid */}
       <div style={{ marginTop: "24px" }}>
-        <SurfaceHealthGrid surfaces={surfaces} />
+        <SurfaceHealthGrid
+          surfaces={surfaces}
+          overallStatus={overallStatus}
+          reports24hCount={reportSummary.total24h}
+        />
       </div>
 
       {/* Uptime heat strip (client — fetches sparkline) */}

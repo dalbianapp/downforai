@@ -3,10 +3,14 @@ import { getStatusConfig, getRelativeTime } from "./_statusConfig";
 
 interface Props {
   surfaces: SurfaceSnapshot[];
+  overallStatus?: string;
+  reports24hCount?: number;
 }
 
-export default function SurfaceHealthGrid({ surfaces }: Props) {
+export default function SurfaceHealthGrid({ surfaces, overallStatus, reports24hCount }: Props) {
   if (surfaces.length === 0) return null;
+
+  const isReportedIssues = overallStatus === "REPORTED_ISSUES";
 
   return (
     <div
@@ -44,6 +48,13 @@ export default function SurfaceHealthGrid({ surfaces }: Props) {
             ? getRelativeTime(s.lastObservedAt)
             : "—";
 
+          const showNoProbErrors = isReportedIssues && s.status === "OPERATIONAL";
+          const dotColor = showNoProbErrors ? "#9ca3af" : sc.dot;
+          const badgeText = showNoProbErrors ? "No probe errors" : sc.label;
+          const badgeColor = showNoProbErrors ? "#6b7280" : sc.text;
+          const badgeBg = showNoProbErrors ? "#f5f5f5" : sc.bg;
+          const badgeBorder = showNoProbErrors ? "#e5e5e5" : sc.border;
+
           return (
             <div
               key={s.surfaceId}
@@ -66,7 +77,7 @@ export default function SurfaceHealthGrid({ surfaces }: Props) {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    backgroundColor: sc.dot,
+                    backgroundColor: dotColor,
                     flexShrink: 0,
                   }}
                 />
@@ -84,14 +95,14 @@ export default function SurfaceHealthGrid({ surfaces }: Props) {
                   style={{
                     fontSize: "11px",
                     fontWeight: 600,
-                    color: sc.text,
-                    background: sc.bg,
-                    border: `1px solid ${sc.border}`,
+                    color: badgeColor,
+                    background: badgeBg,
+                    border: `1px solid ${badgeBorder}`,
                     borderRadius: "999px",
                     padding: "2px 8px",
                   }}
                 >
-                  {sc.label}
+                  {badgeText}
                 </span>
               </div>
 
@@ -130,6 +141,25 @@ export default function SurfaceHealthGrid({ surfaces }: Props) {
           );
         })}
       </div>
+
+      {isReportedIssues && (
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fef3c7",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            margin: "12px 20px 20px",
+            fontSize: "13px",
+            color: "#92400e",
+          }}
+        >
+          ⚠️ Probes show normal HTTP responses, but {reports24hCount ?? 0} users
+          reported issues in the last 24 hours. The problem may affect
+          authentication, specific models, or regions not covered by synthetic
+          probes.
+        </div>
+      )}
     </div>
   );
 }

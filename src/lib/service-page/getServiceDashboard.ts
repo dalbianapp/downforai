@@ -192,7 +192,7 @@ export async function getServiceDashboard(
     },
   });
 
-  // 7. Classify scope
+  // 7. Classify scope (must run before overallStatus)
   const hasOpenIncident = incidentsRaw.some((i) => i.status !== "RESOLVED");
   const diagnosis = classifyServiceIssue({
     surfaces,
@@ -201,18 +201,28 @@ export async function getServiceDashboard(
     hasOpenIncident,
   });
 
-  // 8. Overall status = worst of surface statuses
+  // 8. Overall status = worst probe status, with community pressure override
   const STATUS_PRIORITY: Record<SurfaceSnapshot["status"], number> = {
     OUTAGE: 3,
     DEGRADED: 2,
     UNKNOWN: 1,
     OPERATIONAL: 0,
   };
-  const overallStatus = surfaces.reduce<SurfaceSnapshot["status"]>(
+  const probeStatus = surfaces.reduce<SurfaceSnapshot["status"]>(
     (worst, s) =>
       STATUS_PRIORITY[s.status] > STATUS_PRIORITY[worst] ? s.status : worst,
     "OPERATIONAL"
   );
+
+  let overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES" = probeStatus;
+  if (
+    probeStatus === "OPERATIONAL" &&
+    (diagnosis.scope === "global" || diagnosis.scope === "partial") &&
+    (diagnosis.confidence === "HIGH" ||
+      (diagnosis.confidence === "MEDIUM" && reports2hCount >= 5))
+  ) {
+    overallStatus = "REPORTED_ISSUES";
+  }
 
   // 9. Top 50 editorial content (static, no DB query)
   const topContent = TOP_SERVICE_CONTENT[slug] ?? null;

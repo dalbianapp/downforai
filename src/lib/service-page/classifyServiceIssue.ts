@@ -50,6 +50,34 @@ export function classifyServiceIssue(input: {
     };
   }
 
+  // 2.5a Community-reported widespread issue (probes healthy, heavy reports)
+  if (allProbesHealthy && reports2h >= 10) {
+    return {
+      label: "Users reporting widespread issues",
+      scope: "global",
+      confidence: "MEDIUM",
+      reasons: [
+        "All monitored surfaces respond normally",
+        `${reports2h} user reports in last 2 hours — above threshold`,
+        "Possible issue not captured by synthetic probes (auth, specific models, regional)",
+      ],
+    };
+  }
+
+  // 2.5b Community-reported partial issue (probes healthy, moderate reports)
+  if (allProbesHealthy && reports2h >= 5) {
+    return {
+      label: "Users reporting issues",
+      scope: "partial",
+      confidence: "MEDIUM",
+      reasons: [
+        "All monitored surfaces respond normally",
+        `${reports2h} user reports in last 2 hours`,
+        "Check if the issue is specific to your account, model, or region",
+      ],
+    };
+  }
+
   // 3. Local/client issue
   if (allProbesHealthy && reports2h < 3) {
     return {
