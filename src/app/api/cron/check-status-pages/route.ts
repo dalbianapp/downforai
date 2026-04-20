@@ -62,13 +62,32 @@ export async function GET(request: Request) {
           signal: AbortSignal.timeout(5000),
           redirect: "follow",
         });
-        const json = await res.json() as { status: { indicator: string; description: string } };
-        data = { indicator: json.status.indicator, description: json.status.description };
+
+        // Non-2xx (e.g. 404 for Midjourney) — endpoint unavailable, stay silent
+        if (!res.ok) {
+          console.log(`[status-pages] ${page.slug}: HTTP ${res.status} — endpoint unavailable, skipping`);
+          results[page.slug] = { ok: true, error: `HTTP ${res.status} — no data` };
+          continue;
+        }
+
+        const json = await res.json() as { status?: { indicator?: string; description?: string } };
+
+        // Guard: JSON must have the expected shape, otherwise stay silent
+        const indicator = json?.status?.indicator;
+        const description = json?.status?.description ?? "";
+        if (typeof indicator !== "string") {
+          console.log(`[status-pages] ${page.slug}: unexpected JSON shape — skipping`);
+          results[page.slug] = { ok: true, error: "unexpected JSON shape" };
+          continue;
+        }
+
+        data = { indicator, description };
         fetched.set(page.url, data);
       }
 
       results[page.slug] = { indicator: data.indicator, ok: data.indicator === "none" };
 
+      // Only alert when indicator is explicitly non-operational
       if (data.indicator !== "none") {
         await maybeAlert(
           page.slug,
@@ -81,8 +100,9 @@ export async function GET(request: Request) {
         );
       }
     } catch (error) {
-      console.error(`[status-pages] Failed to fetch ${page.url}:`, error);
-      results[page.slug] = { ok: false, error: String(error) };
+      // Network error, timeout, JSON parse error — stay silent
+      console.error(`[status-pages] ${page.slug}: fetch error — ${error}`);
+      results[page.slug] = { ok: true, error: String(error) };
     }
   }
 
@@ -92,30 +112,43 @@ export async function GET(request: Request) {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; DownForAI/1.0)" },
       signal: AbortSignal.timeout(5000),
     });
-    const incidents = await res.json() as Array<{ end?: string; external_desc: string }>;
 
-    // An open incident has no "end" field or end is in the future
-    const openIncidents = incidents.filter(
-      (i) => !i.end || new Date(i.end).getTime() > Date.now()
-    );
+    if (!res.ok) {
+      console.log(`[status-pages] ${GOOGLE_CLOUD.slug}: HTTP ${res.status} — endpoint unavailable, skipping`);
+      results[GOOGLE_CLOUD.slug] = { ok: true, error: `HTTP ${res.status} — no data` };
+    } else {
+      const json = await res.json();
+      // Guard: must be a non-empty array
+      if (!Array.isArray(json)) {
+        console.log(`[status-pages] ${GOOGLE_CLOUD.slug}: unexpected response shape — skipping`);
+        results[GOOGLE_CLOUD.slug] = { ok: true, error: "unexpected response shape" };
+      } else {
+        const incidents = json as Array<{ end?: string; external_desc?: string }>;
+        // An open incident has no "end" field or end is in the future
+        const openIncidents = incidents.filter(
+          (i) => !i.end || new Date(i.end).getTime() > Date.now()
+        );
 
-    results[GOOGLE_CLOUD.slug] = { ok: openIncidents.length === 0 };
+        results[GOOGLE_CLOUD.slug] = { ok: openIncidents.length === 0 };
 
-    if (openIncidents.length > 0) {
-      const latest = openIncidents[0];
-      await maybeAlert(
-        GOOGLE_CLOUD.slug,
-        GOOGLE_CLOUD.name,
-        `🚨 <b>STATUS PAGE ALERT — ${GOOGLE_CLOUD.name}</b>\n\n` +
-        `Open incident: ${latest.external_desc.slice(0, 120)}\n` +
-        `Source: ${GOOGLE_CLOUD.url}\n\n` +
-        `→ https://downforai.com/${GOOGLE_CLOUD.slug}`,
-        alerts
-      );
+        if (openIncidents.length > 0) {
+          const latest = openIncidents[0];
+          await maybeAlert(
+            GOOGLE_CLOUD.slug,
+            GOOGLE_CLOUD.name,
+            `🚨 <b>STATUS PAGE ALERT — ${GOOGLE_CLOUD.name}</b>\n\n` +
+            `Open incident: ${(latest.external_desc ?? "unknown").slice(0, 120)}\n` +
+            `Source: ${GOOGLE_CLOUD.url}\n\n` +
+            `→ https://downforai.com/${GOOGLE_CLOUD.slug}`,
+            alerts
+          );
+        }
+      }
     }
   } catch (error) {
-    console.error(`[status-pages] Failed to fetch ${GOOGLE_CLOUD.url}:`, error);
-    results[GOOGLE_CLOUD.slug] = { ok: false, error: String(error) };
+    // Network error, timeout — stay silent
+    console.error(`[status-pages] ${GOOGLE_CLOUD.slug}: fetch error — ${error}`);
+    results[GOOGLE_CLOUD.slug] = { ok: true, error: String(error) };
   }
 
   return NextResponse.json({
