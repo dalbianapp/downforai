@@ -47,6 +47,10 @@ export function HeroSection({ operational, degraded, outage, total }: HeroSectio
         <Link href="/#services" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
           Browse 800+ services
         </Link>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <Link href="/developers" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
+          Badges &amp; API
+        </Link>
       </nav>
     </div>
   );

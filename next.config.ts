@@ -36,6 +36,15 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
+  async rewrites() {
+    return [
+      {
+        source: "/api/badge/:slug.svg",
+        destination: "/api/badge/:slug",
+      },
+    ];
+  },
+
   async redirects() {
     return [
       // /[serviceSlug]/down → /[serviceSlug]

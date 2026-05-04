@@ -24,6 +24,7 @@ import ErrorSignaturesPanel from "@/components/service/ErrorSignaturesPanel";
 import ProviderSpecificPanel from "@/components/service/ProviderSpecificPanel";
 import FallbackAlternativesPanel from "@/components/service/FallbackAlternativesPanel";
 import MethodologyPanel from "@/components/service/MethodologyPanel";
+import BadgeEmbed from "@/components/service/BadgeEmbed";
 
 const WorldReportMap = dynamic(
   () => import("@/components/status/WorldReportMap").then((mod) => ({ default: mod.WorldReportMap }))
@@ -223,6 +224,11 @@ export default async function ServicePage({
       {/* Methodology */}
       <div style={{ marginTop: "24px" }}>
         <MethodologyPanel />
+      </div>
+
+      {/* Badge embed */}
+      <div style={{ marginTop: "24px" }}>
+        <BadgeEmbed serviceSlug={service.slug} serviceName={service.name} />
       </div>
 
       {/* Comment section */}
