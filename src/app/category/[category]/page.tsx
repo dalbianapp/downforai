@@ -6,7 +6,7 @@ import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
-export const revalidate = 120;
+export const revalidate = 300;
 
 export async function generateStaticParams() {
   return Object.values(ServiceCategory).map((category) => ({

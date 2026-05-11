@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/check-status",
-      "schedule": "*/6 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/aggregate-reports",
-      "schedule": "*/20 * * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/cleanup",

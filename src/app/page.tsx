@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 async function getServicesStatus() {
   type RawRow = {

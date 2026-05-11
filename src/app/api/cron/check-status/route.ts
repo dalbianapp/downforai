@@ -5,7 +5,7 @@ import { isTier1 } from "@/lib/notifications/tier1";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check
-const BATCH_SIZE = 200; // Check 200 surfaces per cron run (fully parallel)
+const BATCH_SIZE = 50; // Check 50 surfaces per cron run (fully parallel)
 
 function verifyAuth(request: NextRequest): boolean {
   const authHeader = request.headers.get("Authorization");
