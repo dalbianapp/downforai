@@ -47,6 +47,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3550609846480994"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${plusJakarta.variable} antialiased`}
         style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
