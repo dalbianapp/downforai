@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/lib/posthog";
+import Script from "next/script";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -67,6 +68,18 @@ export default function RootLayout({
           <Analytics />
           <SpeedInsights />
         </PostHogProvider>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-ERM2ZXFVRY"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ERM2ZXFVRY');
+          `}
+        </Script>
       </body>
     </html>
   );
