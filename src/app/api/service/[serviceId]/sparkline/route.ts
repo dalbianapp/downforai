@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export const revalidate = 120; // 2 min ISR cache
+export const revalidate = 600; // 10 min ISR cache
 
 export async function GET(
   _req: NextRequest,

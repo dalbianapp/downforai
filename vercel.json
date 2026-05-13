@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/check-status-pages",
-      "schedule": "*/3 * * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -30,7 +30,7 @@ const WorldReportMap = dynamic(
   () => import("@/components/status/WorldReportMap").then((mod) => ({ default: mod.WorldReportMap }))
 );
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   const services = await prisma.service.findMany({ select: { slug: true } });

@@ -8,7 +8,7 @@ import { getErrorsForCategory, getErrorInfo, getServiceLinks, getRelevantReportT
 import { BackToServiceButton } from "@/components/ui/BackToServiceButton";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
-export const revalidate = 300; // 5 minutes — error guides are mostly static content
+export const revalidate = 3600; // 1 hour — error guides are mostly static content
 
 export async function generateStaticParams() {
   // Generate pages for each service × their category's errors

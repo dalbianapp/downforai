@@ -6,7 +6,7 @@ import { truncateTitle, truncateDescription, generateBreadcrumbJsonLd } from "@/
 import Link from "next/link";
 import { TIER_1_SERVICES, getSymptomInfo, getSymptomsForCategory } from "@/lib/ai-symptoms";
 
-export const revalidate = 300; // 5 minutes — symptom guides are mostly static content
+export const revalidate = 3600; // 1 hour — symptom guides are mostly static content
 
 export async function generateStaticParams() {
   // Get all services from database to match slugs with categories

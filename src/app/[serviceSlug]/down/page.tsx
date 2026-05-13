@@ -6,7 +6,7 @@ import { generateBreadcrumbJsonLd } from "@/lib/seo";
 import Link from "next/link";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   const services = await prisma.service.findMany({ select: { slug: true } });
