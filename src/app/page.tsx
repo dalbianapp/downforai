@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 async function getServicesStatus() {
   type RawRow = {
@@ -314,6 +314,30 @@ export default async function HomePage() {
           background: 'linear-gradient(90deg, transparent, var(--border), transparent)'
         }}
       />
+
+      {/* Reliability Index CTA */}
+      <Link
+        href="/reliability-index"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 20px',
+          background: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          color: '#0c4a6e',
+        }}
+      >
+        <div>
+          <span style={{ fontWeight: 700, fontSize: '14px' }}>AI Reliability Index</span>
+          <span style={{ fontSize: '13px', color: '#0369a1', marginLeft: '8px' }}>
+            Uptime, latency p50/p95 &amp; incidents for 50 major AI services
+          </span>
+        </div>
+        <span style={{ fontSize: '13px', color: '#0369a1', flexShrink: 0 }}>View →</span>
+      </Link>
 
       {/* Dashboard - All Services */}
       <StatusDashboard services={services} />

@@ -891,7 +891,7 @@ export default async function ServiceErrorPage({
             📊 {service.name} Status Dashboard
           </Link>
           <Link
-            href={`/${service.slug}/down`}
+            href={`/${service.slug}`}
             style={{
               fontSize: "14px",
               color: "#2563eb",
@@ -912,7 +912,7 @@ export default async function ServiceErrorPage({
               .map((error) => (
                 <Link
                   key={error.slug}
-                  href={`/${service.slug}/error/${error.slug}`}
+                  href={`/errors/${error.slug}`}
                   style={{
                     fontSize: "12px",
                     color: "#2563eb",
