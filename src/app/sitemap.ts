@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getIncidentServiceSummaries(100),
   ]);
 
-  const categories = Object.values(ServiceCategory).map((c) => c.toLowerCase());
+  const categories = Object.values(ServiceCategory).map((c) => c.toLowerCase().replace(/_/g, "-"));
 
   // Static pages
   const staticRoutes: MetadataRoute.Sitemap = [

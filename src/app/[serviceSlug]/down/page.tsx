@@ -135,7 +135,7 @@ export default async function ServiceDownPage({
 
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://downforai.com" },
-    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase().replace(/_/g, "-")}` },
     { name: service.name, url: `https://downforai.com/${service.slug}` },
     { name: "Down Status", url: `https://downforai.com/${service.slug}/down` },
   ]);
@@ -403,7 +403,7 @@ export default async function ServiceDownPage({
             </div>
             <div style={{ fontSize: "13px", color: "#525252", lineHeight: 1.6 }}>
               {service.name} is in the{" "}
-              <Link href={`/category/${service.category.toLowerCase()}`} style={{ color: "#2563eb" }}>
+              <Link href={`/category/${service.category.toLowerCase().replace(/_/g, "-")}`} style={{ color: "#2563eb" }}>
                 {formatCategoryLabel(service.category)}
               </Link>{" "}
               category. {service.description}

@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       // Default: allow good bots
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/api/reliability-index", "/api/status/", "/api/badge/"],
         disallow: ["/api/", "/admin/"],
       },
       // Block parasite SEO crawlers

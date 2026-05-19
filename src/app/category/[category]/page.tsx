@@ -6,11 +6,11 @@ import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 export async function generateStaticParams() {
   return Object.values(ServiceCategory).map((category) => ({
-    category: category.toLowerCase(),
+    category: category.toLowerCase().replace(/_/g, "-"),
   }));
 }
 
@@ -20,10 +20,10 @@ export async function generateMetadata({
   params: Promise<{ category: string }>;
 }): Promise<Metadata> {
   const { category } = await params;
-  const categoryLabel = formatCategoryLabel(category.toUpperCase());
+  const categoryLabel = formatCategoryLabel(category.toUpperCase().replace(/-/g, "_"));
 
   const count = await prisma.service.count({
-    where: { category: category.toUpperCase() as ServiceCategory },
+    where: { category: category.toUpperCase().replace(/-/g, "_") as ServiceCategory },
   });
 
   const fullTitle = `${count} ${categoryLabel} AI Tools Monitored Live | DownForAI`;
@@ -43,7 +43,7 @@ export async function generateMetadata({
 }
 
 async function getCategoryServices(category: string) {
-  const categoryUpper = category.toUpperCase() as ServiceCategory;
+  const categoryUpper = category.toUpperCase().replace(/-/g, "_") as ServiceCategory;
 
   type RawRow = {
     slug: string;
@@ -182,7 +182,7 @@ export default async function CategoryPage({
 }) {
   const { category } = await params;
   const services = await getCategoryServices(category);
-  const categoryLabel = formatCategoryLabel(category.toUpperCase());
+  const categoryLabel = formatCategoryLabel(category.toUpperCase().replace(/-/g, "_"));
 
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://downforai.com" },

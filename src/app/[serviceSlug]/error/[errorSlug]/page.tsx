@@ -228,7 +228,7 @@ export default async function ServiceErrorPage({
   // BreadcrumbList JSON-LD
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://downforai.com" },
-    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase().replace(/_/g, "-")}` },
     { name: service.name, url: `https://downforai.com/${serviceSlug}` },
     { name: errorInfo.title, url: `https://downforai.com/${serviceSlug}/error/${errorSlug}` },
   ]);
@@ -310,7 +310,7 @@ export default async function ServiceErrorPage({
           Home
         </Link>
         <span>/</span>
-        <Link href={`/category/${service.category.toLowerCase()}`} style={{ color: "#a3a3a3", textDecoration: "none" }}>
+        <Link href={`/category/${service.category.toLowerCase().replace(/_/g, "-")}`} style={{ color: "#a3a3a3", textDecoration: "none" }}>
           {formatCategoryLabel(service.category)}
         </Link>
         <span>/</span>
@@ -928,7 +928,7 @@ export default async function ServiceErrorPage({
               ))}
           </div>
           <Link
-            href={`/category/${service.category.toLowerCase()}`}
+            href={`/category/${service.category.toLowerCase().replace(/_/g, "-")}`}
             style={{
               fontSize: "14px",
               color: "#2563eb",

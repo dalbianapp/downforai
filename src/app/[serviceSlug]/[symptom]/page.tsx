@@ -150,7 +150,7 @@ export default async function SymptomPage({
 
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://downforai.com" },
-    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase()}` },
+    { name: formatCategoryLabel(service.category), url: `https://downforai.com/category/${service.category.toLowerCase().replace(/_/g, "-")}` },
     { name: service.name, url: `https://downforai.com/${service.slug}` },
     { name: symptomInfo.title, url: `https://downforai.com/${service.slug}/${symptom}` },
   ]);
@@ -477,7 +477,7 @@ export default async function SymptomPage({
             </div>
             <div style={{ fontSize: "13px", color: "#525252", lineHeight: 1.6 }}>
               Browse our{" "}
-              <Link href={`/category/${service.category.toLowerCase()}`} style={{ color: "#2563eb" }}>
+              <Link href={`/category/${service.category.toLowerCase().replace(/_/g, "-")}`} style={{ color: "#2563eb" }}>
                 {formatCategoryLabel(service.category)} category
               </Link>{" "}
               to see alternative services with their current status. We monitor dozens of AI tools to help you find working alternatives when you need them.
