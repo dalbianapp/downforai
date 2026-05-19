@@ -15,6 +15,9 @@ export const CATEGORIES = [
   { slug: "roleplay", label: "Roleplay AI" },
   { slug: "marketing", label: "Marketing AI" },
   { slug: "support", label: "Support AI" },
+  { slug: "education", label: "Education AI" },
+  { slug: "hr-ai", label: "HR AI" },
+  { slug: "legal-ai", label: "Legal AI" },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
