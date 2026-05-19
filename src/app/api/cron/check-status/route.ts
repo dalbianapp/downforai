@@ -336,6 +336,17 @@ async function handleCheckStatus(request: NextRequest) {
       await prisma.observation.createMany({ data: observations });
     }
 
+    // Pre-fetch all open incidents for services in this batch — replaces N+1 findFirst
+    const batchServiceIds = [...new Set(batch.map(s => s.serviceId))];
+    const openIncidentRows = await prisma.incident.findMany({
+      where: {
+        serviceId: { in: batchServiceIds },
+        resolvedAt: null,
+      },
+      select: { id: true, serviceId: true, startedAt: true, status: true },
+    });
+    const openIncidentMap = new Map(openIncidentRows.map(i => [i.serviceId, i]));
+
     // Auto-create incidents on OUTAGE transitions (with anti-flapping)
     // Only create incident if BOTH current AND previous observation are OUTAGE with HIGH confidence
     for (const surface of batch) {
@@ -349,13 +360,7 @@ async function handleCheckStatus(request: NextRequest) {
         prevObs?.status === "OUTAGE" &&
         prevObs?.confidence === "HIGH"
       ) {
-        // Check if there's already an open incident for this service
-        const existingIncident = await prisma.incident.findFirst({
-          where: {
-            serviceId: surface.serviceId,
-            resolvedAt: null,
-          },
-        });
+        const existingIncident = openIncidentMap.get(surface.serviceId);
 
         if (!existingIncident) {
           const newIncident = await prisma.incident.create({
@@ -369,6 +374,9 @@ async function handleCheckStatus(request: NextRequest) {
               startedAt: now,
             },
           });
+
+          // Update map so other surfaces of the same service don't create duplicates
+          openIncidentMap.set(surface.serviceId, { id: newIncident.id, serviceId: surface.serviceId, startedAt: now, status: "OPEN" });
 
           if (isTier1(surface.service.slug)) {
             await sendTelegramAlert(
@@ -384,12 +392,7 @@ async function handleCheckStatus(request: NextRequest) {
       // Auto-resolve incidents when back to OPERATIONAL
       // Fix: no longer requires prevObs === "OUTAGE" — resolves whenever service returns OPERATIONAL
       if (newObs?.status === "OPERATIONAL") {
-        const openIncident = await prisma.incident.findFirst({
-          where: {
-            serviceId: surface.serviceId,
-            resolvedAt: null,
-          },
-        });
+        const openIncident = openIncidentMap.get(surface.serviceId);
 
         if (openIncident) {
           // Only resolve if incident has been open for at least 10 minutes
@@ -402,6 +405,9 @@ async function handleCheckStatus(request: NextRequest) {
                 status: "RESOLVED"
               },
             });
+
+            // Remove from map so other surfaces of the same service don't re-resolve
+            openIncidentMap.delete(surface.serviceId);
 
             if (isTier1(surface.service.slug)) {
               const durationMinutes = Math.round(
