@@ -12,6 +12,7 @@ const PREMIUM_SLUGS = [
   "google-ai-studio", "quillbot", "vast-ai", "baidu-ai-cloud", "candy-ai",
   "magnific", "lmarena", "cerebras", "sillytavern", "crushon-ai",
   "genspark", "devin", "tripo3d", "voicemod", "n8n",
+  "civitai", "chai-ai", "databricks", "chub-ai", "kiro", "nvidia-nim",
 ];
 
 export const revalidate = 3600;

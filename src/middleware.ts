@@ -20,6 +20,12 @@ const BLOCKED_BOTS = [
   "amazonbot",
 ];
 
+const DEAD_SERVICES = [
+  "octoai", "invoke-ai", "phind", "3dfy-ai", "hour-one",
+  "csm-ai", "play-ht", "dora", "visual-electric", "safurai",
+  "querium", "predibase", "moemate",
+];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const userAgent = request.headers.get("user-agent")?.toLowerCase() || "";
@@ -27,6 +33,15 @@ export function middleware(request: NextRequest) {
   // Block parasite bots before any other logic
   if (BLOCKED_BOTS.some((bot) => userAgent.includes(bot))) {
     return new NextResponse("Forbidden", { status: 403 });
+  }
+
+  // Return 410 Gone for permanently removed services
+  const firstSegment = pathname.split("/")[1];
+  if (firstSegment && DEAD_SERVICES.includes(firstSegment)) {
+    return new NextResponse("This service has been permanently removed.", {
+      status: 410,
+      headers: { "Content-Type": "text/plain" },
+    });
   }
 
   // Admin auth
