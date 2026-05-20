@@ -12,45 +12,35 @@ export async function GET(
     return NextResponse.json({ error: "Missing serviceId" }, { status: 400 });
   }
 
-  // 24 buckets of 60 min over 24h — Groups all surfaces for the service together (aggregate view)
-  // generate_series bounds are inclusive, so use (currentHour - 23h) → currentHour for exactly 24 slots
+  // 20 most recent real observations — no empty slots, no gray bars
   const rows = await prisma.$queryRaw<
     Array<{
-      bucket_start: Date;
+      observed_at: Date;
       p50: number | null;
-      p95: number | null;
-      mode_status: string | null;
+      status: string | null;
     }>
   >`
-    WITH buckets AS (
-      SELECT generate_series(
-        date_trunc('hour', NOW()) - INTERVAL '23 hours',
-        date_trunc('hour', NOW()),
-        INTERVAL '60 minutes'
-      ) AS bucket_start
+    WITH surface_ids AS (
+      SELECT id FROM "ServiceSurface"
+      WHERE "serviceId" = ${serviceId} AND "isEnabled" = true
     )
     SELECT
-      b.bucket_start,
-      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY o."latencyMs") AS p50,
-      PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY o."latencyMs") AS p95,
-      MODE() WITHIN GROUP (ORDER BY o.status)                     AS mode_status
-    FROM buckets b
-    LEFT JOIN "Observation" o
-      ON o."serviceSurfaceId" IN (
-           SELECT id FROM "ServiceSurface"
-           WHERE "serviceId" = ${serviceId} AND "isEnabled" = true
-         )
-      AND o."observedAt" >= b.bucket_start
-      AND o."observedAt" <  b.bucket_start + INTERVAL '60 minutes'
-    GROUP BY b.bucket_start
-    ORDER BY b.bucket_start
+      o."observedAt" AS observed_at,
+      o."latencyMs"  AS p50,
+      o.status
+    FROM "Observation" o
+    WHERE o."serviceSurfaceId" IN (SELECT id FROM surface_ids)
+      AND o."latencyMs" IS NOT NULL
+    ORDER BY o."observedAt" DESC
+    LIMIT 20
   `;
 
-  const buckets = rows.map((r) => ({
-    bucketStart: r.bucket_start.toISOString(),
+  // Reverse to chronological order (oldest → newest)
+  const buckets = rows.reverse().map((r) => ({
+    bucketStart: r.observed_at.toISOString(),
     p50: r.p50 != null ? Math.round(Number(r.p50)) : null,
-    p95: r.p95 != null ? Math.round(Number(r.p95)) : null,
-    modeStatus: r.mode_status ?? null,
+    p95: null,
+    modeStatus: r.status ?? null,
   }));
 
   return NextResponse.json({ buckets }, { status: 200 });

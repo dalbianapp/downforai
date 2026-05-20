@@ -23,7 +23,6 @@ const statusLabels: Record<string, string> = {
   OPERATIONAL: "Operational",
   DEGRADED: "Degraded",
   OUTAGE: "Outage",
-  UNKNOWN: "No data",
 };
 
 export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: UptimeBarWithHoursProps) {
@@ -31,18 +30,15 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
-  // Generate hour markers - every 3 hours for 24h (8 markers)
-  const hourMarkers = [0, 3, 6, 9, 12, 15, 18, 21]; // Indices for 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+  // Markers at positions 0, 5, 10, 15, last — one every ~5 real probes
+  const hourMarkers = [0, 5, 10, 15, slots.length - 1].filter(
+    (v, i, arr) => v >= 0 && v < slots.length && arr.indexOf(v) === i
+  );
 
   const formatTime = (date: Date) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-  };
-
-  const formatTimeRange = (date: Date) => {
-    const endDate = new Date(date.getTime() + 60 * 60 * 1000); // +60 min
-    return `${formatTime(date)} – ${formatTime(endDate)}`;
   };
 
   return (
@@ -85,7 +81,7 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
                   }}
                 >
                   <div style={{ fontWeight: 600, marginBottom: "2px" }}>
-                    {formatTimeRange(slot.time)}
+                    {isClient ? formatTime(slot.time) : ""}
                   </div>
                   <div style={{ color: statusColors[slot.status] }}>
                     {statusLabels[slot.status]}

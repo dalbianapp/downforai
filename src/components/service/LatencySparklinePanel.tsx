@@ -54,7 +54,7 @@ export default function LatencySparklinePanel({ serviceId }: Props) {
           marginBottom: "16px",
         }}
       >
-        Latency — last 24h (p50 per 1h slot)
+        Latency — last 20 probes
       </h2>
 
       {loading ? (

@@ -24,44 +24,17 @@ export function LatencyChart({ observations }: LatencyChartProps) {
   useEffect(() => { setIsClient(true); }, []);
 
   const chartData = useMemo(() => {
-    if (!isClient) return [];
+    if (!isClient || observations.length === 0) return [];
 
-    const now = Date.now();
-    const SLOT_MS = 60 * 60 * 1000; // 60 minutes
-
-    // Generate 24 fixed slots covering the last 24h, ending at now
-    const currentSlot = Math.floor(now / SLOT_MS) * SLOT_MS;
-    const slots: { timestamp: number; time: string; latency: number | null }[] = [];
-
-    for (let i = 23; i >= 0; i--) {
-      const slotStart = currentSlot - i * SLOT_MS;
-      const date = new Date(slotStart);
+    return observations.map((obs) => {
+      const date = new Date(obs.observedAt);
       const h = date.getHours().toString().padStart(2, "0");
       const m = date.getMinutes().toString().padStart(2, "0");
-      slots.push({
-        timestamp: slotStart,
+      return {
         time: `${h}:${m}`,
-        latency: null,
-      });
-    }
-
-    // Fill slots with observation data
-    observations.forEach((obs) => {
-      if (obs.latencyMs === null) return;
-      const time = new Date(obs.observedAt).getTime();
-      const bucketTs = Math.floor(time / SLOT_MS) * SLOT_MS;
-      const slot = slots.find((s) => s.timestamp === bucketTs);
-      if (slot) {
-        // Average if multiple observations in same slot
-        if (slot.latency === null) {
-          slot.latency = obs.latencyMs;
-        } else {
-          slot.latency = Math.round((slot.latency + obs.latencyMs) / 2);
-        }
-      }
+        latency: obs.latencyMs,
+      };
     });
-
-    return slots;
   }, [observations, isClient]);
 
   if (!isClient) {
