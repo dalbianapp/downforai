@@ -115,7 +115,7 @@ export function LatencyChart({ observations }: LatencyChartProps) {
           fillOpacity={1}
           fill="url(#colorLatency)"
           dot={false}
-          connectNulls={false}
+          connectNulls={true}
         />
       </AreaChart>
     </ResponsiveContainer>
