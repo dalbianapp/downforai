@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export const revalidate = 600; // 10 min ISR cache
+export const dynamic = "force-dynamic"; // real-time monitoring — never cache
 
 export async function GET(
   _req: NextRequest,
@@ -13,6 +13,7 @@ export async function GET(
   }
 
   // 24 buckets of 60 min over 24h — Groups all surfaces for the service together (aggregate view)
+  // generate_series bounds are inclusive, so use (currentHour - 23h) → currentHour for exactly 24 slots
   const rows = await prisma.$queryRaw<
     Array<{
       bucket_start: Date;
@@ -23,8 +24,8 @@ export async function GET(
   >`
     WITH buckets AS (
       SELECT generate_series(
-        date_trunc('hour', NOW() - INTERVAL '24 hours'),
-        NOW(),
+        date_trunc('hour', NOW()) - INTERVAL '23 hours',
+        date_trunc('hour', NOW()),
         INTERVAL '60 minutes'
       ) AS bucket_start
     )
