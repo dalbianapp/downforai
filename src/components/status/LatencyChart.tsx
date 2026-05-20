@@ -27,13 +27,13 @@ export function LatencyChart({ observations }: LatencyChartProps) {
     if (!isClient) return [];
 
     const now = Date.now();
-    const SLOT_MS = 30 * 60 * 1000; // 30 minutes
+    const SLOT_MS = 60 * 60 * 1000; // 60 minutes
 
-    // Generate 48 fixed slots covering the last 24h, ending at now
+    // Generate 24 fixed slots covering the last 24h, ending at now
     const currentSlot = Math.floor(now / SLOT_MS) * SLOT_MS;
     const slots: { timestamp: number; time: string; latency: number | null }[] = [];
 
-    for (let i = 47; i >= 0; i--) {
+    for (let i = 23; i >= 0; i--) {
       const slotStart = currentSlot - i * SLOT_MS;
       const date = new Date(slotStart);
       const h = date.getHours().toString().padStart(2, "0");

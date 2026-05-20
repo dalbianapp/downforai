@@ -12,8 +12,7 @@ export async function GET(
     return NextResponse.json({ error: "Missing serviceId" }, { status: 400 });
   }
 
-  // 48 buckets of 30 min over 24h — per CODE_CONTEXT.md section 3
-  // Groups all surfaces for the service together (aggregate view)
+  // 24 buckets of 60 min over 24h — Groups all surfaces for the service together (aggregate view)
   const rows = await prisma.$queryRaw<
     Array<{
       bucket_start: Date;
@@ -26,7 +25,7 @@ export async function GET(
       SELECT generate_series(
         date_trunc('hour', NOW() - INTERVAL '24 hours'),
         NOW(),
-        INTERVAL '30 minutes'
+        INTERVAL '60 minutes'
       ) AS bucket_start
     )
     SELECT
@@ -41,7 +40,7 @@ export async function GET(
            WHERE "serviceId" = ${serviceId} AND "isEnabled" = true
          )
       AND o."observedAt" >= b.bucket_start
-      AND o."observedAt" <  b.bucket_start + INTERVAL '30 minutes'
+      AND o."observedAt" <  b.bucket_start + INTERVAL '60 minutes'
     GROUP BY b.bucket_start
     ORDER BY b.bucket_start
   `;

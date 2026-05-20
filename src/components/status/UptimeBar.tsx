@@ -32,7 +32,7 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
   useEffect(() => { setIsClient(true); }, []);
 
   // Generate hour markers - every 3 hours for 24h (8 markers)
-  const hourMarkers = [0, 6, 12, 18, 24, 30, 36, 42]; // Indices for 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+  const hourMarkers = [0, 3, 6, 9, 12, 15, 18, 21]; // Indices for 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
 
   const formatTime = (date: Date) => {
     const hours = date.getHours();
@@ -41,7 +41,7 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
   };
 
   const formatTimeRange = (date: Date) => {
-    const endDate = new Date(date.getTime() + 30 * 60 * 1000); // +30 min
+    const endDate = new Date(date.getTime() + 60 * 60 * 1000); // +60 min
     return `${formatTime(date)} – ${formatTime(endDate)}`;
   };
 
