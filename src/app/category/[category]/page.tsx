@@ -201,6 +201,26 @@ export default async function CategoryPage({
         </p>
       </div>
 
+      {/* Reliability ranking link */}
+      <a
+        href={`/reliability/${category}`}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "8px 14px",
+          background: "#f0f9ff",
+          border: "1px solid #bae6fd",
+          borderRadius: "8px",
+          fontSize: "13px",
+          color: "#0369a1",
+          textDecoration: "none",
+          fontWeight: 500,
+        }}
+      >
+        📊 View {categoryLabel} reliability ranking →
+      </a>
+
       {category === "sports-betting" && (
         <div style={{
           background: "#fef3c7",

@@ -315,29 +315,77 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Reliability Index CTA */}
-      <Link
-        href="/reliability-index"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 20px',
-          background: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          borderRadius: '12px',
-          textDecoration: 'none',
-          color: '#0c4a6e',
-        }}
-      >
-        <div>
-          <span style={{ fontWeight: 700, fontSize: '14px' }}>AI Reliability Index</span>
-          <span style={{ fontSize: '13px', color: '#0369a1', marginLeft: '8px' }}>
-            Uptime, latency p50/p95 &amp; incidents for 50 major AI services
-          </span>
+      {/* Quick access CTAs */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <Link
+          href="/reliability-index"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            background: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#0c4a6e',
+          }}
+        >
+          <div>
+            <span style={{ fontWeight: 700, fontSize: '14px' }}>AI Reliability Index</span>
+            <span style={{ fontSize: '13px', color: '#0369a1', marginLeft: '8px' }}>
+              Uptime, latency p50/p95 &amp; incidents for 50 major AI services
+            </span>
+          </div>
+          <span style={{ fontSize: '13px', color: '#0369a1', flexShrink: 0 }}>View →</span>
+        </Link>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <Link
+            href="/top-outages"
+            style={{
+              flex: '1 1 220px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: '#fff5f5',
+              border: '1px solid #fecaca',
+              borderRadius: '12px',
+              textDecoration: 'none',
+            }}
+          >
+            <div>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: '#991b1b' }}>🔴 Top Outages</span>
+              <span style={{ fontSize: '13px', color: '#b91c1c', display: 'block', marginTop: '1px' }}>
+                Most reported AI services right now
+              </span>
+            </div>
+            <span style={{ fontSize: '13px', color: '#b91c1c', flexShrink: 0 }}>View →</span>
+          </Link>
+          <Link
+            href="/reliability"
+            style={{
+              flex: '1 1 220px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
+              textDecoration: 'none',
+            }}
+          >
+            <div>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: '#166534' }}>Reliability Rankings</span>
+              <span style={{ fontSize: '13px', color: '#16a34a', display: 'block', marginTop: '1px' }}>
+                By category, 90-day rolling
+              </span>
+            </div>
+            <span style={{ fontSize: '13px', color: '#16a34a', flexShrink: 0 }}>View →</span>
+          </Link>
         </div>
-        <span style={{ fontSize: '13px', color: '#0369a1', flexShrink: 0 }}>View →</span>
-      </Link>
+      </div>
 
       {/* Dashboard - All Services */}
       <StatusDashboard services={services} />

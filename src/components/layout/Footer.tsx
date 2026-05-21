@@ -37,6 +37,8 @@ export function Footer() {
           <div>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "#171717", marginBottom: "12px" }}>Resources</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <Link href="/top-outages" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Top Outages</Link>
+              <Link href="/reliability" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Reliability Rankings</Link>
               <Link href="/guides" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Guides</Link>
               <Link href="/reports/ai-outages-may-2026" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Reports</Link>
               <Link href="/data" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Data</Link>
