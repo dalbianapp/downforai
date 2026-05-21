@@ -28,6 +28,7 @@ enum ServiceCategory {
   EDUCATION
   HR_AI
   LEGAL_AI
+  SPORTS_BETTING
 }
 
 enum BadgeType {

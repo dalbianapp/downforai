@@ -22,7 +22,7 @@ interface StatusDashboardProps {
   services: ServiceData[];
 }
 
-const CATEGORIES = ["LLM", "IMAGE", "VIDEO", "AUDIO", "DEV", "INFRA", "SEARCH", "PRODUCTIVITY", "AGENTS", "THREE_D", "DESIGN", "MLOPS", "VECTOR_DB", "ROLEPLAY", "MARKETING", "SUPPORT", "EDUCATION", "HR_AI", "LEGAL_AI"];
+const CATEGORIES = ["LLM", "IMAGE", "VIDEO", "AUDIO", "DEV", "INFRA", "SEARCH", "PRODUCTIVITY", "AGENTS", "THREE_D", "DESIGN", "MLOPS", "VECTOR_DB", "ROLEPLAY", "MARKETING", "SUPPORT", "EDUCATION", "HR_AI", "LEGAL_AI", "SPORTS_BETTING"];
 
 export function StatusDashboard({ services }: StatusDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");

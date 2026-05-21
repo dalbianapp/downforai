@@ -13,6 +13,12 @@ const PREMIUM_SLUGS = [
   "magnific", "lmarena", "cerebras", "sillytavern", "crushon-ai",
   "genspark", "devin", "tripo3d", "voicemod", "n8n",
   "civitai", "chai-ai", "databricks", "chub-ai", "kiro", "nvidia-nim",
+  // Sports Betting AI (20 services)
+  "oddsjam", "forebet", "rithmm", "leans-ai", "zcode-system",
+  "bettingpros-sharp-ai", "betideas", "sports-ai", "deepbetting",
+  "sportsline", "betql", "dimers", "action-network", "sharp-app",
+  "juice-reel", "accuscore", "rebelbetting", "parlay-savant",
+  "sportbot-ai", "pandascore",
 ];
 
 export const revalidate = 3600;

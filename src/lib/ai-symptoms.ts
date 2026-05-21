@@ -30,6 +30,7 @@ export const AI_SYMPTOM_MAPPING: Record<ServiceCategory, string[]> = {
   EDUCATION: ["not-working", "api-error", "slow-response"],
   HR_AI: ["not-working", "api-error", "login-issue"],
   LEGAL_AI: ["not-working", "api-error", "slow-response"],
+  SPORTS_BETTING: ["not-working", "slow-response", "login-issue"],
 };
 
 // Détails des symptômes

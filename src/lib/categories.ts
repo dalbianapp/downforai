@@ -18,6 +18,7 @@ export const CATEGORIES = [
   { slug: "education", label: "Education AI" },
   { slug: "hr-ai", label: "HR AI" },
   { slug: "legal-ai", label: "Legal AI" },
+  { slug: "sports-betting", label: "Sports Betting AI" },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];

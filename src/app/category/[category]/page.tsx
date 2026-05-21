@@ -201,6 +201,19 @@ export default async function CategoryPage({
         </p>
       </div>
 
+      {category === "sports-betting" && (
+        <div style={{
+          background: "#fef3c7",
+          border: "1px solid #f59e0b",
+          borderRadius: "8px",
+          padding: "12px 16px",
+          fontSize: "13px",
+          color: "#92400e",
+        }}>
+          ⚠️ DownForAI monitors service availability only. This is not betting advice. Please gamble responsibly.
+        </div>
+      )}
+
       <StatusDashboard services={services} />
     </div>
   );

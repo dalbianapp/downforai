@@ -66,6 +66,7 @@ export function getCategoryColor(category: string): string {
     EDUCATION: "from-lime-500/20 to-lime-600/20",
     HR_AI: "from-orange-500/20 to-orange-600/20",
     LEGAL_AI: "from-slate-500/20 to-slate-600/20",
+    SPORTS_BETTING: "from-green-500/20 to-green-600/20",
   };
   return colors[category] || "from-gray-500/20 to-gray-600/20";
 }
@@ -91,6 +92,7 @@ export function getCategoryInitialBgColor(category: string): string {
     EDUCATION: "bg-lime-500",
     HR_AI: "bg-orange-500",
     LEGAL_AI: "bg-slate-500",
+    SPORTS_BETTING: "bg-green-600",
   };
   return colors[category] || "bg-gray-500";
 }
@@ -120,6 +122,7 @@ export function formatCategoryLabel(category: string): string {
     EDUCATION: "Education AI",
     HR_AI: "HR & Recruitment AI",
     LEGAL_AI: "Legal AI",
+    SPORTS_BETTING: "Sports Betting AI",
   };
   return labels[category] || category;
 }
