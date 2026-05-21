@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { sendTelegramAlert } from "@/lib/notifications/telegram";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 // Set to true during debugging to skip Telegram sends
 const DRY_RUN = false;
 

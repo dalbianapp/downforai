@@ -252,6 +252,89 @@ export default async function HomePage() {
         </div>
       )}
 
+      {/* Major Outages — compact list of all OUTAGE/DEGRADED services */}
+      {(counts.outage > 0 || counts.degraded > 0) && (() => {
+        const outageServices = services
+          .filter(s => s.status === 'OUTAGE' || s.status === 'DEGRADED')
+          .sort((a, b) => {
+            const order = { OUTAGE: 0, DEGRADED: 1, UNKNOWN: 2, OPERATIONAL: 3 } as const;
+            return order[a.status] - order[b.status];
+          });
+        return (
+          <div
+            style={{
+              background: '#fff5f5',
+              border: '1px solid #fecaca',
+              borderRadius: '14px',
+              padding: '20px 24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#991b1b' }}>
+                  ⚠️ Major Outages & Degradations
+                </div>
+                <div style={{ fontSize: '13px', color: '#b91c1c', marginTop: '2px' }}>
+                  {counts.outage > 0 && `${counts.outage} outage${counts.outage > 1 ? 's' : ''}`}
+                  {counts.outage > 0 && counts.degraded > 0 && ' · '}
+                  {counts.degraded > 0 && `${counts.degraded} degraded`}
+                </div>
+              </div>
+              <Link
+                href="/top-outages"
+                style={{ fontSize: '12px', color: '#b91c1c', textDecoration: 'underline' }}
+              >
+                View all →
+              </Link>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {outageServices.slice(0, 12).map(s => (
+                <Link
+                  key={s.slug}
+                  href={`/${s.slug}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    background: '#ffffff',
+                    borderRadius: '8px',
+                    border: `1px solid ${s.status === 'OUTAGE' ? '#fecaca' : '#fde68a'}`,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: s.status === 'OUTAGE' ? '#dc2626' : '#ca8a04',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#171717', flex: 1 }}>
+                    {s.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: s.status === 'OUTAGE' ? '#fef2f2' : '#fffbeb',
+                      color: s.status === 'OUTAGE' ? '#dc2626' : '#92400e',
+                      letterSpacing: '0.3px',
+                    }}
+                  >
+                    {s.status === 'OUTAGE' ? 'OUTAGE' : 'DEGRADED'}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Performance Alerts */}
       {perfAlerts.length > 0 && (
         <div

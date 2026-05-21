@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { sendTelegramAlert } from "@/lib/notifications/telegram";
 import { isTier1 } from "@/lib/notifications/tier1";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 const CRON_SECRET = process.env.CRON_SECRET;
 const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check
 const BATCH_SIZE = 200; // Check 200 surfaces per cron run (fully parallel)
