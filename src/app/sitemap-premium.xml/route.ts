@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+// Editorial pages added directly as static URLs (no DB lookup needed)
+const EDITORIAL_PATHS = [
+  "/reports/ai-outages-may-2026",
+  "/guides",
+  "/guides/ai-api-uptime-comparison-2026",
+  "/guides/chatgpt-down-alternatives",
+  "/guides/how-to-monitor-ai-api-status",
+  "/guides/ai-outage-patterns",
+  "/guides/cost-of-ai-downtime",
+  "/guides/openai-vs-anthropic-vs-google-reliability",
+  "/guides/free-ai-monitoring-tools",
+  "/data",
+  "/about",
+];
+
 const PREMIUM_SLUGS = [
   "openai", "anthropic", "google-gemini", "deepseek", "perplexity",
   "xai-grok", "midjourney", "suno", "groq", "mistral",
@@ -37,7 +52,7 @@ export async function GET() {
     console.warn("[sitemap-premium] slugs not found in DB:", missingSlugs);
   }
 
-  const urls = services
+  const serviceUrls = services
     .map(
       (s) => `
   <url>
@@ -49,8 +64,18 @@ export async function GET() {
     )
     .join("");
 
+  const editorialUrls = EDITORIAL_PATHS.map(
+    (path) => `
+  <url>
+    <loc>${baseUrl}${path}</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`
+  ).join("");
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${serviceUrls}${editorialUrls}
 </urlset>`;
 
   return new NextResponse(xml, {

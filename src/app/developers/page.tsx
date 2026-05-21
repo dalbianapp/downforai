@@ -141,7 +141,7 @@ export default function DevelopersPage() {
         </section>
 
         {/* Coming soon */}
-        <section>
+        <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
             Coming soon
           </h2>
@@ -156,6 +156,27 @@ export default function DevelopersPage() {
               Get in touch →
             </Link>
           </p>
+        </section>
+
+        {/* See also */}
+        <section>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
+            See also
+          </h2>
+          <ul style={{ color: "#525252", lineHeight: 1.8, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <li>
+              <Link href="/guides/how-to-monitor-ai-api-status" style={{ color: "#2563eb", textDecoration: "underline" }}>
+                How to Monitor AI API Status in Your Application
+              </Link>
+              {" "}— Circuit breakers, fallback patterns, and custom checks
+            </li>
+            <li>
+              <Link href="/data" style={{ color: "#2563eb", textDecoration: "underline" }}>
+                Data for Researchers & Journalists
+              </Link>
+              {" "}— API access, citation formats, and open data license
+            </li>
+          </ul>
         </section>
       </div>
     </>

@@ -1,80 +1,113 @@
 import { Metadata } from "next";
-import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About DownForAI — Real-Time AI Status Monitoring",
-  description: "Learn about DownForAI, the free real-time status monitoring platform for 500+ AI services. Our mission, how it works, and who we are.",
-  alternates: {
-    canonical: "/about",
-  },
+  title: "About DownForAI: Independent AI Status Monitoring",
+  description:
+    "DownForAI monitors 817 AI services in real time, tracking uptime, latency, incidents, and community reports worldwide.",
+  alternates: { canonical: "/about" },
   robots: { index: true, follow: true },
 };
 
 export default function AboutPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://downforai.com" },
+      { "@type": "ListItem", position: 2, name: "About" },
+    ],
+  };
+
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto" }}>
-      <Link href="/" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "none", display: "inline-block", marginBottom: "24px" }}>
-        ← Back to dashboard
-      </Link>
+    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "40px 20px" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <nav style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px" }}>
+        <a href="/" style={{ color: "#2563eb", textDecoration: "none" }}>Home</a>
+        {" / "}
+        <span>About</span>
+      </nav>
 
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", padding: "32px" }}>
-        <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", letterSpacing: "-1px", marginBottom: "24px" }}>About DownForAI</h1>
+      <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", marginBottom: "24px", lineHeight: 1.2 }}>
+        About DownForAI
+      </h1>
 
-        <div style={{ fontSize: "14px", color: "#525252", lineHeight: 1.8 }}>
-          <section style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Our Mission</h2>
-            <p>
-              DownForAI is a free, independent monitoring platform that tracks the real-time status of 500+ AI services — from ChatGPT and Claude to Midjourney, Stable Diffusion, and beyond.
-            </p>
-            <p style={{ marginTop: "8px" }}>
-              When an AI service goes down, developers and users need to know immediately. Is it just me, or is everyone affected? DownForAI answers that question in seconds.
-            </p>
-          </section>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        DownForAI is an independent monitoring platform for AI services. We track availability, latency, and incident signals of 817 AI services — from large language models to image generators, coding assistants, vector databases, and specialized AI tools.
+      </p>
 
-          <section style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>How It Works</h2>
-            <p>We monitor AI services through three complementary methods:</p>
-            <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 16px" }}>
-                <span style={{ fontWeight: 700, color: "#166534" }}>🤖 Automated Monitoring</span>
-                <span style={{ display: "block", fontSize: "13px", color: "#16a34a", marginTop: "2px" }}>We ping service endpoints every 5 minutes to check availability and measure latency.</span>
-              </div>
-              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "12px 16px" }}>
-                <span style={{ fontWeight: 700, color: "#1e40af" }}>📡 Status Page Sync</span>
-                <span style={{ display: "block", fontSize: "13px", color: "#2563eb", marginTop: "2px" }}>We aggregate data from official status pages when available.</span>
-              </div>
-              <div style={{ background: "#fefce8", border: "1px solid #fef08a", borderRadius: "10px", padding: "12px 16px" }}>
-                <span style={{ fontWeight: 700, color: "#854d0e" }}>👥 Community Reports</span>
-                <span style={{ display: "block", fontSize: "13px", color: "#ca8a04", marginTop: "2px" }}>Users can report issues directly from any service page. When multiple reports come in, we create an incident.</span>
-              </div>
-            </div>
-          </section>
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Why We Built DownForAI
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        AI tools are now part of daily work for millions of developers, creators, and businesses. When they go down, information is fragmented: official status pages lag behind reality, social media is noisy, and users are left wondering "is it just me?" DownForAI brings all signals together — synthetic monitoring, latency measurement, and community reports — into one real-time dashboard.
+      </p>
 
-          <section style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Who We Are</h2>
-            <p>
-              DownForAI is an independent project. We are not affiliated with any AI company. Our goal is to provide transparent, unbiased status information to the AI community.
-            </p>
-          </section>
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Our Scale
+      </h2>
+      <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>817 services monitored in real time</li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>Automated checks every 75 minutes from multiple locations</li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>p50 and p95 latency measurements per probe</li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>283 community reports collected from users in 25+ countries</li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>Major LLMs actively query our data: ChatGPT-User and PerplexityBot send hundreds of requests per 12-hour window for their own status awareness</li>
+      </ul>
 
-          <section style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Services We Monitor</h2>
-            <p>
-              We currently track 500+ AI services across 16 categories: LLMs (ChatGPT, Claude, Gemini...), Image Generation (Midjourney, DALL-E, Stable Diffusion...), Video, Audio, Dev Tools, Infrastructure, Search, Productivity, Agents, Design, 3D & Avatars, MLOps (Weights & Biases, LangSmith...), Vector DB (Pinecone, Chroma, Milvus...), Roleplay AI (Replika, Character AI...), Marketing AI (Surfer SEO, Anyword...), and Support AI (Intercom Fin, Zendesk AI...).
-            </p>
-            <p style={{ marginTop: "8px" }}>
-              Missing a service? <Link href="/contact" style={{ color: "#2563eb", textDecoration: "none" }}>Let us know</Link> and we'll add it.
-            </p>
-          </section>
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Our Methodology
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        Two complementary data streams:
+      </p>
+      <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          Synthetic Testing — automated endpoint checks measuring HTTP response times and status codes across all monitored services
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          Community Verification — user reports that capture issues automated checks may miss, including regional failures and quality degradation
+        </li>
+      </ul>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        Read the full <a href="/methodology" style={{ color: "#2563eb", textDecoration: "underline" }}>Methodology →</a>
+      </p>
 
-          <section>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "8px" }}>Tech Stack</h2>
-            <p>
-              Built with Next.js, PostgreSQL (Neon), Prisma, and deployed on Vercel. Designed for speed, reliability, and real-time accuracy.
-            </p>
-          </section>
-        </div>
-      </div>
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Independence
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        DownForAI is entirely independent. Not sponsored by, affiliated with, or funded by any AI provider. When <a href="/openai" style={{ color: "#2563eb", textDecoration: "underline" }}>OpenAI</a> fails, we report it. When <a href="/groq" style={{ color: "#2563eb", textDecoration: "underline" }}>Groq</a> is the fastest, the data proves it. Our monitoring is the same for every service.
+      </p>
+
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Built by Dalbian
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        Based in France. We built DownForAI because AI reliability is too important to remain scattered across status pages, social posts, and anecdotal reports. The infrastructure that powers our work is increasingly critical — it deserves the same monitoring rigor as traditional software.
+      </p>
+
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Explore
+      </h2>
+      <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="/reliability-index" style={{ color: "#2563eb", textDecoration: "underline" }}>AI Reliability Index</a> — live uptime and latency rankings
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="/badges" style={{ color: "#2563eb", textDecoration: "underline" }}>Status Badges</a> — embed live status in your README
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="/developers" style={{ color: "#2563eb", textDecoration: "underline" }}>Developer API</a> — programmatic status access
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="/data" style={{ color: "#2563eb", textDecoration: "underline" }}>Data for Researchers</a> — reports, API, citation formats
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="/guides" style={{ color: "#2563eb", textDecoration: "underline" }}>Guides &amp; Reports</a> — monitoring strategies and monthly outage reports
+        </li>
+      </ul>
     </div>
   );
 }
