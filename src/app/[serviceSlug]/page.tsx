@@ -6,7 +6,8 @@ import { truncateTitle, truncateDescription } from "@/lib/seo";
 import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
 import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
-import { QuickReport } from "@/components/status/QuickReport";
+import { StatusAndReport } from "@/components/status/StatusAndReport";
+import { ReportBottomCard } from "@/components/status/ReportBottomCard";
 import { CommentSection } from "@/components/status/CommentSection";
 import AffiliateBlock from "@/components/affiliate/AffiliateBlock";
 
@@ -83,6 +84,16 @@ export default async function ServicePage({
 
   const { service, overallStatus, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
 
+  // Derive props for StatusAndReport
+  const mostRecent = surfaces.reduce<typeof surfaces[number] | null>((best, s) => {
+    if (!s.lastObservedAt) return best;
+    if (!best?.lastObservedAt) return s;
+    return s.lastObservedAt > best.lastObservedAt ? s : best;
+  }, null);
+  const hasOpenIncident = incidents30d.some(
+    (i) => i.status === "OPEN" || i.status === "MONITORING"
+  );
+
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(service);
   const softwareAppJsonLd = buildSoftwareApplicationJsonLd(service, dashboard);
 
@@ -136,12 +147,16 @@ export default async function ServicePage({
         />
       </div>
 
-      {/* Quick report — high for visibility */}
+      {/* Status + report — 2-column layout */}
       <div style={{ marginTop: "24px" }}>
-        <QuickReport
-          serviceSlug={service.slug}
+        <StatusAndReport
           serviceName={service.name}
-          initialCount={reportSummary.total24h}
+          serviceSlug={service.slug}
+          overallStatus={overallStatus}
+          lastProbeAt={mostRecent?.lastObservedAt ?? null}
+          lastProbeLatency={mostRecent?.latestLatencyMs ?? null}
+          hasOpenIncident={hasOpenIncident}
+          reportCount24h={reportSummary.total24h}
           surfaces={surfaces.map((s) => ({ id: s.surfaceId, displayName: s.displayName }))}
         />
       </div>
@@ -234,6 +249,11 @@ export default async function ServicePage({
       {/* Comment section */}
       <div style={{ marginTop: "24px" }}>
         <CommentSection serviceSlug={service.slug} serviceName={service.name} />
+      </div>
+
+      {/* Bottom report CTA */}
+      <div style={{ marginTop: "24px" }}>
+        <ReportBottomCard serviceName={service.name} />
       </div>
     </div>
   );
