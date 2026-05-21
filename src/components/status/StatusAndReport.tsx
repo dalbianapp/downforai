@@ -45,12 +45,12 @@ export function StatusAndReport({
 }: Props) {
   const report = useReport(serviceSlug, reportCount24h);
   const stickyRef = useRef<HTMLDivElement>(null);
-  const openModalRef = useRef(report.openModal);
-  openModalRef.current = report.openModal;
+  const reportNowRef = useRef(report.reportNow);
+  reportNowRef.current = report.reportNow;
 
-  // Listen for custom event dispatched by the bottom card
+  // Listen for custom event dispatched by the bottom card / mobile sticky
   useEffect(() => {
-    const handler = () => openModalRef.current();
+    const handler = () => reportNowRef.current();
     window.addEventListener("open-report-modal", handler);
     return () => window.removeEventListener("open-report-modal", handler);
   }, []);
@@ -192,7 +192,7 @@ export function StatusAndReport({
             Help other users by reporting if {serviceName} is not working for you.
           </p>
 
-          {/* Cooldown warning */}
+          {/* Cooldown / error feedback */}
           {report.cooldownError && (
             <div style={{
               background: "#fef3c7",
@@ -206,30 +206,44 @@ export function StatusAndReport({
               Please wait 15 minutes before reporting again.
             </div>
           )}
+          {report.errorMessage && !report.cooldownError && (
+            <div style={{
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              fontSize: "13px",
+              color: "#991b1b",
+              marginBottom: "14px",
+            }}>
+              {report.errorMessage}
+            </div>
+          )}
 
-          {/* Big red button */}
+          {/* Big red button — sends DOWN immediately on click */}
           <button
-            onClick={report.openModal}
+            onClick={report.reportNow}
+            disabled={report.submitting}
             style={{
               width: "100%",
               padding: "16px 20px",
               fontSize: "15px",
               fontWeight: 700,
               color: "#ffffff",
-              background: "#dc2626",
+              background: report.submitting ? "#9ca3af" : "#dc2626",
               border: "none",
               borderRadius: "12px",
-              cursor: "pointer",
+              cursor: report.submitting ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "8px",
               transition: "background 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#b91c1c"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#dc2626"; }}
+            onMouseEnter={(e) => { if (!report.submitting) e.currentTarget.style.background = "#b91c1c"; }}
+            onMouseLeave={(e) => { if (!report.submitting) e.currentTarget.style.background = report.submitting ? "#9ca3af" : "#dc2626"; }}
           >
-            ⚠️ I confirm: {shortName} is not working
+            {report.submitting ? "Sending…" : `⚠️ I confirm: ${shortName} is not working`}
           </button>
 
           {/* Live count */}
@@ -324,14 +338,27 @@ export function StatusAndReport({
               </div>
             ) : (
               <>
-                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", margin: "0 0 20px", paddingRight: "28px" }}>
-                  Report an issue with {serviceName}
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", margin: "0 0 12px", paddingRight: "28px" }}>
+                  Add details (optional)
                 </h3>
+
+                {/* Report confirmed banner */}
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                  fontSize: "13px",
+                  color: "#166534",
+                  marginBottom: "20px",
+                }}>
+                  ✓ Your report has been registered. Help the community by adding more details below.
+                </div>
 
                 {/* Type picker */}
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "#171717", marginBottom: "10px" }}>
-                    What type of issue? <span style={{ color: "#dc2626" }}>*</span>
+                    What type of issue?
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                     {REPORT_BUTTONS.map((btn) => {
@@ -443,45 +470,26 @@ export function StatusAndReport({
                   />
                 </div>
 
-                {/* Error */}
-                {report.errorMessage && (
-                  <div style={{
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    borderRadius: "8px",
-                    padding: "10px 12px",
-                    fontSize: "13px",
-                    color: "#991b1b",
-                    marginBottom: "16px",
-                  }}>
-                    {report.errorMessage}
-                  </div>
-                )}
-
-                {/* Submit */}
+                {/* Add details submit */}
                 <button
-                  onClick={report.handleSubmit}
-                  disabled={report.submitting || !report.selectedType}
+                  onClick={report.handleAddDetails}
+                  disabled={report.submitting}
                   style={{
                     width: "100%",
                     padding: "14px 20px",
                     fontSize: "15px",
                     fontWeight: 700,
                     color: "#ffffff",
-                    background: !report.selectedType || report.submitting ? "#9ca3af" : "#dc2626",
+                    background: report.submitting ? "#9ca3af" : "#dc2626",
                     border: "none",
                     borderRadius: "10px",
-                    cursor: !report.selectedType || report.submitting ? "not-allowed" : "pointer",
+                    cursor: report.submitting ? "not-allowed" : "pointer",
                     transition: "background 0.15s",
                   }}
-                  onMouseEnter={(e) => {
-                    if (report.selectedType && !report.submitting) e.currentTarget.style.background = "#b91c1c";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (report.selectedType && !report.submitting) e.currentTarget.style.background = "#dc2626";
-                  }}
+                  onMouseEnter={(e) => { if (!report.submitting) e.currentTarget.style.background = "#b91c1c"; }}
+                  onMouseLeave={(e) => { if (!report.submitting) e.currentTarget.style.background = report.submitting ? "#9ca3af" : "#dc2626"; }}
                 >
-                  {report.submitting ? "Submitting…" : "Submit report"}
+                  {report.submitting ? "Sending…" : "Add details"}
                 </button>
               </>
             )}
@@ -492,20 +500,21 @@ export function StatusAndReport({
       {/* ── Mobile sticky button (JS-controlled, CSS hides on desktop) ── */}
       <div ref={stickyRef} className="sar-sticky">
         <button
-          onClick={report.openModal}
+          onClick={report.reportNow}
+          disabled={report.submitting}
           style={{
             width: "100%",
             padding: "14px 20px",
             fontSize: "15px",
             fontWeight: 700,
             color: "#ffffff",
-            background: "#dc2626",
+            background: report.submitting ? "#9ca3af" : "#dc2626",
             border: "none",
             borderRadius: "12px",
-            cursor: "pointer",
+            cursor: report.submitting ? "not-allowed" : "pointer",
           }}
         >
-          🔴 Report issue with {shortName}
+          {report.submitting ? "Sending…" : `🔴 Report issue with ${shortName}`}
         </button>
       </div>
     </>

@@ -50,28 +50,16 @@ export function useReport(serviceSlug: string, initialCount: number) {
     setSuccess(false);
   }, []);
 
-  const openModal = useCallback(() => {
-    if (isOnCooldown()) {
-      setCooldownError(true);
-      setTimeout(() => setCooldownError(false), 3000);
-      return;
-    }
-    resetForm();
-    setShowModal(true);
-  }, [isOnCooldown, resetForm]);
-
   const closeModal = useCallback(() => {
     setShowModal(false);
     resetForm();
   }, [resetForm]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!selectedType) {
-      setErrorMessage("Please select an issue type.");
-      return;
-    }
+  // Main entry point: POST DOWN immediately, then open detail modal
+  const reportNow = useCallback(async () => {
     if (isOnCooldown()) {
-      setErrorMessage("Please wait 15 minutes before reporting again.");
+      setCooldownError(true);
+      setTimeout(() => setCooldownError(false), 3000);
       return;
     }
 
@@ -82,7 +70,7 @@ export function useReport(serviceSlug: string, initialCount: number) {
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serviceSlug, reportType: selectedType }),
+        body: JSON.stringify({ serviceSlug, reportType: "DOWN" }),
       });
       const data = await res.json();
 
@@ -98,30 +86,41 @@ export function useReport(serviceSlug: string, initialCount: number) {
 
       setCooldown();
       if (data.newCount !== undefined) setLiveCount(data.newCount);
-
-      // Submit details silently if user filled them in
-      if (comment || email || surface) {
-        await fetch("/api/report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            serviceSlug,
-            reportType: selectedType,
-            surfaceId: surface || undefined,
-            email: email || undefined,
-            comment: comment || undefined,
-            isDetailUpdate: true,
-          }),
-        }).catch(() => {/* detail update failing is non-critical */});
-      }
-
-      setSuccess(true);
       setSubmitting(false);
+      resetForm();
+      setShowModal(true);
     } catch {
       setErrorMessage("Network error. Please try again.");
       setSubmitting(false);
     }
-  }, [selectedType, isOnCooldown, setCooldown, serviceSlug, comment, email, surface]);
+  }, [isOnCooldown, setCooldown, serviceSlug, resetForm]);
+
+  // Optional detail submission from inside the modal
+  const handleAddDetails = useCallback(async () => {
+    if (!selectedType && !comment && !email && !surface) {
+      closeModal();
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceSlug,
+          reportType: selectedType || "DOWN",
+          surfaceId: surface || undefined,
+          email: email || undefined,
+          comment: comment || undefined,
+          isDetailUpdate: true,
+        }),
+      });
+    } catch { /* detail update is non-critical */ }
+
+    setSuccess(true);
+    setSubmitting(false);
+  }, [selectedType, comment, email, surface, serviceSlug, closeModal]);
 
   return {
     liveCount,
@@ -135,9 +134,9 @@ export function useReport(serviceSlug: string, initialCount: number) {
     success,
     errorMessage,
     cooldownError,
-    openModal,
+    reportNow,
     closeModal,
-    handleSubmit,
+    handleAddDetails,
     setSelectedType,
     setComment,
     setEmail,
