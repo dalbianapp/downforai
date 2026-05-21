@@ -27,11 +27,11 @@ export function LatencyChart({ observations }: LatencyChartProps) {
     if (!isClient || observations.length === 0) return [];
 
     return observations.map((obs) => {
-      const date = new Date(obs.observedAt);
-      const h = date.getHours().toString().padStart(2, "0");
-      const m = date.getMinutes().toString().padStart(2, "0");
+      const d = new Date(obs.observedAt);
+      // toLocaleTimeString uses the browser's local timezone, never UTC
+      const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
       return {
-        time: `${h}:${m}`,
+        time,
         latency: obs.latencyMs,
       };
     });

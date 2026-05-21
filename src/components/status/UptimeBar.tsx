@@ -35,11 +35,9 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
     (v, i, arr) => v >= 0 && v < slots.length && arr.indexOf(v) === i
   );
 
-  const formatTime = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-  };
+  // toLocaleTimeString uses the browser's local timezone, never UTC
+  const formatTime = (date: Date) =>
+    new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
     <div>
@@ -113,8 +111,10 @@ export function UptimeBarWithHours({ slots, uptimePercent: _uptimePercent }: Upt
             if (!slot) return null;
 
             // Show actual clock time (local time) — only after hydration
-            const d = new Date(slot.time);
-            const label = isClient ? `${d.getHours().toString().padStart(2, "0")}h` : "";
+            // Use local timezone for axis labels
+            const label = isClient
+              ? `${String(new Date(slot.time).getHours()).padStart(2, "0")}h`
+              : "";
 
             return (
               <div
