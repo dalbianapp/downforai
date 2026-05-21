@@ -63,7 +63,7 @@ export default function DataPage() {
         <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", margin: 0, marginBottom: "8px" }}>
           Aggregate analysis of AI outages, latency trends, and community reports.
         </p>
-        <a href="/reports/ai-outages-may-2026" style={{ color: "#2563eb", textDecoration: "underline" }}>AI Outages — May 2026 →</a>
+        <a href="/reports/2026-05" style={{ color: "#2563eb", textDecoration: "underline" }}>AI Outages — May 2026 →</a>
       </div>
 
       <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "20px", marginBottom: "16px" }}>
@@ -101,7 +101,7 @@ export default function DataPage() {
         For report citations:
       </p>
       <pre style={{ background: "#f3f4f6", padding: "16px", borderRadius: "8px", fontFamily: "monospace", fontSize: "14px", overflowX: "auto" as const, marginBottom: "16px" }}>
-        {`DownForAI, "AI Outages — May 2026," https://downforai.com/reports/ai-outages-may-2026`}
+        {`DownForAI, "AI Outages — May 2026," https://downforai.com/reports/2026-05`}
       </pre>
 
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>

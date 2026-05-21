@@ -12,7 +12,7 @@ const guides = [
   {
     tag: "REPORT",
     title: "AI Outages Report — May 2026",
-    href: "/reports/ai-outages-may-2026",
+    href: "/reports/2026-05",
     description:
       "Real-time data on 817 services: the OpenAI April 20 cascade, latency rankings, and 283 community reports from 25+ countries.",
   },

@@ -207,7 +207,7 @@ export default function MethodologyPage() {
           <h2 style={h2Style}>Further reading</h2>
           <ul style={{ paddingLeft: "24px", margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             <li style={liStyle}>
-              <Link href="/reports/ai-outages-may-2026" style={{ color: "#2563eb", textDecoration: "underline" }}>
+              <Link href="/reports/2026-05" style={{ color: "#2563eb", textDecoration: "underline" }}>
                 AI Outages Report — May 2026
               </Link>
               {" "}— Real-world incident data from 817 monitored services

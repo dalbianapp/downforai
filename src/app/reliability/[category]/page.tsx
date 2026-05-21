@@ -392,7 +392,7 @@ export default async function ReliabilityCategoryPage({
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" as const }}>
           <a href="/top-outages" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Top Outages Right Now</a>
           <a href="/reliability-index" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>AI Reliability Index</a>
-          <a href="/reports/ai-outages-may-2026" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Monthly Report</a>
+          <a href="/reports/2026-05" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Monthly Report</a>
         </div>
       </div>
 

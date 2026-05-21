@@ -47,6 +47,12 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      // /reports/ai-outages-may-2026 → /reports/2026-05
+      {
+        source: "/reports/ai-outages-may-2026",
+        destination: "/reports/2026-05",
+        permanent: true,
+      },
       // /[serviceSlug]/down → /[serviceSlug]
       {
         source: "/:serviceSlug/down",

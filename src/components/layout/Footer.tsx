@@ -40,7 +40,7 @@ export function Footer() {
               <Link href="/top-outages" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Top Outages</Link>
               <Link href="/reliability" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Reliability Rankings</Link>
               <Link href="/guides" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Guides</Link>
-              <Link href="/reports/ai-outages-may-2026" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Reports</Link>
+              <Link href="/reports" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Reports</Link>
               <Link href="/data" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Data</Link>
               <Link href="/about" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>About</Link>
               <Link href="/methodology" style={{ fontSize: "13px", color: "#a3a3a3", textDecoration: "none" }}>Methodology</Link>

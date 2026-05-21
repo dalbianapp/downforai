@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 
 // Editorial pages added directly as static URLs (no DB lookup needed)
 const EDITORIAL_PATHS = [
-  "/reports/ai-outages-may-2026",
+  "/reports",
+  "/reports/2026-05",
   "/guides",
   "/guides/ai-api-uptime-comparison-2026",
   "/guides/chatgpt-down-alternatives",

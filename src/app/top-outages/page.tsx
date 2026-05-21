@@ -350,7 +350,7 @@ export default async function TopOutagesPage({
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" as const }}>
           <a href="/report" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Report an issue</a>
           <a href="/reliability-index" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>AI Reliability Index</a>
-          <a href="/reports/ai-outages-may-2026" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Monthly Report</a>
+          <a href="/reports/2026-05" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Monthly Report</a>
           <a href="/reliability" style={{ fontSize: "13px", color: "#2563eb", textDecoration: "underline" }}>Reliability Rankings</a>
         </div>
       </div>
