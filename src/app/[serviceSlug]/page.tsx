@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import dynamic from "next/dynamic";
-import { truncateTitle, truncateDescription } from "@/lib/seo";
+import { truncateDescription } from "@/lib/seo";
 import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
 import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
@@ -38,6 +38,27 @@ export async function generateStaticParams() {
   return services.map((s) => ({ serviceSlug: s.slug }));
 }
 
+function buildServiceTitle(serviceName: string, year: number): string {
+  const primary = `Is ${serviceName} Down Today? Live Status & Outages ${year}`;
+  const fallback = `Is ${serviceName} Down? Live Status ${year}`;
+  const shortFallback = `${serviceName} Status & Outages ${year}`;
+  if (primary.length <= 60) return primary;
+  if (fallback.length <= 60) return fallback;
+  return shortFallback;
+}
+
+function buildServiceDescription(serviceName: string, reports24h: number): string {
+  const reportLabel = reports24h === 1 ? "report" : "reports";
+  if (reports24h > 0) {
+    return truncateDescription(
+      `Is ${serviceName} down today? Check live status, latency, and outage reports. ${reports24h} community ${reportLabel} in the last 24 hours.`
+    );
+  }
+  return truncateDescription(
+    `Is ${serviceName} down today? Check live status, latency, and outage reports. Updated every ~75 minutes by DownForAI.`
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -47,11 +68,16 @@ export async function generateMetadata({
   const service = await prisma.service.findUnique({ where: { slug: serviceSlug } });
   if (!service) return {};
 
-  const fullTitle = `Is ${service.name} Down? Live Status & Outage Reports`;
-  const title = truncateTitle(fullTitle, `Is ${service.name} Down? Live Status`);
-  const description = truncateDescription(
-    `Check ${service.name} real-time server status and community outage reports. Is ${service.name} down for everyone or just you? Live monitoring and incident tracking.`
-  );
+  const reports24h = await prisma.communityReport.count({
+    where: {
+      serviceId: service.id,
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    },
+  });
+
+  const year = new Date().getFullYear();
+  const title = buildServiceTitle(service.name, year);
+  const description = buildServiceDescription(service.name, reports24h);
 
   return {
     title,
@@ -83,6 +109,16 @@ export default async function ServicePage({
   if (!dashboard) notFound();
 
   const { service, overallStatus, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
+
+  const lastIncident = await prisma.incident.findFirst({
+    where: {
+      serviceId: service.id,
+      resolvedAt: { not: null },
+      startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { startedAt: "desc" },
+    select: { startedAt: true },
+  });
 
   // Derive props for StatusAndReport
   const mostRecent = surfaces.reduce<typeof surfaces[number] | null>((best, s) => {
@@ -136,6 +172,7 @@ export default async function ServicePage({
         surfaces={surfaces}
         reportSummary={reportSummary}
         topContent={topContent}
+        lastIncidentDate={lastIncident?.startedAt ?? null}
       />
 
       {/* 4 KPI tiles */}

@@ -1,6 +1,7 @@
 import type { SurfaceSnapshot, DiagnosisResult, ReportSummary } from "@/lib/service-page/types";
 import type { TopServiceContent } from "@/content/top-services/types";
 import { getStatusConfig } from "./_statusConfig";
+import SnippetMagnet from "./SnippetMagnet";
 
 interface Props {
   service: { slug: string; name: string };
@@ -9,6 +10,7 @@ interface Props {
   surfaces: SurfaceSnapshot[];
   reportSummary: ReportSummary;
   topContent: TopServiceContent | null;
+  lastIncidentDate?: Date | null;
 }
 
 const SCOPE_LABEL: Record<string, string> = {
@@ -31,6 +33,7 @@ export default function ServiceHeroHeader({
   surfaces,
   reportSummary,
   topContent,
+  lastIncidentDate,
 }: Props) {
   const sc = getStatusConfig(overallStatus);
 
@@ -63,6 +66,14 @@ export default function ServiceHeroHeader({
       >
         {service.name} status: API, auth, latency &amp; outage reports
       </h1>
+
+      <SnippetMagnet
+        serviceName={service.name}
+        status={overallStatus}
+        surfaceCount={surfaces.length}
+        reports24h={reportSummary.total24h}
+        lastIncidentDate={lastIncidentDate}
+      />
 
       {/* Status card */}
       <div
