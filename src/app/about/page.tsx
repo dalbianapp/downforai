@@ -115,6 +115,10 @@ export default function AboutPage() {
       <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
         DownForAI is built by <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>Dalbian</a>. You can find our open-source projects, status badge repository, and contribution history on our <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>GitHub profile</a>. DownForAI is also referenced on <a href="https://www.wikidata.org/wiki/Q139801327" style={{ color: "#2563eb", textDecoration: "underline" }}>Wikidata</a>.
       </p>
+      <a href="https://www.saashub.com/downforai?utm_source=badge&utm_campaign=badge&utm_content=downforai&badge_variant=color&badge_kind=approved" target="_blank" rel="noopener">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1" alt="DownForAI - Approved on SaaSHub" style={{ maxWidth: "150px" }} />
+      </a>
 
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
         Explore
