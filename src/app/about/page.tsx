@@ -89,6 +89,34 @@ export default function AboutPage() {
       </p>
 
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Our Monitoring Network
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        DownForAI is part of the Dalbian network, which monitors service availability across multiple countries and languages.
+      </p>
+
+      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginTop: "24px", marginBottom: "10px" }}>
+        Statut Services — France
+      </h3>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        <a href="https://www.statut-services.fr" style={{ color: "#2563eb", textDecoration: "underline" }}>Statut Services</a> monitors 1,448 digital services in France in real-time: banks, ISPs, streaming, e-commerce, public services, and more. Available in French, it is one of the leading independent outage trackers in France with over 600 daily users from Google.
+      </p>
+
+      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginTop: "24px", marginBottom: "10px" }}>
+        Estado Servicios — Spain
+      </h3>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        <a href="https://www.estado-servicios.es" style={{ color: "#2563eb", textDecoration: "underline" }}>Estado Servicios</a> monitors 575 digital services in Spain in real-time: banks, telecom operators, streaming, e-commerce, and public services. Available in Spanish.
+      </p>
+
+      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginTop: "24px", marginBottom: "10px" }}>
+        Open Source &amp; GitHub
+      </h3>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        DownForAI is built by <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>Dalbian</a>. You can find our open-source projects, status badge repository, and contribution history on our GitHub profile.
+      </p>
+
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
         Explore
       </h2>
       <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>

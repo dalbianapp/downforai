@@ -74,6 +74,29 @@ export default function DataPage() {
         <a href="/badges" style={{ color: "#2563eb", textDecoration: "underline" }}>Get Badges →</a>
       </div>
 
+      <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "20px", marginBottom: "16px" }}>
+        <div style={{ fontWeight: 700, fontSize: "16px", color: "#171717", marginBottom: "8px" }}>International Coverage</div>
+        <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", margin: 0, marginBottom: "8px" }}>
+          Our monitoring network extends beyond AI services:
+        </p>
+        <ul style={{ marginLeft: "20px", listStyleType: "disc", margin: 0 }}>
+          <li style={{ marginBottom: "6px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+            <a href="https://www.statut-services.fr" style={{ color: "#2563eb", textDecoration: "underline" }}>Statut Services</a> — 1,448 services monitored in France
+          </li>
+          <li style={{ fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+            <a href="https://www.estado-servicios.es" style={{ color: "#2563eb", textDecoration: "underline" }}>Estado Servicios</a> — 575 services monitored in Spain
+          </li>
+        </ul>
+      </div>
+
+      <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "20px", marginBottom: "16px" }}>
+        <div style={{ fontWeight: 700, fontSize: "16px", color: "#171717", marginBottom: "8px" }}>Open Source</div>
+        <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", margin: 0, marginBottom: "8px" }}>
+          Our code and status badge tools are available on{" "}
+          <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>GitHub</a>.
+        </p>
+      </div>
+
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
         Coverage
       </h2>
