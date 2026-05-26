@@ -113,7 +113,7 @@ export default function AboutPage() {
         Open Source &amp; GitHub
       </h3>
       <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
-        DownForAI is built by <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>Dalbian</a>. You can find our open-source projects, status badge repository, and contribution history on our GitHub profile.
+        DownForAI is built by <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>Dalbian</a>. You can find our open-source projects, status badge repository, and contribution history on our <a href="https://github.com/dalbianapp" style={{ color: "#2563eb", textDecoration: "underline" }}>GitHub profile</a>. DownForAI is also referenced on <a href="https://www.wikidata.org/wiki/Q139801327" style={{ color: "#2563eb", textDecoration: "underline" }}>Wikidata</a>.
       </p>
 
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
