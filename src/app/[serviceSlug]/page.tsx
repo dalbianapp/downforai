@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { truncateDescription } from "@/lib/seo";
 import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
+import { getServiceBySlug, getReports24hCount, getLastResolvedIncident } from "@/lib/service-queries";
 import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
 import { StatusAndReport } from "@/components/status/StatusAndReport";
@@ -65,15 +66,10 @@ export async function generateMetadata({
   params: Promise<{ serviceSlug: string }>;
 }): Promise<Metadata> {
   const { serviceSlug } = await params;
-  const service = await prisma.service.findUnique({ where: { slug: serviceSlug } });
+  const service = await getServiceBySlug(serviceSlug);
   if (!service) return {};
 
-  const reports24h = await prisma.communityReport.count({
-    where: {
-      serviceId: service.id,
-      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    },
-  });
+  const reports24h = await getReports24hCount(service.id);
 
   const year = new Date().getFullYear();
   const title = buildServiceTitle(service.name, year);
@@ -110,15 +106,7 @@ export default async function ServicePage({
 
   const { service, overallStatus, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
 
-  const lastIncident = await prisma.incident.findFirst({
-    where: {
-      serviceId: service.id,
-      resolvedAt: { not: null },
-      startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-    },
-    orderBy: { startedAt: "desc" },
-    select: { startedAt: true },
-  });
+  const lastIncident = await getLastResolvedIncident(service.id);
 
   // Derive props for StatusAndReport
   const mostRecent = surfaces.reduce<typeof surfaces[number] | null>((best, s) => {

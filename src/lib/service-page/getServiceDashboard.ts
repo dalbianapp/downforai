@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { TOP_SERVICE_CONTENT } from "@/content/top-services";
 import { classifyServiceIssue } from "./classifyServiceIssue";
+import { getServiceBySlug, getReports24hCount } from "@/lib/service-queries";
 import type {
   ServiceDashboardData,
   SurfaceSnapshot,
@@ -10,19 +11,8 @@ import type {
 export async function getServiceDashboard(
   slug: string
 ): Promise<ServiceDashboardData | null> {
-  // 1. Load service basic info
-  const service = await prisma.service.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      category: true,
-      description: true,
-      websiteUrl: true,
-      iconUrl: true,
-    },
-  });
+  // 1. Load service basic info (cached — shared with generateMetadata in the same request)
+  const service = await getServiceBySlug(slug);
   if (!service) return null;
 
   // 2. Latest observation per surface (LATERAL JOIN — 1 row per surface)
@@ -151,12 +141,7 @@ export async function getServiceDashboard(
   // 6. Community reports — count queries hit the composite index
   //    @@index([serviceId, createdAt(sort: Desc)]) — safe
   const [reports24hCount, reports2hCount] = await Promise.all([
-    prisma.communityReport.count({
-      where: {
-        serviceId: service.id,
-        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      },
-    }),
+    getReports24hCount(service.id), // cached — shared with generateMetadata in the same request
     prisma.communityReport.count({
       where: {
         serviceId: service.id,
