@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export const dynamic = "force-dynamic"; // real-time monitoring — never cache
+export const revalidate = 600;
 
 export async function GET(
   _req: NextRequest,
@@ -43,5 +43,10 @@ export async function GET(
     modeStatus: r.status ?? null,
   }));
 
-  return NextResponse.json({ buckets }, { status: 200 });
+  return NextResponse.json({ buckets }, {
+    status: 200,
+    headers: {
+      "Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
+    },
+  });
 }
