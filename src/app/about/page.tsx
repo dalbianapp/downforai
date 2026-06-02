@@ -121,6 +121,23 @@ export default function AboutPage() {
       </a>
 
       <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
+        Featured on
+      </h2>
+      <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#374151", marginBottom: "16px" }}>
+        DownForAI is listed on these curated resources:
+      </p>
+      <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="https://github.com/ivbeg/awesome-status-pages" target="_blank" rel="noopener" style={{ color: "#2563eb", textDecoration: "underline" }}>awesome-status-pages</a>
+          {" "}— Curated list of status pages and monitoring services
+        </li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>
+          <a href="https://www.saashub.com/downforai" target="_blank" rel="noopener" style={{ color: "#2563eb", textDecoration: "underline" }}>SaaSHub</a>
+          {" "}— Software discovery platform (approved listing)
+        </li>
+      </ul>
+
+      <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#171717", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
         Explore
       </h2>
       <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
