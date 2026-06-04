@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const CACHE_SECONDS = 300;
+export const revalidate = 600;
+
+const CACHE_SECONDS = 600;
 
 const STATUS_COLORS: Record<string, { bg: string; label: string }> = {
   OPERATIONAL:      { bg: "#22c55e", label: "operational" },
@@ -98,7 +100,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml",
-        "Cache-Control": `public, max-age=${CACHE_SECONDS}, s-maxage=${CACHE_SECONDS}`,
+        "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS}`,
         "Vary": "Accept",
       },
     });
