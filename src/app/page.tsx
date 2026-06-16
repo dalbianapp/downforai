@@ -4,6 +4,7 @@ import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { HeroSection } from "@/components/home/HeroSection";
 import { BentoSection } from "@/components/home/BentoSection";
 import { RecentIncidents } from "@/components/home/RecentIncidents";
+import { EditorialLinks } from "@/components/home/EditorialLinks";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { calculateWorstStatus } from "@/lib/utils";
 import { generateWebSiteJsonLd } from "@/lib/seo";
@@ -477,6 +478,9 @@ export default async function HomePage() {
       {incidents.length > 0 && (
         <RecentIncidents incidents={incidents} />
       )}
+
+      {/* Editorial Links — SSR maillage interne */}
+      <EditorialLinks />
 
       {/* Bottom CTA */}
       <div

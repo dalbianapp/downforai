@@ -173,11 +173,51 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  // Editorial pages (guides, reliability hubs, data, reports, top-outages)
+  // Previously only in the orphan sitemap-premium — now in the main sitemap so Google discovers them
+  const RELIABILITY_CATEGORY_SLUGS = [
+    "llm", "image", "video", "audio", "dev", "infra", "search", "productivity",
+    "agents", "three-d", "design", "mlops", "vector-db", "roleplay", "marketing",
+    "support", "education", "hr-ai", "legal-ai", "sports-betting",
+  ];
+
+  const GUIDE_SLUGS = [
+    "ai-api-uptime-comparison-2026",
+    "chatgpt-down-alternatives",
+    "how-to-monitor-ai-api-status",
+    "ai-outage-patterns",
+    "cost-of-ai-downtime",
+    "openai-vs-anthropic-vs-google-reliability",
+    "free-ai-monitoring-tools",
+  ];
+
+  const editorialRoutes: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/guides`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
+    ...GUIDE_SLUGS.map((slug) => ({
+      url: `${baseUrl}/guides/${slug}`,
+      lastModified: DEPLOY_DATE,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    { url: `${baseUrl}/reliability`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
+    ...RELIABILITY_CATEGORY_SLUGS.map((slug) => ({
+      url: `${baseUrl}/reliability/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    })),
+    { url: `${baseUrl}/data`, lastModified: DEPLOY_DATE, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/top-outages`, lastModified: new Date(), changeFrequency: "daily", priority: 0.6 },
+    { url: `${baseUrl}/reports`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
+    { url: `${baseUrl}/reports/2026-05`, lastModified: DEPLOY_DATE, changeFrequency: "monthly", priority: 0.5 },
+  ];
+
   return [
     ...staticRoutes,
     ...serviceRoutes,
     ...categoryRoutes,
     ...errorRoutes,
+    ...editorialRoutes,
     ...monthlyIncidentRoutes,
     ...serviceIncidentRoutes,
   ];
