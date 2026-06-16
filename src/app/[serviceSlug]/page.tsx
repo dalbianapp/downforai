@@ -27,6 +27,7 @@ import ProviderSpecificPanel from "@/components/service/ProviderSpecificPanel";
 import FallbackAlternativesPanel from "@/components/service/FallbackAlternativesPanel";
 import MethodologyPanel from "@/components/service/MethodologyPanel";
 import BadgeEmbed from "@/components/service/BadgeEmbed";
+import { ReliabilitySummary } from "@/components/service/ReliabilitySummary";
 
 const WorldReportMap = dynamic(
   () => import("@/components/status/WorldReportMap").then((mod) => ({ default: mod.WorldReportMap }))
@@ -169,6 +170,20 @@ export default async function ServicePage({
           uptime24h={uptime24h}
           surfaces={surfaces}
           incidents30d={incidents30d}
+        />
+      </div>
+
+      {/* Reliability synthesis — SSR prose, readable by crawlers */}
+      <div style={{ marginTop: "24px" }}>
+        <ReliabilitySummary
+          service={service}
+          overallStatus={overallStatus}
+          diagnosis={diagnosis}
+          surfaces={surfaces}
+          uptime24h={uptime24h}
+          incidents30d={incidents30d}
+          reportSummary={reportSummary}
+          lastIncident={lastIncident}
         />
       </div>
 
