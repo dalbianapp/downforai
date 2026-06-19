@@ -438,7 +438,11 @@ async function handleCheckStatus(request: NextRequest) {
         // SHADOW MODE: parse Atlassian indicator once per URL (fail-safe: null on any error)
         let shadow: AtlassianShadow | null = null;
         if (atlassianUrls.has(url) && result.bodyText) {
-          shadow = parseAtlassianBody(result.bodyText);
+          const parsed = parseAtlassianBody(result.bodyText);
+          // Fail-safe: parse failure → shadow falls back to HTTP-computed status, not forced OPERATIONAL.
+          // A broken parse on a 200 response → OPERATIONAL (HTTP says up, we just can't read the indicator).
+          // A broken parse on a 500 response → OUTAGE (HTTP already tells us it's down).
+          shadow = parsed.parseOk ? parsed : { ...parsed, shadowStatus: result.status };
         }
 
         for (const surface of surfacesForUrl) {
