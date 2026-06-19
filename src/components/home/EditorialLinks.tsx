@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const EDITORIAL_LINKS = [
   {
+    href: "/speed-index",
+    title: "LLM Speed Index",
+    description: "Live latency rankings for LLM APIs — p50/p95, uptime, and trend.",
+  },
+  {
     href: "/guides/ai-api-uptime-comparison-2026",
     title: "AI API Uptime Comparison 2026",
     description: "Uptime, latency, and incident data compared across 50+ AI APIs.",

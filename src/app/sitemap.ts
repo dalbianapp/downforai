@@ -206,6 +206,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.6,
     })),
+    { url: `${baseUrl}/speed-index`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
     { url: `${baseUrl}/data`, lastModified: DEPLOY_DATE, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/top-outages`, lastModified: new Date(), changeFrequency: "daily", priority: 0.6 },
     { url: `${baseUrl}/reports`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
