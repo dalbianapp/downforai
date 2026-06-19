@@ -19,11 +19,19 @@ function verifyAuth(request: NextRequest): boolean {
 type StatusResult = "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
 type ConfidenceLevel = "HIGH" | "LOW";
 
+type AtlassianShadow = {
+  shadowStatus: StatusResult;
+  indicator: string | null;
+  parseOk: boolean;
+  parseError?: string;
+};
+
 type CheckResult = {
   status: StatusResult;
   latencyMs: number | null;
   httpStatus: number | null;
   confidence: ConfidenceLevel;
+  bodyText?: string;
 };
 
 type BatchRow = {
@@ -40,7 +48,8 @@ type BatchRow = {
 };
 
 // Perform HTTP fetch with specified method
-async function doFetch(url: string, method: "HEAD" | "GET"): Promise<CheckResult> {
+// captureBody=true: read response body text (used for Atlassian JSON shadow parsing)
+async function doFetch(url: string, method: "HEAD" | "GET", captureBody = false): Promise<CheckResult> {
   const start = Date.now();
   try {
     const controller = new AbortController();
@@ -67,11 +76,13 @@ async function doFetch(url: string, method: "HEAD" | "GET"): Promise<CheckResult
 
     // 200-299 = clearly operational
     if (response.ok) {
+      const bodyText = captureBody && method === "GET" ? await response.text() : undefined;
       return {
         status: latencyMs > 5000 ? "DEGRADED" : "OPERATIONAL",
         latencyMs,
         httpStatus,
         confidence: "HIGH",
+        ...(bodyText !== undefined && { bodyText }),
       };
     }
 
@@ -133,8 +144,12 @@ async function doFetch(url: string, method: "HEAD" | "GET"): Promise<CheckResult
   }
 }
 
-// Check URL with fallback from HEAD to GET if blocked
-async function checkUrl(url: string): Promise<CheckResult> {
+// Check URL with fallback from HEAD to GET if blocked.
+// For Atlassian JSON endpoints, go straight to GET to capture body for shadow parsing.
+async function checkUrl(url: string, isAtlassian = false): Promise<CheckResult> {
+  if (isAtlassian) {
+    return doFetch(url, "GET", true);
+  }
   // Try HEAD first (lightweight)
   let result = await doFetch(url, "HEAD");
 
@@ -144,6 +159,27 @@ async function checkUrl(url: string): Promise<CheckResult> {
   }
 
   return result;
+}
+
+function parseAtlassianIndicator(indicator: string): StatusResult {
+  if (indicator === "none") return "OPERATIONAL";
+  if (indicator === "minor") return "DEGRADED";
+  if (indicator === "major" || indicator === "critical") return "OUTAGE";
+  if (indicator === "maintenance") return "DEGRADED";
+  return "OPERATIONAL"; // unknown value → fail-safe: never produce a false alarm
+}
+
+function parseAtlassianBody(bodyText: string): AtlassianShadow {
+  try {
+    const json = JSON.parse(bodyText) as { status?: { indicator?: string } };
+    const indicator = json?.status?.indicator;
+    if (typeof indicator !== "string" || !indicator) {
+      return { shadowStatus: "OPERATIONAL", indicator: null, parseOk: false, parseError: "indicator_missing" };
+    }
+    return { shadowStatus: parseAtlassianIndicator(indicator), indicator, parseOk: true };
+  } catch {
+    return { shadowStatus: "OPERATIONAL", indicator: null, parseOk: false, parseError: "json_parse_error" };
+  }
 }
 
 // Generate realistic status for simulation mode (dev)
@@ -344,7 +380,12 @@ async function handleCheckStatus(request: NextRequest) {
       urlToSurfaces.get(url)!.push(surface);
     }
 
-    // Per-surface detail for dry-run response
+    // URLs using Atlassian JSON format — detected by endpoint pattern, used for shadow parsing
+    const atlassianUrls = new Set<string>(
+      Array.from(urlToSurfaces.keys()).filter(u => u.endsWith("/api/v2/status.json"))
+    );
+
+    // Per-surface detail for dry-run response (shadow fields present for Atlassian URLs)
     const surfaceDetails: Array<{
       surfaceId: string;
       serviceSlug: string;
@@ -354,6 +395,9 @@ async function handleCheckStatus(request: NextRequest) {
       latencyMs: number | null;
       statusComputed: StatusResult;
       confidence: ConfidenceLevel;
+      shadowStatus?: StatusResult;
+      indicator?: string | null;
+      parseOk?: boolean;
     }> = [];
 
     // Check each unique URL
@@ -380,7 +424,7 @@ async function handleCheckStatus(request: NextRequest) {
       const chunk = urlEntries.slice(i, i + CONCURRENCY);
       const chunkResults = await Promise.allSettled(
         chunk.map(async ([url, surfacesForUrl]) => {
-          const result = await checkUrl(url);
+          const result = await checkUrl(url, atlassianUrls.has(url));
           return { url, surfacesForUrl, result };
         })
       );
@@ -389,12 +433,34 @@ async function handleCheckStatus(request: NextRequest) {
 
     for (const settled of results) {
       if (settled.status === "fulfilled") {
-        const { surfacesForUrl, result } = settled.value;
+        const { url, surfacesForUrl, result } = settled.value;
+
+        // SHADOW MODE: parse Atlassian indicator once per URL (fail-safe: null on any error)
+        let shadow: AtlassianShadow | null = null;
+        if (atlassianUrls.has(url) && result.bodyText) {
+          shadow = parseAtlassianBody(result.bodyText);
+        }
+
         for (const surface of surfacesForUrl) {
+          // Shadow compare log — observation written to DB is UNCHANGED (old status only)
+          if (shadow) {
+            console.log(JSON.stringify({
+              event: "shadow_compare",
+              serviceSlug: surface.service.slug,
+              checkType: "ATLASSIAN_JSON",
+              oldStatus: result.status,
+              shadowStatus: shadow.shadowStatus,
+              indicator: shadow.indicator,
+              parseOk: shadow.parseOk,
+              ...(shadow.parseError && { parseError: shadow.parseError }),
+              divergence: shadow.shadowStatus !== result.status,
+            }));
+          }
+
           observations.push({
             serviceSurfaceId: surface.id,
             regionId: region.id,
-            status: result.status,
+            status: result.status,   // shadow mode: DB write unchanged
             latencyMs: result.latencyMs,
             httpStatus: result.httpStatus,
             confidence: result.confidence,
@@ -406,11 +472,16 @@ async function handleCheckStatus(request: NextRequest) {
             surfaceId: surface.id,
             serviceSlug: surface.service.slug,
             surfaceName: surface.displayName,
-            checkUrl: settled.value.url,
+            checkUrl: url,
             httpStatus: result.httpStatus,
             latencyMs: result.latencyMs,
             statusComputed: result.status,
             confidence: result.confidence,
+            ...(shadow && {
+              shadowStatus: shadow.shadowStatus,
+              indicator: shadow.indicator,
+              parseOk: shadow.parseOk,
+            }),
           });
 
           console.log(JSON.stringify({
@@ -418,7 +489,7 @@ async function handleCheckStatus(request: NextRequest) {
             dryRun,
             surfaceId: surface.id,
             serviceSlug: surface.service.slug,
-            checkUrl: settled.value.url,
+            checkUrl: url,
             httpStatus: result.httpStatus,
             latencyMs: result.latencyMs,
             statusComputed: result.status,

@@ -8,6 +8,23 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum CheckType {
+  HOMEPAGE
+  STATUS_HTML
+  ATLASSIAN_JSON
+  GCP_JSON
+  AWS_HEALTH
+  AZURE_STATUS
+  ROBOTS_TXT
+  UNKNOWN
+}
+
+enum SignalConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 enum ServiceCategory {
   LLM
   IMAGE
@@ -93,9 +110,11 @@ model ServiceSurface {
   displayName            String
   badgeOverride          BadgeType?
   limitPhraseOverrideKey String?
-  isEnabled              Boolean   @default(true)
-  checkUrl               String?   // URL to ping for monitoring (optional, fallback to service.websiteUrl)
-  createdAt              DateTime  @default(now())
+  isEnabled              Boolean         @default(true)
+  checkUrl               String?         // URL to ping for monitoring (optional, fallback to service.websiteUrl)
+  checkType              CheckType       @default(HOMEPAGE)
+  signalConfidence       SignalConfidence @default(LOW)
+  createdAt              DateTime        @default(now())
 
   service       Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   observations  Observation[]
