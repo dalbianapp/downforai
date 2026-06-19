@@ -28,6 +28,7 @@ type CheckResult = {
 
 type BatchRow = {
   id: string;
+  displayName: string;
   checkUrl: string | null;
   serviceId: string;
   websiteUrl: string | null;
@@ -269,6 +270,7 @@ async function handleCheckStatus(request: NextRequest) {
       batchRaw = await prisma.$queryRaw<BatchRow[]>`
         SELECT
           ss.id,
+          ss."displayName",
           ss."checkUrl",
           ss."serviceId",
           s."websiteUrl",
@@ -295,6 +297,7 @@ async function handleCheckStatus(request: NextRequest) {
       batchRaw = await prisma.$queryRaw<BatchRow[]>`
         SELECT
           ss.id,
+          ss."displayName",
           ss."checkUrl",
           ss."serviceId",
           s."websiteUrl",
@@ -320,6 +323,7 @@ async function handleCheckStatus(request: NextRequest) {
 
     const batch = batchRaw.map((row) => ({
       id: row.id,
+      displayName: row.displayName,
       checkUrl: row.checkUrl,
       serviceId: row.serviceId,
       service: { websiteUrl: row.websiteUrl, slug: row.slug },
@@ -339,6 +343,18 @@ async function handleCheckStatus(request: NextRequest) {
       if (!urlToSurfaces.has(url)) urlToSurfaces.set(url, []);
       urlToSurfaces.get(url)!.push(surface);
     }
+
+    // Per-surface detail for dry-run response
+    const surfaceDetails: Array<{
+      surfaceId: string;
+      serviceSlug: string;
+      surfaceName: string;
+      checkUrl: string;
+      httpStatus: number | null;
+      latencyMs: number | null;
+      statusComputed: StatusResult;
+      confidence: ConfidenceLevel;
+    }> = [];
 
     // Check each unique URL
     const observations: Array<{
@@ -384,6 +400,17 @@ async function handleCheckStatus(request: NextRequest) {
             confidence: result.confidence,
             errorRate: null,
             observedAt: now,
+          });
+
+          surfaceDetails.push({
+            surfaceId: surface.id,
+            serviceSlug: surface.service.slug,
+            surfaceName: surface.displayName,
+            checkUrl: settled.value.url,
+            httpStatus: result.httpStatus,
+            latencyMs: result.latencyMs,
+            statusComputed: result.status,
+            confidence: result.confidence,
           });
 
           console.log(JSON.stringify({
@@ -542,6 +569,7 @@ async function handleCheckStatus(request: NextRequest) {
         LOW: observations.filter(o => o.confidence === "LOW").length,
       },
       ...(dryRun && { note: "DRY-RUN: no observations written to database" }),
+      ...(dryRun && { surfaces: surfaceDetails }),
     });
 
   } catch (error) {

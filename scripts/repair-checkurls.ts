@@ -1,6 +1,7 @@
 /**
- * Repairs checkUrl for ~120 services that currently ping homepages/CDN
+ * Repairs checkUrl for 117 services that currently ping homepages/CDN
  * instead of real status pages.
+ * Validated from Vercel IPs (2026-06-19). 18 excluded: 4 WAF-blocked + 14 DNS-fail.
  *
  * Usage:
  *   npx tsx scripts/repair-checkurls.ts           (validate — no DB writes)
@@ -55,15 +56,10 @@ const UPDATES: Update[] = [
   // HuggingFace ecosystem
   { slug: "huggingchat",     checkUrl: "https://status.huggingface.co/api/v2/status.json", type: "atlassian_json" },
   { slug: "hugging-face",    checkUrl: "https://status.huggingface.co/api/v2/status.json", type: "atlassian_json" },
-  // DeepSeek (HTML status page, no JSON API)
-  { slug: "deepseek",        checkUrl: "https://status.deepseek.com/",                   type: "status_html" },
-  { slug: "deepseek-coder",  checkUrl: "https://status.deepseek.com/",                   type: "status_html" },
   // OpenRouter
   { slug: "openrouter",      checkUrl: "https://status.openrouter.ai/",                  type: "status_html" },
   // WriteSonic
   { slug: "writesonic",      checkUrl: "https://status.writesonic.com/",                 type: "status_html" },
-  // Copy.ai
-  { slug: "copy-ai",         checkUrl: "https://status.copy.ai/",                        type: "status_html" },
 
   // ── DEV ──────────────────────────────────────────────────────────────────────
   // GitHub Copilot → githubstatus.com (Atlassian)
@@ -73,8 +69,6 @@ const UPDATES: Update[] = [
   { slug: "gitlab-duo",      checkUrl: "https://status.gitlab.com/",                     type: "status_html" },
   // Groq API (DEV surface)
   { slug: "groq-api",        checkUrl: "https://status.groq.com/",                       type: "status_html" },
-  // Replit
-  { slug: "replit-ai",       checkUrl: "https://status.replit.com/",                     type: "status_html" },
   // Vercel v0
   { slug: "v0-vercel",       checkUrl: "https://www.vercel-status.com/api/v2/status.json", type: "atlassian_json" },
   // Supabase
@@ -139,8 +133,6 @@ const UPDATES: Update[] = [
   { slug: "vultr-cloud-gpu", checkUrl: "https://status.vultr.com/",                     type: "status_html" },
   // Paperspace / DigitalOcean
   { slug: "paperspace",      checkUrl: "https://status.paperspace.com/",                 type: "status_html" },
-  // RunPod
-  { slug: "runpod",          checkUrl: "https://status.runpod.io/",                      type: "status_html" },
   // Cloudflare AI
   { slug: "cloudflare-ai",   checkUrl: "https://www.cloudflarestatus.com/api/v2/status.json", type: "atlassian_json" },
   // Nvidia NIM
@@ -155,12 +147,8 @@ const UPDATES: Update[] = [
   { slug: "assembly-ai",     checkUrl: "https://status.assemblyai.com/",                 type: "status_html" },
   // Deepgram
   { slug: "deepgram",        checkUrl: "https://status.deepgram.com/api/v2/status.json", type: "atlassian_json" },
-  // Suno
-  { slug: "suno",            checkUrl: "https://status.suno.com/",                       type: "status_html" },
   // Udio
   { slug: "udio",            checkUrl: "https://status.udio.com/",                       type: "status_html" },
-  // Murf
-  { slug: "murf",            checkUrl: "https://status.murf.ai/",                        type: "status_html" },
   // Resemble AI
   { slug: "resemble-ai",     checkUrl: "https://status.resemble.ai/",                    type: "status_html" },
   // Cartesia
@@ -178,18 +166,10 @@ const UPDATES: Update[] = [
   { slug: "stable-audio",    checkUrl: "https://status.stability.ai/api/v2/status.json", type: "atlassian_json" },
   // Figma (has AI features)
   { slug: "figma-ai",        checkUrl: "https://status.figma.com/api/v2/status.json",   type: "atlassian_json" },
-  // Photoroom
-  { slug: "photoroom",       checkUrl: "https://status.photoroom.com/",                  type: "status_html" },
   // Runway
   { slug: "runway",          checkUrl: "https://status.runwayml.com/",                   type: "status_html" },
-  // Pika
-  { slug: "pika",            checkUrl: "https://status.pika.art/",                       type: "status_html" },
   // Civitai
   { slug: "civitai",         checkUrl: "https://status.civitai.com/",                    type: "status_html" },
-  // Leonardo.ai
-  { slug: "leonardo-ai",     checkUrl: "https://status.leonardo.ai/",                    type: "status_html" },
-  // Freepik
-  { slug: "freepik-ai",      checkUrl: "https://status.freepik.com/",                    type: "status_html" },
   // Luma (dream machine + video)
   { slug: "luma-dream-machine", checkUrl: "https://status.lumalabs.ai/",                 type: "status_html" },
   { slug: "luma-ai",         checkUrl: "https://status.lumalabs.ai/",                    type: "status_html" },
@@ -199,16 +179,12 @@ const UPDATES: Update[] = [
   { slug: "synthesia",       checkUrl: "https://status.synthesia.io/api/v2/status.json", type: "atlassian_json" },
   // HeyGen
   { slug: "heygen",          checkUrl: "https://status.heygen.com/api/v2/status.json",   type: "atlassian_json" },
-  // Captions.ai
-  { slug: "captions-ai",     checkUrl: "https://status.captions.ai/",                   type: "status_html" },
 
   // ── SEARCH / RAG ─────────────────────────────────────────────────────────────
   // Elastic
   { slug: "elastic-ai",      checkUrl: "https://status.elastic.co/api/v2/status.json",  type: "atlassian_json" },
   // Pinecone
   { slug: "pinecone",        checkUrl: "https://status.pinecone.io/api/v2/status.json", type: "atlassian_json" },
-  // Weaviate
-  { slug: "weaviate",        checkUrl: "https://status.weaviate.io/",                   type: "status_html" },
   // Algolia
   { slug: "algolia-ai",      checkUrl: "https://status.algolia.com/api/v2/status.json", type: "atlassian_json" },
 
@@ -237,8 +213,6 @@ const UPDATES: Update[] = [
   { slug: "jasper",          checkUrl: "https://status.jasper.ai/",                     type: "status_html" },
   // Monday.com
   { slug: "monday-ai",       checkUrl: "https://status.monday.com/",                    type: "status_html" },
-  // Taskade
-  { slug: "taskade-ai",      checkUrl: "https://status.taskade.com/",                   type: "status_html" },
 
   // ── AGENTS / AUTOMATION ──────────────────────────────────────────────────────
   // Zapier
@@ -253,21 +227,14 @@ const UPDATES: Update[] = [
   { slug: "dify",            checkUrl: "https://status.dify.ai/",                       type: "status_html" },
   // CrewAI
   { slug: "crewai",          checkUrl: "https://status.crewai.com/",                    type: "status_html" },
-  // LangChain / LangSmith
-  { slug: "langchain",       checkUrl: "https://status.langchain.com/",                 type: "status_html" },
-  { slug: "langsmith",       checkUrl: "https://status.langchain.com/",                 type: "status_html" },
 
   // ── MLOPS ────────────────────────────────────────────────────────────────────
-  // Weights & Biases (no /api/v2 endpoint)
-  { slug: "weights-and-biases", checkUrl: "https://status.wandb.ai/",                  type: "status_html" },
   // Datadog LLM observability
   { slug: "datadog-llm",     checkUrl: "https://status.datadoghq.com/api/v2/status.json", type: "atlassian_json" },
   // Langfuse
   { slug: "langfuse",        checkUrl: "https://status.langfuse.com/",                  type: "status_html" },
   // Comet ML
   { slug: "comet-ml",        checkUrl: "https://status.comet.com/",                     type: "status_html" },
-  // Neptune
-  { slug: "neptune-ai",      checkUrl: "https://status.neptune.ai/",                    type: "status_html" },
   // Humanloop
   { slug: "humanloop",       checkUrl: "https://status.humanloop.com/",                 type: "status_html" },
   // Portkey
