@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check
+const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check — confirmed present, unchanged
 const BATCH_SIZE = 200; // Check 200 surfaces per cron run (fully parallel)
+const BOT_UA = "DownForAIStatusBot/1.0 (+https://downforai.com/methodology)";
 
 function verifyAuth(request: NextRequest): boolean {
   const authHeader = request.headers.get("Authorization");
@@ -25,6 +26,18 @@ type CheckResult = {
   confidence: ConfidenceLevel;
 };
 
+type BatchRow = {
+  id: string;
+  checkUrl: string | null;
+  serviceId: string;
+  websiteUrl: string | null;
+  slug: string;
+  lastObservedAt: Date | null;
+  lastStatus: string | null;
+  lastConfidence: string | null;
+  lastHttpStatus: number | null;
+};
+
 // Perform HTTP fetch with specified method
 async function doFetch(url: string, method: "HEAD" | "GET"): Promise<CheckResult> {
   const start = Date.now();
@@ -34,10 +47,11 @@ async function doFetch(url: string, method: "HEAD" | "GET"): Promise<CheckResult
 
     const response = await fetch(url, {
       method,
+      cache: "no-store", // prevent Vercel/Next.js edge cache from masking real status
       signal: controller.signal,
       redirect: "follow",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "User-Agent": BOT_UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
@@ -171,8 +185,30 @@ async function handleCheckStatus(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ── Dry-run params (zero DB writes) ────────────────────────────────────────
+  // ?dryRun=1               → fetch all surfaces in batch, log but do not write
+  // ?dryRun=1&surfaceId=xxx → fetch a single named surface
+  // ?dryRun=1&limit=20      → fetch a small subset
+  const { searchParams } = new URL(request.url);
+  const dryRun = searchParams.get("dryRun") === "1";
+  const filterSurfaceId = dryRun ? (searchParams.get("surfaceId") ?? null) : null;
+  const limitParam = dryRun ? searchParams.get("limit") : null;
+  const batchLimit = limitParam
+    ? Math.min(parseInt(limitParam, 10), BATCH_SIZE)
+    : BATCH_SIZE;
+
+  const runStart = Date.now();
   const isProduction = process.env.NODE_ENV === "production";
-  const mode = isProduction ? "production" : "simulation";
+  const mode = isProduction ? (dryRun ? "dry-run" : "production") : "simulation";
+
+  console.log(JSON.stringify({
+    event: "cron_start",
+    mode,
+    dryRun,
+    ...(filterSurfaceId && { filterSurfaceId }),
+    batchLimit,
+    ts: new Date().toISOString(),
+  }));
 
   try {
     const region = await prisma.region.findUnique({ where: { code: "EU" } });
@@ -207,14 +243,16 @@ async function handleCheckStatus(request: NextRequest) {
         });
       }
 
-      await prisma.observation.createMany({
-        data: observations,
-      });
+      if (!dryRun) {
+        await prisma.observation.createMany({ data: observations });
+      }
 
       return NextResponse.json({
         mode,
+        dryRun,
         checked: surfaces.length,
-        observations_created: observations.length,
+        observations_created: dryRun ? 0 : observations.length,
+        ...(dryRun && { note: "DRY-RUN: no observations written to database" }),
       });
     }
 
@@ -222,42 +260,63 @@ async function handleCheckStatus(request: NextRequest) {
     // PRODUCTION MODE (real HTTP monitoring)
     // ==========================================
 
-    // Get surfaces that need checking (oldest first = round-robin)
-    // Raw SQL: sort + limit in DB instead of loading all ~2400 surfaces in memory
-    const batchRaw = await prisma.$queryRaw<Array<{
-      id: string;
-      checkUrl: string | null;
-      serviceId: string;
-      websiteUrl: string | null;
-      slug: string;
-      lastObservedAt: Date | null;
-      lastStatus: string | null;
-      lastConfidence: string | null;
-      lastHttpStatus: number | null;
-    }>>`
-      SELECT
-        ss.id,
-        ss."checkUrl",
-        ss."serviceId",
-        s."websiteUrl",
-        s.slug,
-        o."observedAt" AS "lastObservedAt",
-        o.status AS "lastStatus",
-        o.confidence AS "lastConfidence",
-        o."httpStatus" AS "lastHttpStatus"
-      FROM "ServiceSurface" ss
-      INNER JOIN "Service" s ON s.id = ss."serviceId"
-      LEFT JOIN LATERAL (
-        SELECT "observedAt", status, confidence, "httpStatus"
-        FROM "Observation"
-        WHERE "serviceSurfaceId" = ss.id
-        ORDER BY "observedAt" DESC
+    // Get surfaces that need checking.
+    // In dry-run + surfaceId: bypass round-robin, fetch that surface directly.
+    // Otherwise: round-robin (oldest first). In production batchLimit === BATCH_SIZE.
+    let batchRaw: BatchRow[];
+
+    if (dryRun && filterSurfaceId) {
+      batchRaw = await prisma.$queryRaw<BatchRow[]>`
+        SELECT
+          ss.id,
+          ss."checkUrl",
+          ss."serviceId",
+          s."websiteUrl",
+          s.slug,
+          o."observedAt" AS "lastObservedAt",
+          o.status AS "lastStatus",
+          o.confidence AS "lastConfidence",
+          o."httpStatus" AS "lastHttpStatus"
+        FROM "ServiceSurface" ss
+        INNER JOIN "Service" s ON s.id = ss."serviceId"
+        LEFT JOIN LATERAL (
+          SELECT "observedAt", status, confidence, "httpStatus"
+          FROM "Observation"
+          WHERE "serviceSurfaceId" = ss.id
+          ORDER BY "observedAt" DESC
+          LIMIT 1
+        ) o ON true
+        WHERE ss."isEnabled" = true AND ss.id = ${filterSurfaceId}
         LIMIT 1
-      ) o ON true
-      WHERE ss."isEnabled" = true
-      ORDER BY o."observedAt" ASC NULLS FIRST
-      LIMIT ${BATCH_SIZE}
-    `;
+      `;
+    } else {
+      // Raw SQL: sort + limit in DB instead of loading all ~2400 surfaces in memory.
+      // batchLimit === BATCH_SIZE (200) in normal production runs — query unchanged.
+      batchRaw = await prisma.$queryRaw<BatchRow[]>`
+        SELECT
+          ss.id,
+          ss."checkUrl",
+          ss."serviceId",
+          s."websiteUrl",
+          s.slug,
+          o."observedAt" AS "lastObservedAt",
+          o.status AS "lastStatus",
+          o.confidence AS "lastConfidence",
+          o."httpStatus" AS "lastHttpStatus"
+        FROM "ServiceSurface" ss
+        INNER JOIN "Service" s ON s.id = ss."serviceId"
+        LEFT JOIN LATERAL (
+          SELECT "observedAt", status, confidence, "httpStatus"
+          FROM "Observation"
+          WHERE "serviceSurfaceId" = ss.id
+          ORDER BY "observedAt" DESC
+          LIMIT 1
+        ) o ON true
+        WHERE ss."isEnabled" = true
+        ORDER BY o."observedAt" ASC NULLS FIRST
+        LIMIT ${batchLimit}
+      `;
+    }
 
     const batch = batchRaw.map((row) => ({
       id: row.id,
@@ -326,6 +385,18 @@ async function handleCheckStatus(request: NextRequest) {
             errorRate: null,
             observedAt: now,
           });
+
+          console.log(JSON.stringify({
+            event: "surface_check",
+            dryRun,
+            surfaceId: surface.id,
+            serviceSlug: surface.service.slug,
+            checkUrl: settled.value.url,
+            httpStatus: result.httpStatus,
+            latencyMs: result.latencyMs,
+            statusComputed: result.status,
+            confidence: result.confidence,
+          }));
         }
       } else {
         console.error("HTTP check failed:", settled.reason);
@@ -334,11 +405,36 @@ async function handleCheckStatus(request: NextRequest) {
 
     const checkElapsedMs = Date.now() - checkStart;
 
-    // Bulk insert observations
-    if (observations.length > 0) {
+    const statusCounts = {
+      OPERATIONAL: observations.filter(o => o.status === "OPERATIONAL").length,
+      DEGRADED: observations.filter(o => o.status === "DEGRADED").length,
+      OUTAGE: observations.filter(o => o.status === "OUTAGE").length,
+      UNKNOWN: observations.filter(o => o.status === "UNKNOWN").length,
+    };
+
+    // End-of-run summary log
+    console.log(JSON.stringify({
+      event: "cron_summary",
+      mode,
+      dryRun,
+      checked: observations.length,
+      uniqueUrlsChecked: urlToSurfaces.size,
+      results: statusCounts,
+      confidence: {
+        HIGH: observations.filter(o => o.confidence === "HIGH").length,
+        LOW: observations.filter(o => o.confidence === "LOW").length,
+      },
+      fetchElapsedMs: checkElapsedMs,
+      totalElapsedMs: Date.now() - runStart,
+    }));
+
+    // Write observations — skipped entirely in dry-run
+    if (!dryRun && observations.length > 0) {
       await prisma.observation.createMany({ data: observations });
     }
 
+    // Incident auto-create/resolve — skipped in dry-run (no observations were written)
+    if (!dryRun) {
     // Pre-fetch all open incidents for services in this batch — replaces N+1 findFirst
     const batchServiceIds = [...new Set(batch.map(s => s.serviceId))];
     const openIncidentRows = await prisma.incident.findMany({
@@ -430,24 +526,22 @@ async function handleCheckStatus(request: NextRequest) {
         }
       }
     }
+    } // end if (!dryRun) — incident logic
 
     return NextResponse.json({
       mode,
+      dryRun,
       checked: observations.length,
-      batch_size: BATCH_SIZE,
+      batch_size: batchLimit,
       total_surfaces: batch.length,
       unique_urls_checked: urlToSurfaces.size,
       elapsed_ms: checkElapsedMs,
-      results: {
-        OPERATIONAL: observations.filter(o => o.status === "OPERATIONAL").length,
-        DEGRADED: observations.filter(o => o.status === "DEGRADED").length,
-        OUTAGE: observations.filter(o => o.status === "OUTAGE").length,
-        UNKNOWN: observations.filter(o => o.status === "UNKNOWN").length,
-      },
+      results: statusCounts,
       confidence: {
         HIGH: observations.filter(o => o.confidence === "HIGH").length,
         LOW: observations.filter(o => o.confidence === "LOW").length,
       },
+      ...(dryRun && { note: "DRY-RUN: no observations written to database" }),
     });
 
   } catch (error) {
