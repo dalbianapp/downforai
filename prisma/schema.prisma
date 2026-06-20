@@ -30,9 +30,16 @@ enum ProbeResult {
 
 enum ServiceLifecycleStatus {
   ACTIVE
-  MONITORING_LIMITED
-  POSSIBLY_DISCONTINUED
+  POSSIBLY_INACTIVE
   DISCONTINUED
+}
+
+enum MonitoringCapability {
+  OFFICIAL_STATUS_API
+  OFFICIAL_STATUS_PAGE
+  BASIC_PUBLIC_SURFACE
+  BLOCKED_FROM_PROBES
+  UNVERIFIABLE
 }
 
 enum CheckType {
@@ -118,9 +125,12 @@ model Service {
   limitPhraseKey  String
   websiteUrl      String?
   iconUrl         String?
-  description     String?
-  lifecycleStatus ServiceLifecycleStatus @default(ACTIVE)
-  createdAt       DateTime               @default(now())
+  description              String?
+  lifecycleStatus          ServiceLifecycleStatus @default(ACTIVE)
+  monitoringCapability     MonitoringCapability   @default(BASIC_PUBLIC_SURFACE)
+  monitoringNote           String?
+  lastManualVerificationAt DateTime?
+  createdAt                DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
   surfaces         ServiceSurface[]
