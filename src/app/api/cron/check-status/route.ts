@@ -52,6 +52,7 @@ type BatchRow = {
   checkUrl: string | null;
   checkType: string;
   signalConfidence: string;
+  monitoringCapability: string;
   serviceId: string;
   websiteUrl: string | null;
   slug: string;
@@ -62,6 +63,13 @@ type BatchRow = {
   lastProbeResult: string | null;
   prevProbeResult: string | null;
 };
+
+type MonitoringCapabilityVal =
+  | "OFFICIAL_STATUS_API"
+  | "OFFICIAL_STATUS_PAGE"
+  | "BASIC_PUBLIC_SURFACE"
+  | "BLOCKED_FROM_PROBES"
+  | "UNVERIFIABLE";
 
 // Perform HTTP fetch with specified method.
 // Uses classifyProbe* to map the raw result to (probeResult, httpDerivedStatus).
@@ -280,6 +288,7 @@ async function handleCheckStatus(request: NextRequest) {
           ss."checkUrl",
           ss."checkType",
           ss."signalConfidence",
+          s."monitoringCapability",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
@@ -311,8 +320,9 @@ async function handleCheckStatus(request: NextRequest) {
         LIMIT 1
       `;
     } else {
-      // Raw SQL: sort + limit in DB instead of loading all ~2400 surfaces in memory.
-      // batchLimit === BATCH_SIZE (200) in normal production runs — query unchanged.
+      // Round-robin batch: oldest lastObservedAt first (NULLS first = never observed yet).
+      // BLOCKED_FROM_PROBES / UNVERIFIABLE: 22h backoff — exclude them from the batch unless
+      // they haven't been observed yet OR their last observation is older than 22 hours.
       batchRaw = await prisma.$queryRaw<BatchRow[]>`
         SELECT
           ss.id,
@@ -320,6 +330,7 @@ async function handleCheckStatus(request: NextRequest) {
           ss."checkUrl",
           ss."checkType",
           ss."signalConfidence",
+          s."monitoringCapability",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
@@ -348,6 +359,11 @@ async function handleCheckStatus(request: NextRequest) {
           ) r
         ) o ON true
         WHERE ss."isEnabled" = true
+          AND (
+            s."monitoringCapability" NOT IN ('BLOCKED_FROM_PROBES', 'UNVERIFIABLE')
+            OR o."lastObservedAt" IS NULL
+            OR o."lastObservedAt" < NOW() - INTERVAL '22 hours'
+          )
         ORDER BY o."lastObservedAt" ASC NULLS FIRST
         LIMIT ${batchLimit}
       `;
@@ -359,6 +375,7 @@ async function handleCheckStatus(request: NextRequest) {
       checkUrl: row.checkUrl,
       checkType: row.checkType as CheckTypeVal,
       signalConfidence: (row.signalConfidence as "HIGH" | "MEDIUM" | "LOW") ?? "LOW",
+      monitoringCapability: (row.monitoringCapability as MonitoringCapabilityVal) ?? "BASIC_PUBLIC_SURFACE",
       serviceId: row.serviceId,
       service: { websiteUrl: row.websiteUrl, slug: row.slug },
       observations: row.lastObservedAt ? [{
@@ -632,6 +649,32 @@ async function handleCheckStatus(request: NextRequest) {
 
     // Incident auto-create/resolve — skipped in dry-run (no observations were written)
     if (!dryRun) {
+    // Auto-upgrade BLOCKED_FROM_PROBES → BASIC_PUBLIC_SURFACE on 2× consecutive REACHABLE.
+    // If a service was previously unreachable from Vercel IPs but now responds twice in a row,
+    // the block was lifted — remove the 22h penalty and let it re-enter normal monitoring.
+    for (const surface of batch) {
+      if (surface.monitoringCapability !== "BLOCKED_FROM_PROBES") continue;
+      const newObs = observations.find(o => o.serviceSurfaceId === surface.id);
+      const prevProbeResult = surface.observations[0]?.probeResult ?? null;
+      if (newObs?.probeResult === "REACHABLE" && prevProbeResult === "REACHABLE") {
+        await prisma.service.update({
+          where: { id: surface.serviceId },
+          data: {
+            monitoringCapability: "BASIC_PUBLIC_SURFACE",
+            monitoringNote: `Auto-upgraded from BLOCKED_FROM_PROBES: 2× REACHABLE confirmed`,
+          },
+        });
+        surface.monitoringCapability = "BASIC_PUBLIC_SURFACE";
+        console.log(JSON.stringify({
+          event: "monitoring_capability_auto_upgrade",
+          serviceSlug: surface.service.slug,
+          from: "BLOCKED_FROM_PROBES",
+          to: "BASIC_PUBLIC_SURFACE",
+          reason: "2x_consecutive_reachable",
+        }));
+      }
+    }
+
     // Pre-fetch all open incidents for services in this batch — replaces N+1 findFirst
     const batchServiceIds = [...new Set(batch.map(s => s.serviceId))];
     const openIncidentRows = await prisma.incident.findMany({
@@ -664,7 +707,14 @@ async function handleCheckStatus(request: NextRequest) {
 
       let shouldCreateIncident = false;
 
-      if (sigConf === "HIGH") {
+      // Hard override: BLOCKED_FROM_PROBES / UNVERIFIABLE never create incidents.
+      // These surfaces can't produce reliable OUTAGE signals — false positives are certain.
+      if (
+        surface.monitoringCapability === "BLOCKED_FROM_PROBES" ||
+        surface.monitoringCapability === "UNVERIFIABLE"
+      ) {
+        shouldCreateIncident = false;
+      } else if (sigConf === "HIGH") {
         // Atlassian JSON: signal officiel → 2 consécutifs OUTAGE avec HIGH confidence
         shouldCreateIncident = !!(
           newObs?.status === "OUTAGE" &&
