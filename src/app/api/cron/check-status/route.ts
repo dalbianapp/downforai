@@ -526,7 +526,7 @@ async function handleCheckStatus(request: NextRequest) {
     // ── Explosion guard: >3 allowlist services simultaneously OUTAGE via derivation → likely a bug ──
     // Parse failure guard is already handled: deriveFinalStatus() with parseOk=false returns
     // httpDerivedStatus (FALLBACK path), so writtenStatus === httpDerivedStatus for failed parses.
-    const EXPLOSION_THRESHOLD = 3;
+    const EXPLOSION_THRESHOLD = 10;
     const allowlistDerivedOutageCount = staged.filter(
       s => s.useDerived && s.deriveResult.finalStatus === "OUTAGE"
     ).length;
