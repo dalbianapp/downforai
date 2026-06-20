@@ -105,7 +105,7 @@ export default async function ServicePage({
   const dashboard = await getServiceDashboard(serviceSlug);
   if (!dashboard) notFound();
 
-  const { service, overallStatus, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
+  const { service, overallStatus, headline, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
 
   const lastIncident = await getLastResolvedIncident(service.id);
 
@@ -157,6 +157,7 @@ export default async function ServicePage({
       <ServiceHeroHeader
         service={service}
         overallStatus={overallStatus}
+        headline={headline}
         diagnosis={diagnosis}
         surfaces={surfaces}
         reportSummary={reportSummary}

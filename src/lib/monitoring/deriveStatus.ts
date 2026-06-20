@@ -58,12 +58,8 @@ export function deriveFinalStatus(input: DeriveInput): DeriveResult {
     if (officialStatus === "DEGRADED") {
       return { finalStatus: "DEGRADED", statusSource: "OFFICIAL_STATUS_PAGE", confidence: "HIGH" };
     }
-    // officialStatus === OPERATIONAL (or UNKNOWN — treat as OK from official side)
-    if (httpDerivedStatus === "OUTAGE" || httpDerivedStatus === "UNKNOWN") {
-      // Status page says OK, but our HTTP probe can't reach it.
-      // Could be a region-level failure not yet acknowledged → signal early.
-      return { finalStatus: "DEGRADED", statusSource: "MIXED", confidence: "MEDIUM" };
-    }
+    // officialStatus === OPERATIONAL — trust it over any Vercel probe failure.
+    // A timeout / block / UNKNOWN from our probe IPs does not override an official "no incident".
     return { finalStatus: "OPERATIONAL", statusSource: "OFFICIAL_STATUS_PAGE", confidence: "HIGH" };
   }
 

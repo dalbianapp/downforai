@@ -9,6 +9,7 @@ export type SurfaceSnapshot = {
   lastObservedAt: Date | null;
   p50Latency24h: number | null;
   p95Latency24h: number | null;
+  officialStatus: string | null;
 };
 
 export type DiagnosisResult = {
@@ -50,8 +51,11 @@ export type ServiceDashboardData = {
     description: string | null;
     websiteUrl: string | null;
     iconUrl: string | null;
+    monitoringCapability: string;
+    lifecycleStatus: string;
   };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   uptime24h: number | null;       // percentage

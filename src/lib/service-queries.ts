@@ -17,6 +17,8 @@ export const getServiceBySlug = cache(async (slug: string) => {
       description: true,
       websiteUrl: true,
       iconUrl: true,
+      monitoringCapability: true,
+      lifecycleStatus: true,
     },
   });
 });

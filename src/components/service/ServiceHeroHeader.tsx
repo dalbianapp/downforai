@@ -1,11 +1,12 @@
 import type { SurfaceSnapshot, DiagnosisResult, ReportSummary } from "@/lib/service-page/types";
 import type { TopServiceContent } from "@/content/top-services/types";
-import { getStatusConfig } from "./_statusConfig";
+import { getStatusConfig, monitoringConfidence } from "./_statusConfig";
 import SnippetMagnet from "./SnippetMagnet";
 
 interface Props {
-  service: { slug: string; name: string };
+  service: { slug: string; name: string; monitoringCapability: string };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   reportSummary: ReportSummary;
@@ -21,14 +22,15 @@ const SCOPE_LABEL: Record<string, string> = {
 };
 
 const CONFIDENCE_COLOR: Record<string, string> = {
-  HIGH: "#dc2626",
-  MEDIUM: "#ca8a04",
-  LOW: "#6b7280",
+  High: "#dc2626",
+  Medium: "#ca8a04",
+  Low: "#6b7280",
 };
 
 export default function ServiceHeroHeader({
   service,
   overallStatus,
+  headline,
   diagnosis,
   surfaces,
   reportSummary,
@@ -109,11 +111,23 @@ export default function ServiceHeroHeader({
             <div
               style={{ fontSize: "18px", fontWeight: 700, color: sc.text }}
             >
-              {sc.label}
+              {headline === "MONITORING_LIMITED"
+                ? "Monitoring limited"
+                : headline === "STATUS_UNCERTAIN"
+                ? "Status uncertain"
+                : sc.label}
             </div>
             {overallStatus === "REPORTED_ISSUES" ? (
               <div style={{ fontSize: "12px", color: "#92400e", marginTop: "2px" }}>
                 Probes show normal responses, but users are reporting problems.
+              </div>
+            ) : headline === "MONITORING_LIMITED" ? (
+              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                Our probes are blocked by this service — automated status cannot be verified.
+              </div>
+            ) : headline === "STATUS_UNCERTAIN" ? (
+              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                Service unreachable from our probe infrastructure — status uncertain.
               </div>
             ) : (
               <div
@@ -153,7 +167,7 @@ export default function ServiceHeroHeader({
             style={{
               fontSize: "12px",
               fontWeight: 600,
-              color: CONFIDENCE_COLOR[diagnosis.confidence] ?? "#6b7280",
+              color: CONFIDENCE_COLOR[monitoringConfidence(service.monitoringCapability)] ?? "#6b7280",
               background: "#ffffff",
               padding: "4px 10px",
               borderRadius: "999px",
@@ -163,7 +177,7 @@ export default function ServiceHeroHeader({
             {SCOPE_LABEL[diagnosis.scope] ?? diagnosis.scope}
           </span>
           <span style={{ fontSize: "11px", color: "#9ca3af" }}>
-            {diagnosis.confidence} confidence
+            {monitoringConfidence(service.monitoringCapability)} confidence
           </span>
         </div>
       </div>

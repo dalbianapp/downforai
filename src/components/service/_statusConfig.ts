@@ -45,6 +45,12 @@ export function getStatusConfig(status: string) {
   return STATUS_CONFIG[(status as StatusKey) ?? "UNKNOWN"] ?? STATUS_CONFIG.UNKNOWN;
 }
 
+export function monitoringConfidence(capability: string): "High" | "Medium" | "Low" {
+  if (capability === "OFFICIAL_STATUS_API")  return "High";
+  if (capability === "OFFICIAL_STATUS_PAGE") return "Medium";
+  return "Low"; // BASIC_PUBLIC_SURFACE, BLOCKED_FROM_PROBES, UNVERIFIABLE
+}
+
 export function getRelativeTime(date: Date): string {
   const diffMs = Date.now() - date.getTime();
   const diffMins = Math.floor(diffMs / 60_000);

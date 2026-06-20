@@ -8,6 +8,58 @@ import type {
   IncidentSummary,
 } from "./types";
 
+// ── Public status derivation — respects monitoringCapability ─────────────────
+
+type PublicStatus = {
+  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
+  headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
+};
+
+const STATUS_PRIORITY_VALID: Record<string, number> = {
+  OUTAGE: 3, DEGRADED: 2, OPERATIONAL: 0,
+};
+
+function derivePublicStatus(
+  monitoringCapability: string,
+  surfaces: SurfaceSnapshot[],
+  freshOfficialStatus: string | null,
+): PublicStatus {
+  // 1. Non-measurable capabilities → never Degraded/Outage from our probes
+  if (monitoringCapability === "BLOCKED_FROM_PROBES") {
+    return { overallStatus: "UNKNOWN", headline: "MONITORING_LIMITED" };
+  }
+  if (monitoringCapability === "UNVERIFIABLE") {
+    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN" };
+  }
+
+  // 2. Fresh Atlassian signal (≤ 30h) primes over HTTP probe failures
+  if (monitoringCapability === "OFFICIAL_STATUS_API" && freshOfficialStatus !== null) {
+    return {
+      overallStatus: freshOfficialStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
+      headline: null,
+    };
+  }
+
+  // 3. Worst-of valid observations only (UNKNOWN excluded from aggregate)
+  const validSurfaces = surfaces.filter(
+    (s) => s.status === "OPERATIONAL" || s.status === "DEGRADED" || s.status === "OUTAGE"
+  );
+  if (validSurfaces.length === 0) {
+    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN" };
+  }
+  const worstStatus = validSurfaces.reduce<string>(
+    (worst, s) =>
+      STATUS_PRIORITY_VALID[s.status] > STATUS_PRIORITY_VALID[worst] ? s.status : worst,
+    "OPERATIONAL"
+  );
+  return {
+    overallStatus: worstStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
+    headline: null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getServiceDashboard(
   slug: string
 ): Promise<ServiceDashboardData | null> {
@@ -26,6 +78,7 @@ export async function getServiceDashboard(
       httpStatus: number | null;
       confidence: string | null;
       observedAt: Date | null;
+      officialStatus: string | null;
     }>
   >`
     SELECT
@@ -36,10 +89,12 @@ export async function getServiceDashboard(
       latest."latencyMs",
       latest."httpStatus",
       latest.confidence,
-      latest."observedAt"
+      latest."observedAt",
+      latest."officialStatus"::text
     FROM "ServiceSurface" ss
     LEFT JOIN LATERAL (
-      SELECT o.status, o."latencyMs", o."httpStatus", o.confidence, o."observedAt"
+      SELECT o.status, o."latencyMs", o."httpStatus", o.confidence, o."observedAt",
+             o."officialStatus"
       FROM "Observation" o
       WHERE o."serviceSurfaceId" = ss.id
       ORDER BY o."observedAt" DESC
@@ -88,28 +143,36 @@ export async function getServiceDashboard(
       lastObservedAt: s.observedAt ?? null,
       p50Latency24h: stats?.p50 != null ? Math.round(Number(stats.p50)) : null,
       p95Latency24h: stats?.p95 != null ? Math.round(Number(stats.p95)) : null,
+      officialStatus: s.officialStatus ?? null,
     };
   });
 
-  // 4. 24h uptime % (OPERATIONAL obs / total obs across all surfaces)
-  // Uses index: @@index([serviceSurfaceId, observedAt(sort: Desc)])
-  const uptimeRaw = await prisma.$queryRaw<
-    [{ total: bigint; operational: bigint }]
-  >`
-    SELECT
-      COUNT(*)                                             AS total,
-      COUNT(*) FILTER (WHERE o.status = 'OPERATIONAL')    AS operational
-    FROM "Observation" o
-    INNER JOIN "ServiceSurface" ss ON ss.id = o."serviceSurfaceId"
-    WHERE ss."serviceId" = ${service.id}
-      AND o."observedAt" >= NOW() - INTERVAL '24 hours'
-  `;
-
-  const { total, operational } = uptimeRaw[0];
-  const uptime24h =
-    total > 0n
-      ? Number((operational * 10000n) / total) / 100
-      : null;
+  // 4. 24h uptime % — null for non-measurable services; filtered denominator for others.
+  // Excludes from denominator any observation from a probe that was blocked/timed out/unknown
+  // (probeResult IS NULL = pre-PR6 observation, no probeResult stored → kept in denominator).
+  let uptime24h: number | null = null;
+  const monCap = service.monitoringCapability as string;
+  if (monCap !== "BLOCKED_FROM_PROBES" && monCap !== "UNVERIFIABLE") {
+    const uptimeRaw = await prisma.$queryRaw<[{ total: bigint; operational: bigint }]>`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE o.status IN ('OPERATIONAL','DEGRADED','OUTAGE')
+            AND (o."probeResult" IS NULL OR o."probeResult"::text NOT IN
+                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR'))
+        ) AS total,
+        COUNT(*) FILTER (
+          WHERE o.status = 'OPERATIONAL'
+            AND (o."probeResult" IS NULL OR o."probeResult"::text NOT IN
+                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR'))
+        ) AS operational
+      FROM "Observation" o
+      INNER JOIN "ServiceSurface" ss ON ss.id = o."serviceSurfaceId"
+      WHERE ss."serviceId" = ${service.id}
+        AND o."observedAt" >= NOW() - INTERVAL '24 hours'
+    `;
+    const { total, operational } = uptimeRaw[0];
+    uptime24h = total > 0n ? Number((operational * 10000n) / total) / 100 : null;
+  }
 
   // 5. Incidents last 30 days — low cardinality table, findMany is fine
   const incidentsRaw = await prisma.incident.findMany({
@@ -187,17 +250,20 @@ export async function getServiceDashboard(
     hasOpenIncident,
   });
 
-  // 8. Overall status = worst probe status, with community pressure override
-  const STATUS_PRIORITY: Record<SurfaceSnapshot["status"], number> = {
-    OUTAGE: 3,
-    DEGRADED: 2,
-    UNKNOWN: 1,
-    OPERATIONAL: 0,
-  };
-  const probeStatus = surfaces.reduce<SurfaceSnapshot["status"]>(
-    (worst, s) =>
-      STATUS_PRIORITY[s.status] > STATUS_PRIORITY[worst] ? s.status : worst,
-    "OPERATIONAL"
+  // 8. Overall status — respects monitoringCapability + fresh Atlassian signal
+  const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000;
+  const freshOfficialStatus =
+    surfaces.find(
+      (s) =>
+        s.officialStatus !== null &&
+        s.lastObservedAt !== null &&
+        Date.now() - s.lastObservedAt.getTime() < THIRTY_HOURS_MS
+    )?.officialStatus ?? null;
+
+  const { overallStatus: probeStatus, headline } = derivePublicStatus(
+    monCap,
+    surfaces,
+    freshOfficialStatus,
   );
 
   let overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES" = probeStatus;
@@ -217,8 +283,11 @@ export async function getServiceDashboard(
     service: {
       ...service,
       category: service.category as string,
+      monitoringCapability: monCap,
+      lifecycleStatus: service.lifecycleStatus as string,
     },
     overallStatus,
+    headline,
     diagnosis,
     surfaces,
     uptime24h,

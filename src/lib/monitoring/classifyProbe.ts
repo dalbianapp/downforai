@@ -67,7 +67,7 @@ export function classifyProbeError(error: unknown): ClassifyResult {
       return { probeResult: "CONNECTION_FAIL", httpDerivedStatus: "OUTAGE" };
     }
     if (/CERT_|SSL_|ERR_TLS|UNABLE_TO_VERIFY|self.signed|certificate/i.test(hint)) {
-      return { probeResult: "TLS_ERROR", httpDerivedStatus: "DEGRADED" };
+      return { probeResult: "TLS_ERROR", httpDerivedStatus: "UNKNOWN" };
     }
   }
   // Unknown network-level failure — cannot confirm the service is down; prefer UNKNOWN over OUTAGE

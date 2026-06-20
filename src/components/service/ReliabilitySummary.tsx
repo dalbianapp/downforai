@@ -4,9 +4,10 @@ import type {
   IncidentSummary,
   ReportSummary,
 } from "@/lib/service-page/types";
+import { monitoringConfidence } from "./_statusConfig";
 
 interface Props {
-  service: { name: string; slug: string; category: string };
+  service: { name: string; slug: string; category: string; monitoringCapability: string };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
@@ -44,18 +45,6 @@ function fmtDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-function confidence(
-  surfaces: SurfaceSnapshot[],
-  uptime24h: number | null
-): { label: "High" | "Medium" | "Low"; surfacesWithLatency: number } {
-  const active = surfaces.filter((s) => s.lastObservedAt !== null);
-  const withLatency = surfaces.filter((s) => s.p50Latency24h !== null).length;
-  if (active.length >= 2 && withLatency >= 1 && uptime24h !== null)
-    return { label: "High", surfacesWithLatency: withLatency };
-  if (active.length >= 1 && (withLatency >= 1 || uptime24h !== null))
-    return { label: "Medium", surfacesWithLatency: withLatency };
-  return { label: "Low", surfacesWithLatency: withLatency };
-}
 
 function para1(
   service: Props["service"],
@@ -215,7 +204,8 @@ export function ReliabilitySummary({
 }: Props) {
   const p1 = para1(service, surfaces, uptime24h, overallStatus);
   const p2 = para2(service, incidents30d, reportSummary, lastIncident, diagnosis);
-  const { label: confLabel, surfacesWithLatency } = confidence(surfaces, uptime24h);
+  const confLabel = monitoringConfidence(service.monitoringCapability);
+  const surfacesWithLatency = surfaces.filter((s) => s.p50Latency24h !== null).length;
 
   const lastSeen = surfaces
     .map((s) => s.lastObservedAt)
