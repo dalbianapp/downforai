@@ -458,56 +458,48 @@ async function handleCheckStatus(request: NextRequest) {
       results.push(...chunkResults);
     }
 
+    // ── Phase 1: compute all signals, collect staged entries ─────────────────
+    const staged: Array<{
+      surface: (typeof batch)[number];
+      url: string;
+      result: CheckResult;
+      shadow: AtlassianShadow | null;
+      httpDerivedStatus: StatusResult;
+      officialStatus: DeriveStatusResult | null;
+      deriveResult: ReturnType<typeof deriveFinalStatus>;
+      obsParseOk: boolean | null;
+      obsParseError: string | null;
+      useDerived: boolean;
+    }> = [];
+
     for (const settled of results) {
       if (settled.status === "fulfilled") {
         const { url, surfacesForUrl, result } = settled.value;
 
-        // SHADOW MODE: parse Atlassian indicator once per URL (fail-safe: null on any error)
         let shadow: AtlassianShadow | null = null;
         const isAtlassian = atlassianUrls.has(url);
         if (isAtlassian && result.bodyText) {
           const parsed = parseAtlassianBody(result.bodyText);
-          // Fail-safe: parse failure → shadow falls back to HTTP-computed status, not forced OPERATIONAL.
           shadow = parsed.parseOk ? parsed : { ...parsed, shadowStatus: result.status };
         }
 
-        // ── DUAL-SIGNAL (PR 3) ─────────────────────────────────────────────────
-        // Compute once per URL — all surfaces sharing this URL get identical signals.
         const httpDerivedStatus = result.status;
-
-        // officialStatus: only set when Atlassian parse succeeded
         const officialStatus: DeriveStatusResult | null =
           (isAtlassian && shadow?.parseOk === true) ? shadow.shadowStatus : null;
-
-        // parseOk for deriveFinalStatus: non-Atlassian surfaces aren't a "parse failure"
         const deriveParseOk = isAtlassian ? (shadow?.parseOk ?? false) : true;
-
-        // checkType from first surface (all surfaces sharing a URL have same checkType)
         const urlCheckType = surfacesForUrl[0]?.checkType ?? "HOMEPAGE";
-
         const deriveResult = deriveFinalStatus({
-          officialStatus,
-          httpDerivedStatus,
-          checkType: urlCheckType,
-          parseOk: deriveParseOk,
+          officialStatus, httpDerivedStatus, checkType: urlCheckType, parseOk: deriveParseOk,
         });
-
-        // DB audit fields (non-Atlassian → parseOk/parseError null, not applicable)
-        const obsParseOk: boolean | null    = isAtlassian ? (shadow?.parseOk ?? false) : null;
-        const obsParseError: string | null  = isAtlassian ? (shadow?.parseError ?? null) : null;
-        // ── END DUAL-SIGNAL ────────────────────────────────────────────────────
+        const obsParseOk: boolean | null   = isAtlassian ? (shadow?.parseOk ?? false) : null;
+        const obsParseError: string | null = isAtlassian ? (shadow?.parseError ?? null) : null;
 
         for (const surface of surfacesForUrl) {
-          // Feature flag: USE_DERIVED_STATUS off → status written = httpDerivedStatus (unchanged)
           const useDerived =
             USE_DERIVED_STATUS &&
             (DERIVED_STATUS_ALLOWLIST.length === 0 ||
               DERIVED_STATUS_ALLOWLIST.includes(surface.service.slug));
-          const writtenStatus: StatusResult = useDerived
-            ? deriveResult.finalStatus
-            : httpDerivedStatus;
 
-          // Shadow compare log (Atlassian only) — now enriched with dual-signal fields
           if (shadow) {
             console.log(JSON.stringify({
               event: "shadow_compare",
@@ -524,61 +516,94 @@ async function handleCheckStatus(request: NextRequest) {
             }));
           }
 
-          observations.push({
-            serviceSurfaceId: surface.id,
-            regionId: region.id,
-            status: writtenStatus,          // flag off → httpDerivedStatus (old behavior)
-            latencyMs: result.latencyMs,
-            httpStatus: result.httpStatus,
-            confidence: result.confidence,
-            errorRate: null,
-            observedAt: now,
-            // Dual-signal audit columns (PR 3)
-            officialStatus,
-            httpDerivedStatus,
-            statusSource: deriveResult.statusSource,
-            parseOk: obsParseOk,
-            parseError: obsParseError,
-          });
-
-          surfaceDetails.push({
-            surfaceId: surface.id,
-            serviceSlug: surface.service.slug,
-            surfaceName: surface.displayName,
-            checkUrl: url,
-            httpStatus: result.httpStatus,
-            latencyMs: result.latencyMs,
-            statusComputed: deriveResult.finalStatus,  // what derive would produce
-            statusWritten: writtenStatus,               // what goes to DB
-            confidence: result.confidence,
-            // Atlassian shadow fields
-            ...(shadow && {
-              shadowStatus: shadow.shadowStatus,
-              indicator: shadow.indicator,
-              parseOk: shadow.parseOk,
-            }),
-            // Dual-signal fields
-            officialStatus,
-            httpDerivedStatus,
-            finalStatus: deriveResult.finalStatus,
-            statusSource: deriveResult.statusSource,
-          });
-
-          console.log(JSON.stringify({
-            event: "surface_check",
-            dryRun,
-            surfaceId: surface.id,
-            serviceSlug: surface.service.slug,
-            checkUrl: url,
-            httpStatus: result.httpStatus,
-            latencyMs: result.latencyMs,
-            statusComputed: result.status,
-            confidence: result.confidence,
-          }));
+          staged.push({ surface, url, result, shadow, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived });
         }
       } else {
         console.error("HTTP check failed:", settled.reason);
       }
+    }
+
+    // ── Explosion guard: >3 allowlist services simultaneously OUTAGE via derivation → likely a bug ──
+    // Parse failure guard is already handled: deriveFinalStatus() with parseOk=false returns
+    // httpDerivedStatus (FALLBACK path), so writtenStatus === httpDerivedStatus for failed parses.
+    const EXPLOSION_THRESHOLD = 3;
+    const allowlistDerivedOutageCount = staged.filter(
+      s => s.useDerived && s.deriveResult.finalStatus === "OUTAGE"
+    ).length;
+    const explosionGuardActive = USE_DERIVED_STATUS && allowlistDerivedOutageCount > EXPLOSION_THRESHOLD;
+
+    if (explosionGuardActive) {
+      console.log(JSON.stringify({
+        event: "derived_status_alert",
+        reason: "explosion_guard_triggered",
+        allowlistDerivedOutageCount,
+        threshold: EXPLOSION_THRESHOLD,
+        affectedSlugs: staged
+          .filter(s => s.useDerived && s.deriveResult.finalStatus === "OUTAGE")
+          .map(s => s.surface.service.slug),
+        action: "reverting_derived_OUTAGE_to_httpDerivedStatus_this_run",
+      }));
+    }
+
+    // ── Phase 2: finalize writtenStatus and build observation arrays ──────────
+    for (const s of staged) {
+      const { surface, url, result, shadow, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived } = s;
+
+      // Explosion guard: revert only derived OUTAGEs, keep derived DEGRADED as-is
+      const candidateStatus: StatusResult = useDerived ? deriveResult.finalStatus : httpDerivedStatus;
+      const writtenStatus: StatusResult =
+        (explosionGuardActive && useDerived && candidateStatus === "OUTAGE")
+          ? httpDerivedStatus
+          : candidateStatus;
+
+      observations.push({
+        serviceSurfaceId: surface.id,
+        regionId: region.id,
+        status: writtenStatus,
+        latencyMs: result.latencyMs,
+        httpStatus: result.httpStatus,
+        confidence: result.confidence,
+        errorRate: null,
+        observedAt: now,
+        officialStatus,
+        httpDerivedStatus,
+        statusSource: deriveResult.statusSource,
+        parseOk: obsParseOk,
+        parseError: obsParseError,
+      });
+
+      surfaceDetails.push({
+        surfaceId: surface.id,
+        serviceSlug: surface.service.slug,
+        surfaceName: surface.displayName,
+        checkUrl: url,
+        httpStatus: result.httpStatus,
+        latencyMs: result.latencyMs,
+        statusComputed: deriveResult.finalStatus,
+        statusWritten: writtenStatus,
+        confidence: result.confidence,
+        ...(shadow && {
+          shadowStatus: shadow.shadowStatus,
+          indicator: shadow.indicator,
+          parseOk: shadow.parseOk,
+        }),
+        officialStatus,
+        httpDerivedStatus,
+        finalStatus: deriveResult.finalStatus,
+        statusSource: deriveResult.statusSource,
+      });
+
+      console.log(JSON.stringify({
+        event: "surface_check",
+        dryRun,
+        surfaceId: surface.id,
+        serviceSlug: surface.service.slug,
+        checkUrl: url,
+        httpStatus: result.httpStatus,
+        latencyMs: result.latencyMs,
+        statusComputed: result.status,
+        confidence: result.confidence,
+      }));
     }
 
     const checkElapsedMs = Date.now() - checkStart;
