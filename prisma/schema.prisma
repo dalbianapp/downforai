@@ -15,6 +15,26 @@ enum StatusSource {
   FALLBACK
 }
 
+enum ProbeResult {
+  REACHABLE
+  BLOCKED
+  RATE_LIMITED
+  SERVER_ERROR
+  TIMEOUT
+  DNS_FAIL
+  CONNECTION_FAIL
+  TLS_ERROR
+  PARSE_ERROR
+  UNKNOWN_FAILURE
+}
+
+enum ServiceLifecycleStatus {
+  ACTIVE
+  MONITORING_LIMITED
+  POSSIBLY_DISCONTINUED
+  DISCONTINUED
+}
+
 enum CheckType {
   HOMEPAGE
   STATUS_HTML
@@ -89,18 +109,19 @@ enum ReportType {
 }
 
 model Service {
-  id              String          @id @default(cuid())
-  slug            String          @unique
+  id              String                 @id @default(cuid())
+  slug            String                 @unique
   name            String
   category        ServiceCategory
-  tier            Int             @default(1)
+  tier            Int                    @default(1)
   defaultBadge    BadgeType
   limitPhraseKey  String
   websiteUrl      String?
   iconUrl         String?
   description     String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  lifecycleStatus ServiceLifecycleStatus @default(ACTIVE)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
   surfaces         ServiceSurface[]
   incidents        Incident[]
@@ -154,6 +175,7 @@ model Observation {
   statusSource     StatusSource?  // which signal drove the final status
   parseOk          Boolean?       // whether the official source was parsed successfully
   parseError       String?        // error type if parse failed
+  probeResult      ProbeResult?   // classification of the raw HTTP probe result
 
   serviceSurface ServiceSurface @relation(fields: [serviceSurfaceId], references: [id], onDelete: Cascade)
   region         Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)

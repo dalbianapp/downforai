@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { sendTelegramAlert } from "@/lib/notifications/telegram";
 import { isTier1 } from "@/lib/notifications/tier1";
 import { deriveFinalStatus, type CheckTypeVal, type StatusResult as DeriveStatusResult, type StatusSourceVal } from "@/lib/monitoring/deriveStatus";
+import { classifyProbeHTTP, classifyProbeError, probeConfidence, type ProbeResultVal } from "@/lib/monitoring/classifyProbe";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -42,6 +43,7 @@ type CheckResult = {
   httpStatus: number | null;
   confidence: ConfidenceLevel;
   bodyText?: string;
+  probeResult: ProbeResultVal;
 };
 
 type BatchRow = {
@@ -49,6 +51,7 @@ type BatchRow = {
   displayName: string;
   checkUrl: string | null;
   checkType: string;
+  signalConfidence: string;
   serviceId: string;
   websiteUrl: string | null;
   slug: string;
@@ -56,10 +59,13 @@ type BatchRow = {
   lastStatus: string | null;
   lastConfidence: string | null;
   lastHttpStatus: number | null;
+  lastProbeResult: string | null;
+  prevProbeResult: string | null;
 };
 
-// Perform HTTP fetch with specified method
-// captureBody=true: read response body text (used for Atlassian JSON shadow parsing)
+// Perform HTTP fetch with specified method.
+// Uses classifyProbe* to map the raw result to (probeResult, httpDerivedStatus).
+// PR 6: 403/429/timeout → UNKNOWN (never OUTAGE); 5xx/DNS/conn-fail → OUTAGE.
 async function doFetch(url: string, method: "HEAD" | "GET", captureBody = false): Promise<CheckResult> {
   const start = Date.now();
   try {
@@ -68,7 +74,7 @@ async function doFetch(url: string, method: "HEAD" | "GET", captureBody = false)
 
     const response = await fetch(url, {
       method,
-      cache: "no-store", // prevent Vercel/Next.js edge cache from masking real status
+      cache: "no-store",
       signal: controller.signal,
       redirect: "follow",
       headers: {
@@ -84,73 +90,26 @@ async function doFetch(url: string, method: "HEAD" | "GET", captureBody = false)
     clearTimeout(timeout);
     const latencyMs = Date.now() - start;
     const httpStatus = response.status;
+    const classified = classifyProbeHTTP(httpStatus);
+    const bodyText = captureBody && method === "GET" && response.ok ? await response.text() : undefined;
 
-    // 200-299 = clearly operational
-    if (response.ok) {
-      const bodyText = captureBody && method === "GET" ? await response.text() : undefined;
-      return {
-        status: latencyMs > 5000 ? "DEGRADED" : "OPERATIONAL",
-        latencyMs,
-        httpStatus,
-        confidence: "HIGH",
-        ...(bodyText !== undefined && { bodyText }),
-      };
-    }
-
-    // 403/405 = probably blocking us, not actually down
-    if (httpStatus === 403 || httpStatus === 405) {
-      return {
-        status: "UNKNOWN",
-        latencyMs,
-        httpStatus,
-        confidence: "LOW"
-      };
-    }
-
-    // 429 = alive but overloaded
-    if (httpStatus === 429) {
-      return {
-        status: "DEGRADED",
-        latencyMs,
-        httpStatus,
-        confidence: "HIGH"
-      };
-    }
-
-    // 5xx = real server error
-    if (httpStatus >= 500) {
-      return {
-        status: "OUTAGE",
-        latencyMs,
-        httpStatus,
-        confidence: "HIGH"
-      };
-    }
-
-    // Other 4xx (404, etc) = probably operational (URL might be wrong)
     return {
-      status: "OPERATIONAL",
+      status: classified.httpDerivedStatus as StatusResult,
       latencyMs,
       httpStatus,
-      confidence: "LOW"
+      confidence: probeConfidence(classified.probeResult),
+      probeResult: classified.probeResult,
+      ...(bodyText !== undefined && { bodyText }),
     };
 
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return {
-        status: "DEGRADED",
-        latencyMs: CHECK_TIMEOUT_MS,
-        httpStatus: null,
-        confidence: "HIGH"
-      };
-    }
-
-    // DNS failure, connection refused = real outage
+    const classified = classifyProbeError(error);
     return {
-      status: "OUTAGE",
-      latencyMs: null,
+      status: classified.httpDerivedStatus as StatusResult,
+      latencyMs: error instanceof Error && error.name === "AbortError" ? CHECK_TIMEOUT_MS : null,
       httpStatus: null,
-      confidence: "HIGH"
+      confidence: probeConfidence(classified.probeResult),
+      probeResult: classified.probeResult,
     };
   }
 }
@@ -320,21 +279,33 @@ async function handleCheckStatus(request: NextRequest) {
           ss."displayName",
           ss."checkUrl",
           ss."checkType",
+          ss."signalConfidence",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
-          o."observedAt" AS "lastObservedAt",
-          o.status AS "lastStatus",
-          o.confidence AS "lastConfidence",
-          o."httpStatus" AS "lastHttpStatus"
+          o."lastObservedAt",
+          o."lastStatus",
+          o."lastConfidence",
+          o."lastHttpStatus",
+          o."lastProbeResult",
+          o."prevProbeResult"
         FROM "ServiceSurface" ss
         INNER JOIN "Service" s ON s.id = ss."serviceId"
         LEFT JOIN LATERAL (
-          SELECT "observedAt", status, confidence, "httpStatus"
-          FROM "Observation"
-          WHERE "serviceSurfaceId" = ss.id
-          ORDER BY "observedAt" DESC
-          LIMIT 1
+          SELECT
+            MAX(r."observedAt")                                                AS "lastObservedAt",
+            (ARRAY_AGG(r.status::text        ORDER BY r."observedAt" DESC))[1] AS "lastStatus",
+            (ARRAY_AGG(r.confidence          ORDER BY r."observedAt" DESC))[1] AS "lastConfidence",
+            (ARRAY_AGG(r."httpStatus"        ORDER BY r."observedAt" DESC))[1] AS "lastHttpStatus",
+            (ARRAY_AGG(r."probeResult"::text ORDER BY r."observedAt" DESC))[1] AS "lastProbeResult",
+            (ARRAY_AGG(r."probeResult"::text ORDER BY r."observedAt" DESC))[2] AS "prevProbeResult"
+          FROM (
+            SELECT "observedAt", status, confidence, "httpStatus", "probeResult"
+            FROM "Observation"
+            WHERE "serviceSurfaceId" = ss.id
+            ORDER BY "observedAt" DESC
+            LIMIT 2
+          ) r
         ) o ON true
         WHERE ss."isEnabled" = true AND ss.id = ${filterSurfaceId}
         LIMIT 1
@@ -348,24 +319,36 @@ async function handleCheckStatus(request: NextRequest) {
           ss."displayName",
           ss."checkUrl",
           ss."checkType",
+          ss."signalConfidence",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
-          o."observedAt" AS "lastObservedAt",
-          o.status AS "lastStatus",
-          o.confidence AS "lastConfidence",
-          o."httpStatus" AS "lastHttpStatus"
+          o."lastObservedAt",
+          o."lastStatus",
+          o."lastConfidence",
+          o."lastHttpStatus",
+          o."lastProbeResult",
+          o."prevProbeResult"
         FROM "ServiceSurface" ss
         INNER JOIN "Service" s ON s.id = ss."serviceId"
         LEFT JOIN LATERAL (
-          SELECT "observedAt", status, confidence, "httpStatus"
-          FROM "Observation"
-          WHERE "serviceSurfaceId" = ss.id
-          ORDER BY "observedAt" DESC
-          LIMIT 1
+          SELECT
+            MAX(r."observedAt")                                                AS "lastObservedAt",
+            (ARRAY_AGG(r.status::text        ORDER BY r."observedAt" DESC))[1] AS "lastStatus",
+            (ARRAY_AGG(r.confidence          ORDER BY r."observedAt" DESC))[1] AS "lastConfidence",
+            (ARRAY_AGG(r."httpStatus"        ORDER BY r."observedAt" DESC))[1] AS "lastHttpStatus",
+            (ARRAY_AGG(r."probeResult"::text ORDER BY r."observedAt" DESC))[1] AS "lastProbeResult",
+            (ARRAY_AGG(r."probeResult"::text ORDER BY r."observedAt" DESC))[2] AS "prevProbeResult"
+          FROM (
+            SELECT "observedAt", status, confidence, "httpStatus", "probeResult"
+            FROM "Observation"
+            WHERE "serviceSurfaceId" = ss.id
+            ORDER BY "observedAt" DESC
+            LIMIT 2
+          ) r
         ) o ON true
         WHERE ss."isEnabled" = true
-        ORDER BY o."observedAt" ASC NULLS FIRST
+        ORDER BY o."lastObservedAt" ASC NULLS FIRST
         LIMIT ${batchLimit}
       `;
     }
@@ -375,6 +358,7 @@ async function handleCheckStatus(request: NextRequest) {
       displayName: row.displayName,
       checkUrl: row.checkUrl,
       checkType: row.checkType as CheckTypeVal,
+      signalConfidence: (row.signalConfidence as "HIGH" | "MEDIUM" | "LOW") ?? "LOW",
       serviceId: row.serviceId,
       service: { websiteUrl: row.websiteUrl, slug: row.slug },
       observations: row.lastObservedAt ? [{
@@ -382,6 +366,8 @@ async function handleCheckStatus(request: NextRequest) {
         status: row.lastStatus,
         confidence: row.lastConfidence,
         httpStatus: row.lastHttpStatus,
+        probeResult: row.lastProbeResult ?? null,
+        prevProbeResult: row.prevProbeResult ?? null,
       }] : [],
     }));
 
@@ -407,14 +393,13 @@ async function handleCheckStatus(request: NextRequest) {
       checkUrl: string;
       httpStatus: number | null;
       latencyMs: number | null;
-      statusComputed: StatusResult;       // what WOULD be written if flag on (= finalStatus)
-      statusWritten: StatusResult;        // what IS written to DB (httpDerivedStatus while flag off)
+      probeResult: ProbeResultVal;
+      statusComputed: StatusResult;
+      statusWritten: StatusResult;
       confidence: ConfidenceLevel;
-      // Atlassian shadow fields (present only for Atlassian URLs)
       shadowStatus?: StatusResult;
       indicator?: string | null;
       parseOk?: boolean;
-      // Dual-signal fields (PR 3)
       officialStatus: StatusResult | null;
       httpDerivedStatus: StatusResult;
       finalStatus: StatusResult;
@@ -431,12 +416,12 @@ async function handleCheckStatus(request: NextRequest) {
       confidence: ConfidenceLevel;
       errorRate: number | null;
       observedAt: Date;
-      // Dual-signal audit fields (PR 3)
       officialStatus: StatusResult | null;
       httpDerivedStatus: StatusResult | null;
       statusSource: StatusSourceVal | null;
       parseOk: boolean | null;
       parseError: string | null;
+      probeResult: ProbeResultVal | null;
     }> = [];
 
     const now = new Date();
@@ -464,6 +449,7 @@ async function handleCheckStatus(request: NextRequest) {
       url: string;
       result: CheckResult;
       shadow: AtlassianShadow | null;
+      isAtlassian: boolean;
       httpDerivedStatus: StatusResult;
       officialStatus: DeriveStatusResult | null;
       deriveResult: ReturnType<typeof deriveFinalStatus>;
@@ -516,7 +502,7 @@ async function handleCheckStatus(request: NextRequest) {
             }));
           }
 
-          staged.push({ surface, url, result, shadow, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived });
+          staged.push({ surface, url, result, shadow, isAtlassian, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived });
         }
       } else {
         console.error("HTTP check failed:", settled.reason);
@@ -547,7 +533,7 @@ async function handleCheckStatus(request: NextRequest) {
 
     // ── Phase 2: finalize writtenStatus and build observation arrays ──────────
     for (const s of staged) {
-      const { surface, url, result, shadow, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived } = s;
+      const { surface, url, result, shadow, isAtlassian, httpDerivedStatus, officialStatus, deriveResult, obsParseOk, obsParseError, useDerived } = s;
 
       // Explosion guard: revert only derived OUTAGEs, keep derived DEGRADED as-is
       const candidateStatus: StatusResult = useDerived ? deriveResult.finalStatus : httpDerivedStatus;
@@ -555,6 +541,12 @@ async function handleCheckStatus(request: NextRequest) {
         (explosionGuardActive && useDerived && candidateStatus === "OUTAGE")
           ? httpDerivedStatus
           : candidateStatus;
+
+      // If Atlassian HTTP was fine but JSON parse failed, override probeResult to PARSE_ERROR
+      const obsProbeResult: ProbeResultVal =
+        isAtlassian && result.probeResult === "REACHABLE" && obsParseOk === false
+          ? "PARSE_ERROR"
+          : result.probeResult;
 
       observations.push({
         serviceSurfaceId: surface.id,
@@ -570,6 +562,7 @@ async function handleCheckStatus(request: NextRequest) {
         statusSource: deriveResult.statusSource,
         parseOk: obsParseOk,
         parseError: obsParseError,
+        probeResult: obsProbeResult,
       });
 
       surfaceDetails.push({
@@ -579,6 +572,7 @@ async function handleCheckStatus(request: NextRequest) {
         checkUrl: url,
         httpStatus: result.httpStatus,
         latencyMs: result.latencyMs,
+        probeResult: obsProbeResult,
         statusComputed: deriveResult.finalStatus,
         statusWritten: writtenStatus,
         confidence: result.confidence,
@@ -649,19 +643,53 @@ async function handleCheckStatus(request: NextRequest) {
     });
     const openIncidentMap = new Map(openIncidentRows.map(i => [i.serviceId, i]));
 
-    // Auto-create incidents on OUTAGE transitions (with anti-flapping)
-    // Only create incident if BOTH current AND previous observation are OUTAGE with HIGH confidence
+    // Auto-create/resolve incidents — thresholds by signalConfidence (PR 6)
+    //
+    // ANCIEN comportement (identique pour les 3 niveaux) :
+    //   newObs.status=OUTAGE && confidence=HIGH && prevObs.status=OUTAGE && confidence=HIGH → incident
+    //
+    // NOUVEAU comportement par signalConfidence :
+    //   HIGH  (ATLASSIAN_JSON) : 2 consécutifs OUTAGE/HIGH confidence — inchangé (signal officiel fiable)
+    //   MEDIUM (STATUS_HTML)   : 2 consécutifs SERVER_ERROR — jamais sur BLOCKED/TIMEOUT/UNKNOWN
+    //   LOW   (HOMEPAGE/ROBOTS): 3 consécutifs SERVER_ERROR|DNS_FAIL|CONNECTION_FAIL uniquement
+    //                            → 403/429/timeout ne déclenchent JAMAIS d'incident
     for (const surface of batch) {
       const prevObs = surface.observations[0];
       const newObs = observations.find(o => o.serviceSurfaceId === surface.id);
 
-      // Anti-flapping: require 2 consecutive OUTAGE checks with HIGH confidence
-      if (
-        newObs?.status === "OUTAGE" &&
-        newObs?.confidence === "HIGH" &&
-        prevObs?.status === "OUTAGE" &&
-        prevObs?.confidence === "HIGH"
-      ) {
+      const newProbeResult  = newObs?.probeResult  ?? null;
+      const prevProbeResult = prevObs?.probeResult  ?? null;
+      const prevPrevProbeResult = prevObs?.prevProbeResult ?? null;
+      const sigConf = surface.signalConfidence;
+
+      let shouldCreateIncident = false;
+
+      if (sigConf === "HIGH") {
+        // Atlassian JSON: signal officiel → 2 consécutifs OUTAGE avec HIGH confidence
+        shouldCreateIncident = !!(
+          newObs?.status === "OUTAGE" &&
+          newObs?.confidence === "HIGH" &&
+          prevObs?.status === "OUTAGE" &&
+          prevObs?.confidence === "HIGH"
+        );
+      } else if (sigConf === "MEDIUM") {
+        // Status HTML: 2 consécutifs SERVER_ERROR seulement
+        shouldCreateIncident = !!(
+          newProbeResult === "SERVER_ERROR" &&
+          prevProbeResult === "SERVER_ERROR"
+        );
+      } else {
+        // LOW (homepage / robots.txt): 3 consécutifs vrais échecs serveur seulement
+        // BLOCKED / RATE_LIMITED / TIMEOUT / UNKNOWN_FAILURE ne déclenchent JAMAIS d'incident
+        const LOW_FATAL = ["SERVER_ERROR", "DNS_FAIL", "CONNECTION_FAIL"];
+        shouldCreateIncident = !!(
+          newProbeResult && LOW_FATAL.includes(newProbeResult) &&
+          prevProbeResult && LOW_FATAL.includes(prevProbeResult) &&
+          prevPrevProbeResult && LOW_FATAL.includes(prevPrevProbeResult)
+        );
+      }
+
+      if (shouldCreateIncident) {
         const existingIncident = openIncidentMap.get(surface.serviceId);
 
         if (!existingIncident) {
@@ -677,7 +705,6 @@ async function handleCheckStatus(request: NextRequest) {
             },
           });
 
-          // Update map so other surfaces of the same service don't create duplicates
           openIncidentMap.set(surface.serviceId, { id: newIncident.id, serviceId: surface.serviceId, startedAt: now, status: "OPEN" });
 
           if (isTier1(surface.service.slug)) {
@@ -691,24 +718,18 @@ async function handleCheckStatus(request: NextRequest) {
         }
       }
 
-      // Auto-resolve incidents when back to OPERATIONAL
-      // Fix: no longer requires prevObs === "OUTAGE" — resolves whenever service returns OPERATIONAL
+      // Auto-resolve: premier probe OPERATIONAL résout l'incident (après 10 min d'ouverture)
       if (newObs?.status === "OPERATIONAL") {
         const openIncident = openIncidentMap.get(surface.serviceId);
 
         if (openIncident) {
-          // Only resolve if incident has been open for at least 10 minutes
           const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
           if (openIncident.startedAt < tenMinAgo) {
             await prisma.incident.update({
               where: { id: openIncident.id },
-              data: {
-                resolvedAt: now,
-                status: "RESOLVED"
-              },
+              data: { resolvedAt: now, status: "RESOLVED" },
             });
 
-            // Remove from map so other surfaces of the same service don't re-resolve
             openIncidentMap.delete(surface.serviceId);
 
             if (isTier1(surface.service.slug)) {
