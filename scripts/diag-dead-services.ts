@@ -13,7 +13,6 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const prisma = new PrismaClient();
 const FETCH_TIMEOUT_MS = 10_000;
 const BOT_UA = "DownForAIStatusBot/1.0 (+https://downforai.com/methodology)";
-const SINCE_DAYS = 30;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
