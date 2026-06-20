@@ -12,6 +12,7 @@ const SCOPE_DESC: Record<string, string> = {
   partial: "Some surfaces or regions are affected. The issue may not impact all users equally.",
   local: "Our probes see normal responses. The issue is likely on your end or in your network path.",
   unknown: "We don't have enough signal to determine the scope. Check back in a few minutes.",
+  inconclusive: "Automated monitoring is not available for this service. Check the provider's official status page for the latest information.",
 };
 
 const CONFIDENCE_LABEL: Record<string, string> = {
@@ -133,6 +134,10 @@ export default function DiagnosisPanel({
                     </span>
                   </div>
                 ))
+              ) : surfaces.some((s) => s.status === "UNKNOWN") ? (
+                <div style={{ fontSize: "13px", color: "#6b7280" }}>
+                  Status of monitored surfaces could not be determined.
+                </div>
               ) : (
                 <div style={{ fontSize: "13px", color: "#6b7280" }}>
                   All surfaces operational as of last probe.

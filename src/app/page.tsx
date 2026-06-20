@@ -9,6 +9,7 @@ import { CTAButton } from "@/components/ui/CTAButton";
 import { calculateWorstStatus } from "@/lib/utils";
 import { generateWebSiteJsonLd } from "@/lib/seo";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore, getPerformanceColor } from "@/lib/performance";
+import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ async function getServicesStatus() {
     description: string | null;
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    monitoringCapability: string;
     surface_id: string;
     observedAt: Date | null;
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
@@ -43,6 +45,7 @@ async function getServicesStatus() {
       s.description,
       s.category,
       s."defaultBadge",
+      s."monitoringCapability"::text AS "monitoringCapability",
       ss.id           AS surface_id,
       o."observedAt",
       o.status,
@@ -70,6 +73,7 @@ async function getServicesStatus() {
     description: string | null;
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    monitoringCapability: string;
     surfaces: Map<string, SurfaceAccum>;
   };
 
@@ -84,6 +88,7 @@ async function getServicesStatus() {
         description: row.description,
         category: row.category,
         defaultBadge: row.defaultBadge,
+        monitoringCapability: row.monitoringCapability,
         surfaces: new Map(),
       });
     }
@@ -111,24 +116,27 @@ async function getServicesStatus() {
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
     const recentObservations = allObservations.filter((o) => o.observedAt >= sixHoursAgo);
 
-    // If no observations in last 6 hours, status is UNKNOWN
+    // If no observations in last 6 hours, status is UNKNOWN.
+    // Non-measurable services (BLOCKED_FROM_PROBES, UNVERIFIABLE) are always UNKNOWN.
     let status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" = "UNKNOWN";
 
-    if (recentObservations.length > 0) {
+    if (!isNonMeasurableCapability(service.monitoringCapability) && recentObservations.length > 0) {
       const statuses = recentObservations.map((o) => o.status);
       status = calculateWorstStatus(statuses);
     }
 
-    // Build sparkline data from real latency observations
+    // Build sparkline — exclude timeout sentinel (5000ms) and null latencies
     const sparklineData: number[] = allObservations
-      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime()) // Sort ascending (oldest to newest)
+      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())
       .map((o) => o.latencyMs)
-      .filter((lat): lat is number => lat !== null) // Remove nulls
-      .slice(-24); // Keep last 24 points max
+      .filter((lat): lat is number => lat !== null && lat < 5000)
+      .slice(-24);
 
     // Compute performance level
     const surfacePerformances = surfaces.map((surface) => {
-      const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
+      const latencies = surface.observations
+        .filter((o) => o.latencyMs !== null && o.latencyMs < 5000)
+        .map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
       const lastObservedAt = surface.observations[0]?.observedAt || null;
@@ -147,11 +155,19 @@ async function getServicesStatus() {
       category: service.category,
       status,
       badgeType: service.defaultBadge,
-      latencyMs: allObservations[0]?.latencyMs || null,
+      latencyMs: (allObservations[0]?.latencyMs ?? null) !== null && (allObservations[0]?.latencyMs ?? 0) < 5000
+        ? allObservations[0]?.latencyMs || null
+        : null,
       sparklineData,
       performanceLevel,
       performanceBaseline: avgBaseline,
-      performanceScore: computePerformanceScore(allObservations[0]?.latencyMs || null, avgBaseline, performanceLevel),
+      performanceScore: computePerformanceScore(
+        (allObservations[0]?.latencyMs ?? null) !== null && (allObservations[0]?.latencyMs ?? 0) < 5000
+          ? allObservations[0]?.latencyMs || null
+          : null,
+        avgBaseline,
+        performanceLevel,
+      ),
     };
   });
 }

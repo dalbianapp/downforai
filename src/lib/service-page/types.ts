@@ -14,7 +14,7 @@ export type SurfaceSnapshot = {
 
 export type DiagnosisResult = {
   label: string;
-  scope: "global" | "partial" | "local" | "unknown";
+  scope: "global" | "partial" | "local" | "unknown" | "inconclusive";
   confidence: "HIGH" | "MEDIUM" | "LOW";
   reasons: string[];
 };

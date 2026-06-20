@@ -1,12 +1,29 @@
 import type { SurfaceSnapshot, DiagnosisResult } from "./types";
+import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
 
 export function classifyServiceIssue(input: {
   surfaces: SurfaceSnapshot[];
   reports24h: number;
   reports2h: number;
   hasOpenIncident: boolean;
+  monitoringCapability?: string | null;
 }): DiagnosisResult {
-  const { surfaces, reports2h, hasOpenIncident } = input;
+  const { surfaces, reports2h, hasOpenIncident, monitoringCapability } = input;
+
+  // Guard: non-measurable capability — never classify as "local" or "provider-side"
+  if (isNonMeasurableCapability(monitoringCapability)) {
+    return {
+      label: "Monitoring data unavailable",
+      scope: "inconclusive",
+      confidence: "LOW",
+      reasons: [
+        monitoringCapability === "BLOCKED_FROM_PROBES"
+          ? "Probe access blocked by this service"
+          : "Service unreachable from probe infrastructure",
+        "Cannot determine scope from automated monitoring alone",
+      ],
+    };
+  }
 
   const degradedSurfaces = surfaces.filter((s) => s.status === "DEGRADED");
   const outageSurfaces = surfaces.filter((s) => s.status === "OUTAGE");

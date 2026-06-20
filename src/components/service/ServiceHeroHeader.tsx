@@ -19,6 +19,7 @@ const SCOPE_LABEL: Record<string, string> = {
   partial: "Partial outage",
   local: "Likely your side",
   unknown: "Inconclusive",
+  inconclusive: "Inconclusive",
 };
 
 const CONFIDENCE_COLOR: Record<string, string> = {

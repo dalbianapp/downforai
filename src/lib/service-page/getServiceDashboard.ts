@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { TOP_SERVICE_CONTENT } from "@/content/top-services";
 import { classifyServiceIssue } from "./classifyServiceIssue";
 import { getServiceBySlug, getReports24hCount } from "@/lib/service-queries";
+import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
 import type {
   ServiceDashboardData,
   SurfaceSnapshot,
@@ -122,6 +123,9 @@ export async function getServiceDashboard(
       ON o."serviceSurfaceId" = ss.id
       AND o."observedAt" >= NOW() - INTERVAL '24 hours'
       AND o."latencyMs" IS NOT NULL
+      AND o."latencyMs" < 5000
+      AND (o."probeResult" IS NULL OR o."probeResult"::text NOT IN
+           ('BLOCKED','RATE_LIMITED','TIMEOUT','DNS_FAIL','CONNECTION_FAIL','TLS_ERROR','UNKNOWN_FAILURE','PARSE_ERROR'))
     WHERE ss."serviceId" = ${service.id}
       AND ss."isEnabled" = true
     GROUP BY ss.id
@@ -129,20 +133,24 @@ export async function getServiceDashboard(
 
   const latencyMap = new Map(latencyStats.map((l) => [l.surfaceId, l]));
 
-  // Build typed surface snapshots
+  // Declare monCap early — used for surface overrides and uptime guard below
+  const monCap = service.monitoringCapability as string;
+
+  // Build typed surface snapshots — override status/latency for non-measurable services
+  const isNonMeasurable = isNonMeasurableCapability(monCap);
   const surfaces: SurfaceSnapshot[] = surfacesRaw.map((s) => {
     const stats = latencyMap.get(s.surfaceId);
     return {
       surfaceId: s.surfaceId,
       surfaceSlug: s.surfaceSlug,
       displayName: s.displayName,
-      status: (s.status as SurfaceSnapshot["status"]) ?? "UNKNOWN",
+      status: isNonMeasurable ? "UNKNOWN" : ((s.status as SurfaceSnapshot["status"]) ?? "UNKNOWN"),
       latestHttpStatus: s.httpStatus ?? null,
-      latestLatencyMs: s.latencyMs ?? null,
+      latestLatencyMs: isNonMeasurable ? null : (s.latencyMs ?? null),
       confidence: s.confidence ?? null,
       lastObservedAt: s.observedAt ?? null,
-      p50Latency24h: stats?.p50 != null ? Math.round(Number(stats.p50)) : null,
-      p95Latency24h: stats?.p95 != null ? Math.round(Number(stats.p95)) : null,
+      p50Latency24h: isNonMeasurable ? null : (stats?.p50 != null ? Math.round(Number(stats.p50)) : null),
+      p95Latency24h: isNonMeasurable ? null : (stats?.p95 != null ? Math.round(Number(stats.p95)) : null),
       officialStatus: s.officialStatus ?? null,
     };
   });
@@ -151,7 +159,6 @@ export async function getServiceDashboard(
   // Excludes from denominator any observation from a probe that was blocked/timed out/unknown
   // (probeResult IS NULL = pre-PR6 observation, no probeResult stored → kept in denominator).
   let uptime24h: number | null = null;
-  const monCap = service.monitoringCapability as string;
   if (monCap !== "BLOCKED_FROM_PROBES" && monCap !== "UNVERIFIABLE") {
     const uptimeRaw = await prisma.$queryRaw<[{ total: bigint; operational: bigint }]>`
       SELECT
@@ -248,6 +255,7 @@ export async function getServiceDashboard(
     reports24h: reports24hCount,
     reports2h: reports2hCount,
     hasOpenIncident,
+    monitoringCapability: monCap,
   });
 
   // 8. Overall status — respects monitoringCapability + fresh Atlassian signal
