@@ -8,6 +8,13 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum StatusSource {
+  OFFICIAL_STATUS_PAGE
+  HTTP_CHECK
+  MIXED
+  FALLBACK
+}
+
 enum CheckType {
   HOMEPAGE
   STATUS_HTML
@@ -142,6 +149,11 @@ model Observation {
   httpStatus       Int?          // HTTP status code from monitoring check
   confidence       String?       // "HIGH" or "LOW" - reliability of the check result
   observedAt       DateTime      @default(now())
+  officialStatus   ServiceStatus? // parsed from official source (Atlassian JSON); null if non-Atlassian or parse failed
+  httpDerivedStatus ServiceStatus? // status derived from HTTP response alone (legacy behavior)
+  statusSource     StatusSource?  // which signal drove the final status
+  parseOk          Boolean?       // whether the official source was parsed successfully
+  parseError       String?        // error type if parse failed
 
   serviceSurface ServiceSurface @relation(fields: [serviceSurfaceId], references: [id], onDelete: Cascade)
   region         Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendTelegramAlert } from "@/lib/notifications/telegram";
 import { isTier1 } from "@/lib/notifications/tier1";
+import { deriveFinalStatus, type CheckTypeVal, type StatusResult as DeriveStatusResult, type StatusSourceVal } from "@/lib/monitoring/deriveStatus";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,6 +11,15 @@ const CRON_SECRET = process.env.CRON_SECRET;
 const CHECK_TIMEOUT_MS = 5000; // 5s timeout per check — confirmed present, unchanged
 const BATCH_SIZE = 200; // Check 200 surfaces per cron run (fully parallel)
 const BOT_UA = "DownForAIStatusBot/1.0 (+https://downforai.com/methodology)";
+
+// ── Canary feature flags (PR 3: off by default — status displayed is still httpDerivedStatus) ──
+// USE_DERIVED_STATUS=true  → use deriveFinalStatus() for the `status` field (canary PR)
+// DERIVED_STATUS_ALLOWLIST → comma-separated slugs; if non-empty, only those slugs use derived status
+const USE_DERIVED_STATUS = process.env.USE_DERIVED_STATUS === "true";
+const DERIVED_STATUS_ALLOWLIST = (process.env.DERIVED_STATUS_ALLOWLIST ?? "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
 
 function verifyAuth(request: NextRequest): boolean {
   const authHeader = request.headers.get("Authorization");
@@ -38,6 +48,7 @@ type BatchRow = {
   id: string;
   displayName: string;
   checkUrl: string | null;
+  checkType: string;
   serviceId: string;
   websiteUrl: string | null;
   slug: string;
@@ -308,6 +319,7 @@ async function handleCheckStatus(request: NextRequest) {
           ss.id,
           ss."displayName",
           ss."checkUrl",
+          ss."checkType",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
@@ -335,6 +347,7 @@ async function handleCheckStatus(request: NextRequest) {
           ss.id,
           ss."displayName",
           ss."checkUrl",
+          ss."checkType",
           ss."serviceId",
           s."websiteUrl",
           s.slug,
@@ -361,6 +374,7 @@ async function handleCheckStatus(request: NextRequest) {
       id: row.id,
       displayName: row.displayName,
       checkUrl: row.checkUrl,
+      checkType: row.checkType as CheckTypeVal,
       serviceId: row.serviceId,
       service: { websiteUrl: row.websiteUrl, slug: row.slug },
       observations: row.lastObservedAt ? [{
@@ -385,7 +399,7 @@ async function handleCheckStatus(request: NextRequest) {
       Array.from(urlToSurfaces.keys()).filter(u => u.endsWith("/api/v2/status.json"))
     );
 
-    // Per-surface detail for dry-run response (shadow fields present for Atlassian URLs)
+    // Per-surface detail for dry-run response
     const surfaceDetails: Array<{
       surfaceId: string;
       serviceSlug: string;
@@ -393,11 +407,18 @@ async function handleCheckStatus(request: NextRequest) {
       checkUrl: string;
       httpStatus: number | null;
       latencyMs: number | null;
-      statusComputed: StatusResult;
+      statusComputed: StatusResult;       // what WOULD be written if flag on (= finalStatus)
+      statusWritten: StatusResult;        // what IS written to DB (httpDerivedStatus while flag off)
       confidence: ConfidenceLevel;
+      // Atlassian shadow fields (present only for Atlassian URLs)
       shadowStatus?: StatusResult;
       indicator?: string | null;
       parseOk?: boolean;
+      // Dual-signal fields (PR 3)
+      officialStatus: StatusResult | null;
+      httpDerivedStatus: StatusResult;
+      finalStatus: StatusResult;
+      statusSource: string;
     }> = [];
 
     // Check each unique URL
@@ -410,6 +431,12 @@ async function handleCheckStatus(request: NextRequest) {
       confidence: ConfidenceLevel;
       errorRate: number | null;
       observedAt: Date;
+      // Dual-signal audit fields (PR 3)
+      officialStatus: StatusResult | null;
+      httpDerivedStatus: StatusResult | null;
+      statusSource: StatusSourceVal | null;
+      parseOk: boolean | null;
+      parseError: string | null;
     }> = [];
 
     const now = new Date();
@@ -437,39 +464,81 @@ async function handleCheckStatus(request: NextRequest) {
 
         // SHADOW MODE: parse Atlassian indicator once per URL (fail-safe: null on any error)
         let shadow: AtlassianShadow | null = null;
-        if (atlassianUrls.has(url) && result.bodyText) {
+        const isAtlassian = atlassianUrls.has(url);
+        if (isAtlassian && result.bodyText) {
           const parsed = parseAtlassianBody(result.bodyText);
           // Fail-safe: parse failure → shadow falls back to HTTP-computed status, not forced OPERATIONAL.
-          // A broken parse on a 200 response → OPERATIONAL (HTTP says up, we just can't read the indicator).
-          // A broken parse on a 500 response → OUTAGE (HTTP already tells us it's down).
           shadow = parsed.parseOk ? parsed : { ...parsed, shadowStatus: result.status };
         }
 
+        // ── DUAL-SIGNAL (PR 3) ─────────────────────────────────────────────────
+        // Compute once per URL — all surfaces sharing this URL get identical signals.
+        const httpDerivedStatus = result.status;
+
+        // officialStatus: only set when Atlassian parse succeeded
+        const officialStatus: DeriveStatusResult | null =
+          (isAtlassian && shadow?.parseOk === true) ? shadow.shadowStatus : null;
+
+        // parseOk for deriveFinalStatus: non-Atlassian surfaces aren't a "parse failure"
+        const deriveParseOk = isAtlassian ? (shadow?.parseOk ?? false) : true;
+
+        // checkType from first surface (all surfaces sharing a URL have same checkType)
+        const urlCheckType = surfacesForUrl[0]?.checkType ?? "HOMEPAGE";
+
+        const deriveResult = deriveFinalStatus({
+          officialStatus,
+          httpDerivedStatus,
+          checkType: urlCheckType,
+          parseOk: deriveParseOk,
+        });
+
+        // DB audit fields (non-Atlassian → parseOk/parseError null, not applicable)
+        const obsParseOk: boolean | null    = isAtlassian ? (shadow?.parseOk ?? false) : null;
+        const obsParseError: string | null  = isAtlassian ? (shadow?.parseError ?? null) : null;
+        // ── END DUAL-SIGNAL ────────────────────────────────────────────────────
+
         for (const surface of surfacesForUrl) {
-          // Shadow compare log — observation written to DB is UNCHANGED (old status only)
+          // Feature flag: USE_DERIVED_STATUS off → status written = httpDerivedStatus (unchanged)
+          const useDerived =
+            USE_DERIVED_STATUS &&
+            (DERIVED_STATUS_ALLOWLIST.length === 0 ||
+              DERIVED_STATUS_ALLOWLIST.includes(surface.service.slug));
+          const writtenStatus: StatusResult = useDerived
+            ? deriveResult.finalStatus
+            : httpDerivedStatus;
+
+          // Shadow compare log (Atlassian only) — now enriched with dual-signal fields
           if (shadow) {
             console.log(JSON.stringify({
               event: "shadow_compare",
               serviceSlug: surface.service.slug,
               checkType: "ATLASSIAN_JSON",
-              oldStatus: result.status,
-              shadowStatus: shadow.shadowStatus,
+              httpDerivedStatus,
+              officialStatus,
+              finalStatus: deriveResult.finalStatus,
+              statusSource: deriveResult.statusSource,
               indicator: shadow.indicator,
               parseOk: shadow.parseOk,
               ...(shadow.parseError && { parseError: shadow.parseError }),
-              divergence: shadow.shadowStatus !== result.status,
+              divergence: deriveResult.finalStatus !== httpDerivedStatus,
             }));
           }
 
           observations.push({
             serviceSurfaceId: surface.id,
             regionId: region.id,
-            status: result.status,   // shadow mode: DB write unchanged
+            status: writtenStatus,          // flag off → httpDerivedStatus (old behavior)
             latencyMs: result.latencyMs,
             httpStatus: result.httpStatus,
             confidence: result.confidence,
             errorRate: null,
             observedAt: now,
+            // Dual-signal audit columns (PR 3)
+            officialStatus,
+            httpDerivedStatus,
+            statusSource: deriveResult.statusSource,
+            parseOk: obsParseOk,
+            parseError: obsParseError,
           });
 
           surfaceDetails.push({
@@ -479,13 +548,20 @@ async function handleCheckStatus(request: NextRequest) {
             checkUrl: url,
             httpStatus: result.httpStatus,
             latencyMs: result.latencyMs,
-            statusComputed: result.status,
+            statusComputed: deriveResult.finalStatus,  // what derive would produce
+            statusWritten: writtenStatus,               // what goes to DB
             confidence: result.confidence,
+            // Atlassian shadow fields
             ...(shadow && {
               shadowStatus: shadow.shadowStatus,
               indicator: shadow.indicator,
               parseOk: shadow.parseOk,
             }),
+            // Dual-signal fields
+            officialStatus,
+            httpDerivedStatus,
+            finalStatus: deriveResult.finalStatus,
+            statusSource: deriveResult.statusSource,
           });
 
           console.log(JSON.stringify({
