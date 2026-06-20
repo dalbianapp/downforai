@@ -149,7 +149,7 @@ export async function getSpeedIndex(category: ServiceCategory = "LLM"): Promise<
     }),
     prisma.incident.groupBy({
       by: ["serviceId"],
-      where: { serviceId: { in: serviceIds }, startedAt: { gte: since7d } },
+      where: { serviceId: { in: serviceIds }, startedAt: { gte: since7d }, isFalsePositive: false },
       _count: { serviceId: true },
     }),
   ]);

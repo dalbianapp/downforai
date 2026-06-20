@@ -158,6 +158,7 @@ async function getServicesStatus() {
 
 async function getRecentIncidents() {
   const incidents = await prisma.incident.findMany({
+    where: { isFalsePositive: false },
     include: {
       service: {
         select: { name: true },

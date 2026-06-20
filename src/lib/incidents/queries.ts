@@ -20,6 +20,7 @@ function excludedSlugsSql(): string {
 const BASE_WHERE = `
   i.severity IN ('MAJOR','CRITICAL')
   AND s.slug NOT IN (${excludedSlugsSql()})
+  AND i."isFalsePositive" = false
   AND (i."resolvedAt" IS NULL OR EXTRACT(EPOCH FROM (i."resolvedAt" - i."startedAt")) / 60 >= ${MIN_DURATION_MINUTES_FOR_PUBLIC})
   AND (i.status = 'RESOLVED' OR EXTRACT(EPOCH FROM (NOW() - i."startedAt")) / 3600 <= ${MAX_OPEN_INCIDENT_HOURS})
 `;
@@ -175,6 +176,7 @@ export async function getIncidentMonthSummaries(): Promise<IncidentMonthSummary[
        WHERE TO_CHAR(i."startedAt", 'YYYY-MM') = '${row.monthKey}'
          AND i.severity IN ('MAJOR','CRITICAL')
          AND s.slug NOT IN (${excludedSlugsSql()})
+         AND i."isFalsePositive" = false
        GROUP BY s.slug, s.name
        ORDER BY count DESC
        LIMIT 5`

@@ -115,6 +115,7 @@ export async function getServiceDashboard(
   const incidentsRaw = await prisma.incident.findMany({
     where: {
       serviceId: service.id,
+      isFalsePositive: false,
       startedAt: {
         gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       },

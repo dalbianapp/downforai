@@ -42,6 +42,7 @@ export const getLastResolvedIncident = cache(async (serviceId: string) => {
   return prisma.incident.findFirst({
     where: {
       serviceId,
+      isFalsePositive: false,
       resolvedAt: { not: null },
       startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     },
