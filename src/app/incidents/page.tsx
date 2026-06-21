@@ -78,7 +78,7 @@ export default async function IncidentsArchivePage({
           </h1>
           <p style={{ fontSize: "15px", color: "#525252", maxWidth: "680px", lineHeight: 1.6, margin: 0 }}>
             Public archive of significant incidents detected across 800+ AI services.
-            Automated probes run every 2–5 minutes from multiple locations. Updated hourly.{" "}
+            DownForAI checks monitored surfaces on a rotating schedule, roughly every 75 minutes per surface, from a single centralized probe infrastructure. Updated hourly.{" "}
             <Link href="/methodology" style={{ color: "#2563eb", textDecoration: "underline" }}>
               See our methodology
             </Link>

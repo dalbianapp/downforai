@@ -152,9 +152,12 @@ export default async function ReliabilityIndexPage() {
         <h1 style={{ fontSize: "32px", fontWeight: 800, marginBottom: "16px" }}>
           AI Reliability Index
         </h1>
-        <p style={{ fontSize: "16px", color: "#525252", lineHeight: 1.6, marginBottom: "24px" }}>
+        <p style={{ fontSize: "16px", color: "#525252", lineHeight: 1.6, marginBottom: "8px" }}>
           Live uptime and latency data for {data.length} major AI services. Updated hourly.
           Ranked by 30-day uptime.
+        </p>
+        <p style={{ fontSize: "13px", color: "#a3a3a3", lineHeight: 1.5, marginBottom: "24px" }}>
+          Network latency (p50/p95) reflects probe endpoint response time — not model inference speed or time-to-first-token.
         </p>
 
         <div style={{ marginBottom: "24px", display: "flex", gap: "12px", fontSize: "13px", flexWrap: "wrap" }}>

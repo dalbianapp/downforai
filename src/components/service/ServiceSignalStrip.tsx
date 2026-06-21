@@ -6,6 +6,9 @@ interface Props {
   incidents30d: IncidentSummary[];
 }
 
+const LATENCY_TOOLTIP =
+  "Measures HTTP network roundtrip from our probe to the surface endpoint. Does not reflect model inference speed or time-to-first-token (TTFT).";
+
 export default function ServiceSignalStrip({ uptime24h, surfaces, incidents30d }: Props) {
   // Aggregate p50/p95 across all surfaces (median of medians)
   const latencies = surfaces
@@ -39,24 +42,28 @@ export default function ServiceSignalStrip({ uptime24h, surfaces, incidents30d }
       value: uptime24h != null ? `${uptime24h.toFixed(1)}%` : "—",
       color: uptimeColor,
       mono: true,
+      tooltip: undefined as string | undefined,
     },
     {
-      label: "p50 Latency",
+      label: "p50 Network Latency",
       value: p50 != null ? `${p50}ms` : "—",
       color: p50 == null ? "#6b7280" : p50 < 500 ? "#16a34a" : p50 < 1500 ? "#ca8a04" : "#dc2626",
       mono: true,
+      tooltip: LATENCY_TOOLTIP,
     },
     {
-      label: "p95 Latency",
+      label: "p95 Network Latency",
       value: p95 != null ? `${p95}ms` : "—",
       color: p95 == null ? "#6b7280" : p95 < 1500 ? "#ca8a04" : "#dc2626",
       mono: true,
+      tooltip: LATENCY_TOOLTIP,
     },
     {
       label: "Incidents (30d)",
       value: incidents30d.length.toString(),
       color: incidents30d.length === 0 ? "#16a34a" : incidents30d.length <= 2 ? "#ca8a04" : "#dc2626",
       mono: false,
+      tooltip: undefined as string | undefined,
     },
   ];
 
@@ -72,12 +79,14 @@ export default function ServiceSignalStrip({ uptime24h, surfaces, incidents30d }
       {tiles.map((tile) => (
         <div
           key={tile.label}
+          title={tile.tooltip}
           style={{
             background: "#ffffff",
             border: "1px solid #e5e5e5",
             borderRadius: "12px",
             padding: "16px",
             textAlign: "center",
+            ...(tile.tooltip ? { cursor: "help" } : {}),
           }}
         >
           <div
@@ -95,6 +104,9 @@ export default function ServiceSignalStrip({ uptime24h, surfaces, incidents30d }
             style={{ fontSize: "11px", color: "#9ca3af", marginTop: "4px" }}
           >
             {tile.label}
+            {tile.tooltip && (
+              <span style={{ marginLeft: "3px", fontSize: "10px", opacity: 0.5 }}>ⓘ</span>
+            )}
           </div>
         </div>
       ))}

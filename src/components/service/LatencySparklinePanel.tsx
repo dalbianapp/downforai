@@ -54,7 +54,7 @@ export default function LatencySparklinePanel({ serviceId }: Props) {
           marginBottom: "16px",
         }}
       >
-        Latency — last 20 probes
+        Network latency — last 20 probes
       </h2>
 
       {loading ? (

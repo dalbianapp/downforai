@@ -113,7 +113,7 @@ export default function DevelopersPage() {
             How it works
           </h2>
           <ul style={{ color: "#525252", lineHeight: 1.8, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px" }}>
-            <li>Badges reflect the latest probe result, updated every 2–5 minutes</li>
+            <li>Badges reflect the latest DownForAI monitoring data and update as new checks are processed.</li>
             <li>CDN-cached for 5 minutes — fast worldwide, minimal database load</li>
             <li>If 5+ users report issues in 2 hours, badge shows "reported issues" even if probes are green</li>
             <li>No API key required — free and unlimited</li>

@@ -238,7 +238,7 @@ export default async function ServiceDownPage({
       {/* Dynamic intro paragraph — unique per service */}
       <p style={{ fontSize: "14px", color: "#525252", lineHeight: 1.6, marginBottom: "24px" }}>
         {service.name} {info.description}
-        {" "}DownForAI monitors {service.name} with automated checks every 20 minutes across {service.surfaces.length} endpoint{service.surfaces.length > 1 ? "s" : ""}.
+        {" "}DownForAI monitors {service.name} with automated checks on a rotating cycle, roughly every 75 minutes per monitored surface, across {service.surfaces.length} endpoint{service.surfaces.length > 1 ? "s" : ""}.
         {reportsCount24h > 0
           ? ` Currently ${reportsCount24h} user${reportsCount24h > 1 ? "s have" : " has"} reported issues in the past 24 hours.`
           : " No user reports in the past 24 hours."

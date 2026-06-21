@@ -69,7 +69,7 @@ export function LatencyChart({ observations }: LatencyChartProps) {
         <YAxis
           stroke="#a3a3a3"
           style={{ fontSize: "11px" }}
-          label={{ value: "Latency (ms)", angle: -90, position: "insideLeft" }}
+          label={{ value: "Network latency (ms)", angle: -90, position: "insideLeft" }}
         />
         <Tooltip
           contentStyle={{

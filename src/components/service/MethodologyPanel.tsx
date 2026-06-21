@@ -28,16 +28,21 @@ export default function MethodologyPanel() {
           margin: 0,
         }}
       >
-        downforai.com probes each AI service every 2–5 minutes from multiple
-        independent locations. We measure HTTP response codes, latency (p50 &amp;
-        p95), and endpoint availability across the surfaces listed above. Status
-        is classified as <strong style={{ color: "#171717" }}>Operational</strong>,{" "}
+        DownForAI checks monitored AI service surfaces on a rotating schedule,
+        roughly every 75 minutes per surface, from a single centralized probe
+        infrastructure. For services with an official machine-readable status page,
+        we use that official status signal when available. For other services, we
+        perform a basic public-surface check. Some services block datacenter probes;
+        in those cases we mark them as &ldquo;Monitoring limited&rdquo; instead of
+        treating a failed probe as a confirmed outage. Status is classified as{" "}
+        <strong style={{ color: "#171717" }}>Operational</strong>,{" "}
         <strong style={{ color: "#171717" }}>Degraded</strong>, or{" "}
-        <strong style={{ color: "#171717" }}>Outage</strong> based on a weighted
-        combination of probe results. Uptime is calculated over 30-minute buckets
-        and the last 24 hours. User reports are factored into our diagnosis as a
-        secondary signal. We are independent of all providers listed and receive no
-        compensation to report any particular status.
+        <strong style={{ color: "#171717" }}>Outage</strong>.{" "}
+        Network latency (check response time) measures how long the monitored
+        endpoint took to respond to our probe — it is not model inference speed,
+        time-to-first-token, or tokens-per-second performance. We are independent
+        of all providers listed and receive no compensation to report any particular
+        status.
       </p>
     </div>
   );

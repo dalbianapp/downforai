@@ -37,7 +37,7 @@ export function SurfaceStatus({ surfaces }: SurfaceStatusProps) {
               Status
             </th>
             <th className="text-left py-3 px-4 font-semibold text-slate-300">
-              Latency
+              Network latency
             </th>
           </tr>
         </thead>
