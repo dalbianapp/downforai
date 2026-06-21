@@ -1,6 +1,20 @@
 import { BadgeType } from "@prisma/client";
 import { prisma } from "./db";
 
+export function badgeFromCapability(capability: string): BadgeType {
+  switch (capability) {
+    case "OFFICIAL_STATUS_API":
+    case "OFFICIAL_STATUS_PAGE":
+      return "STATUS_PAGE_SYNC";
+    case "BASIC_PUBLIC_SURFACE":
+      return "LIVE_MONITORING";
+    case "BLOCKED_FROM_PROBES":
+    case "UNVERIFIABLE":
+    default:
+      return "COMMUNITY_REPORTS";
+  }
+}
+
 export async function getBadgePhrase(
   key: string,
   lang: string = "en"

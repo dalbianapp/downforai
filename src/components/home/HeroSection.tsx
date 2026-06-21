@@ -6,10 +6,11 @@ interface HeroSectionProps {
   operational: number;
   degraded: number;
   outage: number;
+  limited: number;
   total: number;
 }
 
-export function HeroSection({ operational, degraded, outage, total }: HeroSectionProps) {
+export function HeroSection({ operational, degraded, outage, limited, total }: HeroSectionProps) {
   const issues = degraded + outage;
 
   return (
@@ -31,7 +32,11 @@ export function HeroSection({ operational, degraded, outage, total }: HeroSectio
         </span>
         <span style={{ color: 'var(--text-dim)' }}>·</span>
         <span>
-          <span className="font-bold">{total}</span> services
+          <span className="font-bold" style={{ color: 'var(--text-dim)' }}>{limited}</span> monitoring-limited
+        </span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span>
+          <span className="font-bold">{total}</span> tracked
         </span>
       </div>
 

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { calculateWorstStatus, formatCategoryLabel } from "@/lib/utils";
+import { badgeFromCapability } from "@/lib/badges";
 import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
@@ -51,6 +52,7 @@ async function getCategoryServices(category: string) {
     description: string | null;
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    monitoringCapability: string;
     surface_id: string;
     observedAt: Date | null;
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
@@ -64,6 +66,7 @@ async function getCategoryServices(category: string) {
       s.description,
       s.category,
       s."defaultBadge",
+      s."monitoringCapability"::text AS "monitoringCapability",
       ss.id           AS surface_id,
       o."observedAt",
       o.status,
@@ -91,6 +94,7 @@ async function getCategoryServices(category: string) {
     description: string | null;
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
+    monitoringCapability: string;
     surfaces: Map<string, SurfaceAccum>;
   };
 
@@ -104,6 +108,7 @@ async function getCategoryServices(category: string) {
         description: row.description,
         category: row.category,
         defaultBadge: row.defaultBadge,
+        monitoringCapability: row.monitoringCapability,
         surfaces: new Map(),
       });
     }
@@ -165,7 +170,7 @@ async function getCategoryServices(category: string) {
       description: service.description,
       category: service.category,
       status,
-      badgeType: service.defaultBadge,
+      badgeType: badgeFromCapability(service.monitoringCapability),
       latencyMs: allObservations[0]?.latencyMs || null,
       sparklineData,
       performanceLevel,

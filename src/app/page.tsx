@@ -10,6 +10,7 @@ import { calculateWorstStatus } from "@/lib/utils";
 import { generateWebSiteJsonLd } from "@/lib/seo";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore, getPerformanceColor } from "@/lib/performance";
 import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
+import { badgeFromCapability } from "@/lib/badges";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -154,7 +155,7 @@ async function getServicesStatus() {
       description: service.description,
       category: service.category,
       status,
-      badgeType: service.defaultBadge,
+      badgeType: badgeFromCapability(service.monitoringCapability),
       latencyMs: (allObservations[0]?.latencyMs ?? null) !== null && (allObservations[0]?.latencyMs ?? 0) < 5000
         ? allObservations[0]?.latencyMs || null
         : null,
@@ -197,6 +198,7 @@ export default async function HomePage() {
     outage: services.filter((s) => s.status === "OUTAGE").length,
     total: services.length,
   };
+  const limited = counts.total - counts.operational - counts.degraded - counts.outage;
 
   // Featured services for Bento: 4 most problematic + 2 biggest operational
   const problematicServices = services
@@ -238,6 +240,7 @@ export default async function HomePage() {
         operational={counts.operational}
         degraded={counts.degraded}
         outage={counts.outage}
+        limited={limited}
         total={counts.total}
       />
 

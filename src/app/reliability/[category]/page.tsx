@@ -97,6 +97,7 @@ async function getCategoryReliability(categoryEnum: ServiceCategory): Promise<Ra
       AND cr."isSpam" = false
       AND cr."isVisible" = true
     WHERE s.category = ${categoryEnum}::"ServiceCategory"
+      AND s."monitoringCapability" NOT IN ('BLOCKED_FROM_PROBES', 'UNVERIFIABLE')
     GROUP BY s.id, s.name, s.slug
     ORDER BY report_count ASC, s.name ASC
   `;

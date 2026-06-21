@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { MonitoringCapability } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatCategoryLabel } from "@/lib/utils";
 import { generateBreadcrumbJsonLd } from "@/lib/seo";
@@ -33,7 +34,12 @@ async function getReliabilityData() {
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const services = await prisma.service.findMany({
-    where: { slug: { in: PREMIUM_SLUGS } },
+    where: {
+      slug: { in: PREMIUM_SLUGS },
+      monitoringCapability: {
+        notIn: [MonitoringCapability.BLOCKED_FROM_PROBES, MonitoringCapability.UNVERIFIABLE],
+      },
+    },
     include: {
       surfaces: {
         where: { isEnabled: true },
