@@ -45,7 +45,7 @@ export function generateEnrichedDescription(input: {
   }
 
   const sourceContext: Record<string, string> = {
-    LIVE_MONITORING: "This incident was detected by our automated probes running every 2-5 minutes from multiple locations.",
+    LIVE_MONITORING: "This incident was detected by our automated probe infrastructure, which checks each monitored surface on a rotating schedule.",
     STATUS_PAGE_SYNC: "This incident was surfaced through synchronization with the provider's official status page.",
     COMMUNITY_REPORTS: "This incident was identified based on a significant volume of user reports.",
   };
