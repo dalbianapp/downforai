@@ -17,21 +17,23 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://downforai.com"),
-  title: "DownForAI — Real-Time AI Service Status Monitor",
+  title: "AI Service Status Monitor for 800+ Tools | DownForAI",
   description:
-    "Real-time status monitoring for 500+ AI services. Check if ChatGPT, Claude, Gemini, Midjourney, and more are down right now.",
+    "Track outages, status, and response times for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "DownForAI",
-    title: "DownForAI — Real-Time AI Service Status Monitor",
-    description: "Real-time status monitoring for 500+ AI services.",
+    title: "AI Service Status Monitor for 800+ Tools | DownForAI",
+    description:
+      "Track outages, status, and response times for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
     url: "https://downforai.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DownForAI — Real-Time AI Service Status Monitor",
-    description: "Real-time status monitoring for 500+ AI services.",
+    title: "AI Service Status Monitor for 800+ Tools | DownForAI",
+    description:
+      "Track outages, status, and response times for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
   },
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>↓</text></svg>",

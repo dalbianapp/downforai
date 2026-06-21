@@ -16,10 +16,10 @@ export function HeroSection({ operational, degraded, outage, limited, total }: H
   return (
     <div className="text-center py-6 mb-4">
       <h1 className="text-5xl font-extrabold mb-4" style={{ letterSpacing: '-3px', color: 'var(--text)' }}>
-        Is your AI tool <span className="gradient-text">down</span>?
+        AI service status monitoring for <span className="gradient-text">{total}</span> tools
       </h1>
       <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-        API diagnostics for AI tools. Faster than status pages, cleaner than Reddit.
+        DownForAI tracks outages, status, response times, and community reports across major LLMs and 750+ niche AI services most trackers miss.
       </p>
 
       <div className="flex items-center justify-center gap-3 text-[13px] mb-4" style={{ color: 'var(--text-secondary)' }}>

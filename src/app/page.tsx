@@ -14,9 +14,9 @@ import { badgeFromCapability } from "@/lib/badges";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "DownForAI — Real-time status & diagnostics for 800+ AI tools",
+  title: "AI Service Status Monitor for 800+ Tools | DownForAI",
   description:
-    "Independent real-time monitoring for AI APIs, chat interfaces, and dev tools. Faster than official status pages, cleaner than Reddit. Incidents, latency, fallback alternatives.",
+    "Track outages, status, and response times for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
 };
