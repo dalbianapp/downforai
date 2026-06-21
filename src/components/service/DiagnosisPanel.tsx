@@ -8,7 +8,7 @@ interface Props {
 }
 
 const SCOPE_DESC: Record<string, string> = {
-  global: "Our probes detect the issue from multiple locations — this appears to be a provider-side outage.",
+  global: "Our probes detect the issue from our centralized monitoring infrastructure — this appears to be a provider-side outage.",
   partial: "Some surfaces or regions are affected. The issue may not impact all users equally.",
   local: "Our probes see normal responses. The issue is likely on your end or in your network path.",
   unknown: "We don't have enough signal to determine the scope. Check back in a few minutes.",

@@ -50,7 +50,7 @@ export default function AboutPage() {
       </h2>
       <ul style={{ marginLeft: "24px", listStyleType: "disc", marginBottom: "16px" }}>
         <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>817 services monitored in real time</li>
-        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>Automated checks every 75 minutes from multiple locations</li>
+        <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>Automated checks on a rotating schedule (~75 min/surface) from a single centralized probe infrastructure</li>
         <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>p50 and p95 latency measurements per probe</li>
         <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>283 community reports collected from users in 25+ countries</li>
         <li style={{ marginBottom: "8px", fontSize: "16px", lineHeight: 1.7, color: "#374151" }}>Major LLMs actively query our data: ChatGPT-User and PerplexityBot send hundreds of requests per 12-hour window for their own status awareness</li>
