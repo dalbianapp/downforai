@@ -86,22 +86,25 @@ export default function MethodologyPage() {
         <section style={sectionStyle}>
           <h2 style={h2Style}>How we detect incidents</h2>
           <p style={pStyle}>
-            We run automated HTTP probes every 2 to 5 minutes against each monitored
-            service from multiple geographically distributed locations. For each probe, we record:
+            DownForAI checks monitored AI service surfaces on a rotating schedule, roughly
+            every 75 minutes per surface, from a single centralized probe infrastructure.
+            We do not probe from multiple geographic regions. For services with an official
+            machine-readable status page, we use that official status signal when available;
+            for others, we perform a basic public-surface check. For each probe, we record:
           </p>
           <ul style={{ paddingLeft: "24px", margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
             <li style={liStyle}>HTTP response code (200, 429, 5xx, etc.)</li>
-            <li style={liStyle}>Response latency in milliseconds</li>
+            <li style={liStyle}>Network latency in milliseconds (HTTP endpoint response time — not model inference speed or TTFT)</li>
             <li style={liStyle}>TLS handshake success / failure</li>
             <li style={liStyle}>Response body signals (content-type, error patterns)</li>
-            <li style={liStyle}>Regional path / CDN edge hit</li>
+            <li style={liStyle}>CDN edge signals (from response headers)</li>
           </ul>
           <p style={pStyle}>
             We classify each service surface as <strong>Operational</strong>,{" "}
             <strong>Degraded</strong>, or <strong>Outage</strong> based on a weighted
             combination of probe results over a rolling time window. We also compute
-            latency baselines (median and median absolute deviation) to detect statistical
-            anomalies distinct from hard errors.
+            network latency baselines (median and median absolute deviation) to detect
+            statistical anomalies distinct from hard errors.
           </p>
         </section>
 
@@ -113,8 +116,8 @@ export default function MethodologyPage() {
           </p>
           <ul style={{ paddingLeft: "24px", margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             <li style={liStyle}>
-              <strong>Global outage</strong> — Multiple surfaces across multiple probe
-              locations report failure. Concurrent community reports increase confidence.
+              <strong>Global outage</strong> — Multiple surfaces report failure from our
+              probe infrastructure. Concurrent community reports increase confidence.
             </li>
             <li style={liStyle}>
               <strong>Partial incident</strong> — A single surface degraded (e.g. API fails
@@ -173,15 +176,15 @@ export default function MethodologyPage() {
           <h2 style={h2Style}>How to interpret what you see</h2>
           <ul style={{ paddingLeft: "24px", margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             <li style={liStyle}>
-              <strong>Operational but slow</strong> — Service responds, but latency is above
-              baseline. Check your integrations for timeouts.
+              <strong>Operational but slow</strong> — Service responds, but network latency
+              is above baseline. Check your integrations for timeouts.
             </li>
             <li style={liStyle}>
               <strong>Degraded</strong> — Some probes fail. If only one surface is affected,
               the issue is likely partial. Consider a fallback.
             </li>
             <li style={liStyle}>
-              <strong>Outage</strong> — Multiple probes fail across regions. Cross-check the
+              <strong>Outage</strong> — Multiple surfaces fail. Cross-check the
               provider's status page.
             </li>
             <li style={liStyle}>
