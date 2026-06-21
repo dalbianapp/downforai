@@ -52,6 +52,12 @@ function para1(
   uptime24h: number | null,
   overallStatus: Props["overallStatus"]
 ): string {
+  if (service.monitoringCapability === "BLOCKED_FROM_PROBES") {
+    return `DownForAI currently has limited automated visibility into ${service.name}. Our probes appear to be blocked or restricted, so failed checks are not treated as a confirmed outage. Community reports remain available, but automated availability and check response time are not reliable for this service.`;
+  }
+  if (service.monitoringCapability === "UNVERIFIABLE") {
+    return `DownForAI cannot reliably verify ${service.name} from its monitoring infrastructure. The service is marked as status unconfirmed because automated checks do not provide enough trustworthy signal. We do not classify this as an outage or a discontinued service without stronger evidence.`;
+  }
   const n = surfaces.length;
   const names = surfaces.map((s) => s.displayName);
 

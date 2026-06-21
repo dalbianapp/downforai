@@ -67,7 +67,11 @@ export default function ServiceHeroHeader({
           marginBottom: "16px",
         }}
       >
-        {service.name} status: API, auth, latency &amp; outage reports
+        {service.monitoringCapability === "BLOCKED_FROM_PROBES"
+          ? `${service.name} status: monitoring limited`
+          : service.monitoringCapability === "UNVERIFIABLE"
+          ? `${service.name} status: unconfirmed`
+          : `${service.name} status: API, auth, latency & outage reports`}
       </h1>
 
       <SnippetMagnet
@@ -76,6 +80,7 @@ export default function ServiceHeroHeader({
         surfaceCount={surfaces.length}
         reports24h={reportSummary.total24h}
         lastIncidentDate={lastIncidentDate}
+        monitoringCapability={service.monitoringCapability}
       />
 
       {/* Status card */}

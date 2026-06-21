@@ -40,7 +40,17 @@ export async function generateStaticParams() {
   return services.map((s) => ({ serviceSlug: s.slug }));
 }
 
-function buildServiceTitle(serviceName: string, year: number): string {
+function buildServiceTitle(serviceName: string, year: number, capability?: string | null): string {
+  if (capability === "BLOCKED_FROM_PROBES") {
+    const primary = `Is ${serviceName} Down? Status & User Reports ${year}`;
+    const fallback = `${serviceName} Status & User Reports ${year}`;
+    return primary.length <= 60 ? primary : fallback;
+  }
+  if (capability === "UNVERIFIABLE") {
+    const primary = `Is ${serviceName} Down? Status Unconfirmed ${year}`;
+    const fallback = `${serviceName} Status Unconfirmed ${year}`;
+    return primary.length <= 60 ? primary : fallback;
+  }
   const primary = `Is ${serviceName} Down Today? Live Status & Outages ${year}`;
   const fallback = `Is ${serviceName} Down? Live Status ${year}`;
   const shortFallback = `${serviceName} Status & Outages ${year}`;
@@ -49,7 +59,17 @@ function buildServiceTitle(serviceName: string, year: number): string {
   return shortFallback;
 }
 
-function buildServiceDescription(serviceName: string, reports24h: number): string {
+function buildServiceDescription(serviceName: string, reports24h: number, capability?: string | null): string {
+  if (capability === "BLOCKED_FROM_PROBES") {
+    return truncateDescription(
+      `Is ${serviceName} down today? DownForAI cannot reliably verify this service from its probe network. See community reports and current availability notes.`
+    );
+  }
+  if (capability === "UNVERIFIABLE") {
+    return truncateDescription(
+      `Is ${serviceName} down today? DownForAI cannot reliably reach this service from its monitoring infrastructure. Its current status remains unconfirmed.`
+    );
+  }
   const reportLabel = reports24h === 1 ? "report" : "reports";
   if (reports24h > 0) {
     return truncateDescription(
@@ -73,8 +93,8 @@ export async function generateMetadata({
   const reports24h = await getReports24hCount(service.id);
 
   const year = new Date().getFullYear();
-  const title = buildServiceTitle(service.name, year);
-  const description = buildServiceDescription(service.name, reports24h);
+  const title = buildServiceTitle(service.name, year, service.monitoringCapability);
+  const description = buildServiceDescription(service.name, reports24h, service.monitoringCapability);
 
   return {
     title,

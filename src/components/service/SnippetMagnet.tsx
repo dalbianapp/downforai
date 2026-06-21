@@ -4,6 +4,7 @@ interface SnippetMagnetProps {
   surfaceCount: number;
   reports24h: number;
   lastIncidentDate?: Date | null;
+  monitoringCapability?: string | null;
 }
 
 export default function SnippetMagnet({
@@ -12,13 +13,18 @@ export default function SnippetMagnet({
   surfaceCount,
   reports24h,
   lastIncidentDate,
+  monitoringCapability,
 }: SnippetMagnetProps) {
   const surfaceLabel = surfaceCount === 1 ? "surface" : "surfaces";
   const reportLabel = reports24h === 1 ? "report" : "reports";
 
   let text: string;
 
-  if (status === "OUTAGE") {
+  if (monitoringCapability === "BLOCKED_FROM_PROBES") {
+    text = `Is ${serviceName} down today? DownForAI cannot reliably verify this service from its current probe network, so failed checks are marked as monitoring limited rather than a confirmed outage.`;
+  } else if (monitoringCapability === "UNVERIFIABLE") {
+    text = `DownForAI cannot reliably reach ${serviceName} from its monitoring infrastructure. We do not have enough signal to confirm whether the service is operational or down.`;
+  } else if (status === "OUTAGE") {
     text = `${serviceName} appears down right now. DownForAI checks ${serviceName} every ~75 minutes across ${surfaceCount} monitored ${surfaceLabel}, with ${reports24h} community ${reportLabel} in the last 24 hours.`;
   } else if (status === "DEGRADED") {
     text = `${serviceName} appears degraded right now. DownForAI checks ${serviceName} every ~75 minutes across ${surfaceCount} monitored ${surfaceLabel}, with ${reports24h} community ${reportLabel} in the last 24 hours.`;
