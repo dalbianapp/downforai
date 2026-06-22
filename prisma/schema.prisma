@@ -107,6 +107,11 @@ enum IncidentSeverity {
   CRITICAL
 }
 
+enum IncidentConfidence {
+  CONFIRMED // technical signal also down — high trust
+  PROBABLE  // community reports only — unconfirmed
+}
+
 enum ReportType {
   DOWN
   SLOW
@@ -129,6 +134,14 @@ model Service {
   lifecycleStatus          ServiceLifecycleStatus @default(ACTIVE)
   monitoringCapability     MonitoringCapability   @default(BASIC_PUBLIC_SURFACE)
   monitoringNote           String?
+  // Community signal (3rd monitoring signal). Written by the community-detect cron,
+  // read by resolveServiceStatus(). SEPARATE from technical availability — never
+  // folded into leaderboard uptime. communityStatus caps at DEGRADED unless the
+  // technical signal also confirms (then OUTAGE/CONFIRMED).
+  communityStatus          ServiceStatus?
+  communityConfidence      IncidentConfidence?
+  communityReportsWindow   Int? // reports in the current 30-min detection window
+  communitySignalAt        DateTime? // last cron computation (freshness gate)
   lastManualVerificationAt DateTime?
   createdAt                DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
@@ -204,6 +217,7 @@ model Incident {
   resolvedAt      DateTime?
   summary         String?
   sourceBadge     BadgeType
+  confidence      IncidentConfidence? // CONFIRMED (tech+community) | PROBABLE (community-only); null = legacy/technical
   createdAt       DateTime         @default(now())
   isFalsePositive Boolean          @default(false)
   hiddenReason    String?          // e.g. "PROBE_BLOCKED_FALSE_POSITIVE"

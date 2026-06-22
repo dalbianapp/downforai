@@ -19,6 +19,11 @@ export const getServiceBySlug = cache(async (slug: string) => {
       iconUrl: true,
       monitoringCapability: true,
       lifecycleStatus: true,
+      // Community signal (cron-written, canary-gated) — read by resolveServiceStatus.
+      communityStatus: true,
+      communityConfidence: true,
+      communityReportsWindow: true,
+      communitySignalAt: true,
     },
   });
 });

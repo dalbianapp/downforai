@@ -7,6 +7,7 @@ import { RecentIncidents } from "@/components/home/RecentIncidents";
 import { EditorialLinks } from "@/components/home/EditorialLinks";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { calculateWorstStatus } from "@/lib/utils";
+import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 import { generateWebSiteJsonLd } from "@/lib/seo";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore, getPerformanceColor } from "@/lib/performance";
 import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
@@ -32,6 +33,10 @@ async function getServicesStatus() {
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
     monitoringCapability: string;
+    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
+    communityReportsWindow: number | null;
+    communitySignalAt: Date | null;
     surface_id: string;
     observedAt: Date | null;
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
@@ -47,6 +52,10 @@ async function getServicesStatus() {
       s.category,
       s."defaultBadge",
       s."monitoringCapability"::text AS "monitoringCapability",
+      s."communityStatus"            AS "communityStatus",
+      s."communityConfidence"        AS "communityConfidence",
+      s."communityReportsWindow"     AS "communityReportsWindow",
+      s."communitySignalAt"          AS "communitySignalAt",
       ss.id           AS surface_id,
       o."observedAt",
       o.status,
@@ -75,6 +84,10 @@ async function getServicesStatus() {
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
     monitoringCapability: string;
+    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
+    communityReportsWindow: number | null;
+    communitySignalAt: Date | null;
     surfaces: Map<string, SurfaceAccum>;
   };
 
@@ -90,6 +103,10 @@ async function getServicesStatus() {
         category: row.category,
         defaultBadge: row.defaultBadge,
         monitoringCapability: row.monitoringCapability,
+        communityStatus: row.communityStatus,
+        communityConfidence: row.communityConfidence,
+        communityReportsWindow: row.communityReportsWindow,
+        communitySignalAt: row.communitySignalAt,
         surfaces: new Map(),
       });
     }
@@ -125,6 +142,14 @@ async function getServicesStatus() {
       const statuses = recentObservations.map((o) => o.status);
       status = calculateWorstStatus(statuses);
     }
+
+    // Single source of truth: fold in the community signal (canary-gated, fresh).
+    // Community-only caps at DEGRADED; the card just reflects the resolved status.
+    status = resolveServiceStatus({
+      technicalStatus: status,
+      monitoringCapability: service.monitoringCapability,
+      community: communitySignalOf(service),
+    }).status;
 
     // Build sparkline — exclude timeout sentinel (5000ms) and null latencies
     const sparklineData: number[] = allObservations

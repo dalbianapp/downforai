@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import type { ServiceStatus } from "@prisma/client";
+import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 
 export const revalidate = 60;
 
@@ -34,11 +36,22 @@ export async function GET(
     .flatMap((s) => s.observations)
     .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
 
+  // Single source of truth — same resolution as every surface (community signal
+  // is canary-gated + freshness-gated; community-only caps at DEGRADED).
+  const resolved = resolveServiceStatus({
+    technicalStatus: (latestObs?.status ?? "UNKNOWN") as ServiceStatus,
+    monitoringCapability: service.monitoringCapability,
+    community: communitySignalOf(service),
+  });
+
   return NextResponse.json(
     {
       service: service.name,
       slug: service.slug,
-      status: latestObs?.status ?? "UNKNOWN",
+      status: resolved.status,
+      status_source: resolved.source,
+      status_confidence: resolved.confidence,
+      community_reports_window: resolved.reportsInWindow,
       latency_ms: latestObs?.latencyMs ?? null,
       last_checked: latestObs?.observedAt.toISOString() ?? null,
       url: `https://downforai.com/${service.slug}`,

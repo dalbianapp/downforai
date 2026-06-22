@@ -6,6 +6,7 @@ import { badgeFromCapability } from "@/lib/badges";
 import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
+import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -56,6 +57,10 @@ async function getCategoryServices(category: string) {
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
     monitoringCapability: string;
+    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
+    communityReportsWindow: number | null;
+    communitySignalAt: Date | null;
     surface_id: string;
     observedAt: Date | null;
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
@@ -71,6 +76,10 @@ async function getCategoryServices(category: string) {
       s.category,
       s."defaultBadge",
       s."monitoringCapability"::text AS "monitoringCapability",
+      s."communityStatus"            AS "communityStatus",
+      s."communityConfidence"        AS "communityConfidence",
+      s."communityReportsWindow"     AS "communityReportsWindow",
+      s."communitySignalAt"          AS "communitySignalAt",
       ss.id           AS surface_id,
       o."observedAt",
       o.status,
@@ -100,6 +109,10 @@ async function getCategoryServices(category: string) {
     category: string;
     defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
     monitoringCapability: string;
+    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
+    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
+    communityReportsWindow: number | null;
+    communitySignalAt: Date | null;
     surfaces: Map<string, SurfaceAccum>;
   };
 
@@ -114,6 +127,10 @@ async function getCategoryServices(category: string) {
         category: row.category,
         defaultBadge: row.defaultBadge,
         monitoringCapability: row.monitoringCapability,
+        communityStatus: row.communityStatus,
+        communityConfidence: row.communityConfidence,
+        communityReportsWindow: row.communityReportsWindow,
+        communitySignalAt: row.communitySignalAt,
         surfaces: new Map(),
       });
     }
@@ -149,6 +166,13 @@ async function getCategoryServices(category: string) {
       const statuses = recentObservations.map((o) => o.status);
       status = calculateWorstStatus(statuses);
     }
+
+    // Single source of truth: fold in the community signal (canary-gated, fresh).
+    status = resolveServiceStatus({
+      technicalStatus: status,
+      monitoringCapability: service.monitoringCapability,
+      community: communitySignalOf(service),
+    }).status;
 
     // Build sparkline data from real latency observations
     const sparklineData: number[] = allObservations

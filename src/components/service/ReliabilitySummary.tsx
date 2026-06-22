@@ -6,9 +6,20 @@ import type {
 } from "@/lib/service-page/types";
 import { monitoringConfidence } from "./_statusConfig";
 
+// Resolved sourcing from resolveServiceStatus — the SINGLE source for both the
+// status badge AND this narrative. The narrative must never use its own report
+// count when the community signal is what drove the status.
+interface CommunityDisplay {
+  source: "TECHNICAL" | "COMMUNITY" | "BOTH";
+  confidence: "CONFIRMED" | "PROBABLE" | null;
+  label: string;
+  reportsInWindow: number;
+}
+
 interface Props {
   service: { name: string; slug: string; category: string; monitoringCapability: string };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  community: CommunityDisplay;
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   uptime24h: number | null;
@@ -50,7 +61,8 @@ function para1(
   service: Props["service"],
   surfaces: SurfaceSnapshot[],
   uptime24h: number | null,
-  overallStatus: Props["overallStatus"]
+  overallStatus: Props["overallStatus"],
+  community: CommunityDisplay
 ): string {
   if (service.monitoringCapability === "BLOCKED_FROM_PROBES") {
     return `DownForAI currently has limited automated visibility into ${service.name}. Our probes appear to be blocked or restricted, so failed checks are not treated as a confirmed outage. Community reports remain available, but automated availability and check response time are not reliable for this service.`;
@@ -86,6 +98,13 @@ function para1(
       "Automated probes return normal responses, though user reports suggest active issues.",
   };
 
+  // When the community signal drives the status, report the SAME count
+  // (reportsInWindow) the badge/status API show — never a divergent number.
+  const statusLine =
+    overallStatus === "REPORTED_ISSUES"
+      ? `Automated probes return normal HTTP responses, but ${community.reportsInWindow} community report${community.reportsInWindow !== 1 ? "s" : ""} in the last 30 minutes indicate active issues — community-reported${community.confidence ? `, ${community.confidence.toLowerCase()} confidence` : ""}, not a probe-confirmed outage.`
+      : statusMap[overallStatus];
+
   let uptimeLine = "";
   if (uptime24h !== null) {
     const pct = uptime24h.toFixed(1);
@@ -111,7 +130,7 @@ function para1(
       : ` Median response time (24 h): ${p50} ms.`;
   }
 
-  return `${footprint} ${statusMap[overallStatus]}${uptimeLine}${latLine}`.trim();
+  return `${footprint} ${statusLine}${uptimeLine}${latLine}`.trim();
 }
 
 function para2(
@@ -119,10 +138,22 @@ function para2(
   incidents30d: IncidentSummary[],
   reportSummary: ReportSummary,
   lastIncident: { startedAt: Date } | null,
-  diagnosis: DiagnosisResult
+  diagnosis: DiagnosisResult,
+  community: CommunityDisplay
 ): string | null {
   const domain = DOMAIN[service.category] ?? "service";
   const reports = reportSummary.total24h;
+
+  // Community-driven status takes priority and uses the SAME count as the badge/
+  // status API (reportsInWindow) — guarantees the narrative can never contradict
+  // the status, even in edge cases (signal persisting while 24h reports age out).
+  if (community.source === "COMMUNITY" || community.source === "BOTH") {
+    const n = community.reportsInWindow;
+    const conf = community.confidence ? `${community.confidence.toLowerCase()} confidence` : "unconfirmed";
+    const open = incidents30d.find((i) => i.status === "OPEN" || i.status === "MONITORING");
+    const incidentNote = open ? ` A community incident is open: "${open.title}".` : "";
+    return `${service.name} is showing community-reported issues — ${n} report${n !== 1 ? "s" : ""} in the last 30 minutes (community signal, ${conf}). Automated probes are not confirming a hard outage, so this reflects user reports rather than a verified provider-side failure.${incidentNote}`;
+  }
 
   // Helper: top-2 symptom labels from byType
   function topTypes(): string {
@@ -201,6 +232,7 @@ function para2(
 export function ReliabilitySummary({
   service,
   overallStatus,
+  community,
   diagnosis,
   surfaces,
   uptime24h,
@@ -208,8 +240,8 @@ export function ReliabilitySummary({
   reportSummary,
   lastIncident,
 }: Props) {
-  const p1 = para1(service, surfaces, uptime24h, overallStatus);
-  const p2 = para2(service, incidents30d, reportSummary, lastIncident, diagnosis);
+  const p1 = para1(service, surfaces, uptime24h, overallStatus, community);
+  const p2 = para2(service, incidents30d, reportSummary, lastIncident, diagnosis, community);
   const confLabel = monitoringConfidence(service.monitoringCapability);
   const surfacesWithLatency = surfaces.filter((s) => s.p50Latency24h !== null).length;
 

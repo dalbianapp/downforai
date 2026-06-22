@@ -3,6 +3,7 @@ import { TOP_SERVICE_CONTENT } from "@/content/top-services";
 import { classifyServiceIssue } from "./classifyServiceIssue";
 import { getServiceBySlug, getReports24hCount } from "@/lib/service-queries";
 import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
+import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 import type {
   ServiceDashboardData,
   SurfaceSnapshot,
@@ -276,15 +277,29 @@ export async function getServiceDashboard(
     freshOfficialStatus,
   );
 
-  let overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES" = probeStatus;
-  if (
-    probeStatus === "OPERATIONAL" &&
-    (diagnosis.scope === "global" || diagnosis.scope === "partial") &&
-    (diagnosis.confidence === "HIGH" ||
-      (diagnosis.confidence === "MEDIUM" && reports2hCount >= 5))
-  ) {
+  // Single source of truth: resolveServiceStatus combines the technical signal
+  // (probeStatus) with the cron-written community signal (canary-gated, freshness-
+  // gated). The old ad-hoc reports2h≥5 elevation via classifyServiceIssue is GONE —
+  // classifyServiceIssue now only produces the descriptive narrative below.
+  const resolved = resolveServiceStatus({
+    technicalStatus: probeStatus,
+    monitoringCapability: monCap,
+    community: communitySignalOf(service),
+  });
+  // Map back to the page's status vocabulary: a community-elevated DEGRADED shows
+  // as the existing REPORTED_ISSUES display state (keeps all downstream styling/copy).
+  let overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  if (resolved.status === "DEGRADED" && (resolved.source === "COMMUNITY" || resolved.source === "BOTH")) {
     overallStatus = "REPORTED_ISSUES";
+  } else {
+    overallStatus = resolved.status;
   }
+  const communityDisplay = {
+    source: resolved.source,
+    confidence: resolved.confidence,
+    label: resolved.label,
+    reportsInWindow: resolved.reportsInWindow,
+  };
 
   // 9. Top 50 editorial content (static, no DB query)
   const topContent = TOP_SERVICE_CONTENT[slug] ?? null;
@@ -297,6 +312,7 @@ export async function getServiceDashboard(
       lifecycleStatus: service.lifecycleStatus as string,
     },
     overallStatus,
+    community: communityDisplay,
     headline,
     diagnosis,
     surfaces,

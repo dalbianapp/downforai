@@ -173,7 +173,7 @@ export default async function ReliabilityLeaderboardPage() {
           <div style={{ overflowX: "auto", borderRadius: "12px", border: `1px solid ${BORDER}`, marginBottom: "44px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
               <thead><tr style={{ background: PANEL, borderBottom: `2px solid ${BORDER}` }}>
-                <Th>Service</Th><Th>Category</Th><Th align="right">Reports 90d</Th><Th align="right">Confirmed incidents</Th><Th align="right">Availability</Th><Th align="right">Confidence</Th>
+                <Th>Service</Th><Th>Category</Th><Th align="right">Reports 90d</Th><Th align="right">Community-detected outages</Th><Th align="right">Confirmed incidents</Th><Th align="right">Availability</Th><Th align="right">Confidence</Th>
               </tr></thead>
               <tbody>
                 {mostReported.map((r, i) => (
@@ -181,6 +181,7 @@ export default async function ReliabilityLeaderboardPage() {
                     <td style={td}>{svcLink(r)}</td>
                     <td style={{ ...td, color: MUTED, fontSize: "13px" }}>{formatCategoryLabel(r.category)}</td>
                     <td style={{ ...tdMono, fontWeight: 700, color: "#CA8A04" }}>{r.reports90d}</td>
+                    <td style={{ ...tdMono, color: r.communityIncidents90d > 0 ? "#CA8A04" : FAINT }}>{r.communityIncidents90d || "—"}</td>
                     <td style={{ ...tdMono, color: r.incidents90d > 0 ? "#DC2626" : FAINT }}>{r.incidents90d}</td>
                     <td style={{ ...tdMono, color: availColor(r.availability90d) }}>{fmtAvail(r.availability90d)}</td>
                     <td style={{ ...td, textAlign: "right", color: MUTED, fontSize: "12px" }}>{confLabel(r.capability)}</td>

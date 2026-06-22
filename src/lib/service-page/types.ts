@@ -55,6 +55,14 @@ export type ServiceDashboardData = {
     lifecycleStatus: string;
   };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  // Sourcing for the resolved status (from resolveServiceStatus) — drives honest
+  // "Community-reported …" labelling + report count + confidence on the page.
+  community: {
+    source: "TECHNICAL" | "COMMUNITY" | "BOTH";
+    confidence: "CONFIRMED" | "PROBABLE" | null;
+    label: string;
+    reportsInWindow: number;
+  };
   headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
   diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];

@@ -19,6 +19,7 @@ export type LeaderboardRow = {
   outageMinutes90d: number;        // summed confirmed-incident duration in minutes
   lastIncidentDaysAgo: number | null;
   reports90d: number;              // community reports (raw, not normalized by usage)
+  communityIncidents90d: number;   // community-detected outages — SEPARATE, never in availability/confirmed
 };
 
 export type LeaderboardSummary = {
@@ -61,7 +62,7 @@ export async function getReliabilityLeaderboard(): Promise<{
 
   const since90d = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  const [capabilityGroups, statusRows, incidentRows, lastIncidentRows, reportRows] =
+  const [capabilityGroups, statusRows, incidentRows, lastIncidentRows, reportRows, communityIncidentRows] =
     await Promise.all([
       prisma.service.groupBy({ by: ["monitoringCapability"], _count: { _all: true } }),
       ids.length === 0
@@ -90,6 +91,7 @@ export async function getReliabilityLeaderboard(): Promise<{
               COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE("resolvedAt", NOW()) - "startedAt")) / 60), 0) AS minutes
             FROM "Incident"
             WHERE "isFalsePositive" = false
+              AND "sourceBadge" != 'COMMUNITY_REPORTS'
               AND "startedAt" >= NOW() - INTERVAL '90 days'
               AND "serviceId" IN (${Prisma.join(ids)})
             GROUP BY "serviceId"
@@ -99,7 +101,7 @@ export async function getReliabilityLeaderboard(): Promise<{
         : prisma.$queryRaw<Array<{ serviceId: string; last: Date | null }>>(Prisma.sql`
             SELECT "serviceId", MAX("startedAt") AS last
             FROM "Incident"
-            WHERE "isFalsePositive" = false AND "serviceId" IN (${Prisma.join(ids)})
+            WHERE "isFalsePositive" = false AND "sourceBadge" != 'COMMUNITY_REPORTS' AND "serviceId" IN (${Prisma.join(ids)})
             GROUP BY "serviceId"
           `),
       ids.length === 0
@@ -109,6 +111,15 @@ export async function getReliabilityLeaderboard(): Promise<{
             where: { serviceId: { in: ids }, createdAt: { gte: since90d }, isSpam: false, isVisible: true },
             _count: { serviceId: true },
           }),
+      // Community-detected incidents (90d) — SEPARATE signal, never mixed into the
+      // technical "confirmed incidents" / availability above.
+      ids.length === 0
+        ? Promise.resolve([] as Array<{ serviceId: string; _count: { serviceId: number } }>)
+        : prisma.incident.groupBy({
+            by: ["serviceId"],
+            where: { serviceId: { in: ids }, startedAt: { gte: since90d }, isFalsePositive: false, sourceBadge: "COMMUNITY_REPORTS" },
+            _count: { serviceId: true },
+          }),
     ]);
 
   const statusMap = new Map(statusRows.map((r) => [r.serviceId, r]));
@@ -116,6 +127,9 @@ export async function getReliabilityLeaderboard(): Promise<{
   const lastIncMap = new Map(lastIncidentRows.map((r) => [r.serviceId, r.last]));
   const reportMap = new Map(
     (reportRows as Array<{ serviceId: string; _count: { serviceId: number } }>).map((r) => [r.serviceId, r._count.serviceId]),
+  );
+  const communityIncMap = new Map(
+    (communityIncidentRows as Array<{ serviceId: string; _count: { serviceId: number } }>).map((r) => [r.serviceId, r._count.serviceId]),
   );
 
   const now = Date.now();
@@ -140,6 +154,7 @@ export async function getReliabilityLeaderboard(): Promise<{
       outageMinutes90d: inc ? Math.round(Number(inc.minutes)) : 0,
       lastIncidentDaysAgo: last ? Math.floor((now - new Date(last).getTime()) / 86_400_000) : null,
       reports90d: reportMap.get(r.id) ?? 0,
+      communityIncidents90d: communityIncMap.get(r.id) ?? 0,
     };
   });
 

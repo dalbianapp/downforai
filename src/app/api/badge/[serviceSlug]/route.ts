@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import type { ServiceStatus } from "@prisma/client";
+import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 
 export const revalidate = 600;
 
@@ -52,8 +54,21 @@ export async function GET(
   const { serviceSlug } = await params;
 
   try {
-    const result = await prisma.$queryRaw<Array<{ name: string; status: string | null }>>`
-      SELECT s.name, latest.status
+    const result = await prisma.$queryRaw<Array<{
+      name: string;
+      status: string | null;
+      monitoringCapability: string;
+      communityStatus: ServiceStatus | null;
+      communityConfidence: "CONFIRMED" | "PROBABLE" | null;
+      communityReportsWindow: number | null;
+      communitySignalAt: Date | null;
+    }>>`
+      SELECT s.name, latest.status,
+        s."monitoringCapability"::text   AS "monitoringCapability",
+        s."communityStatus"              AS "communityStatus",
+        s."communityConfidence"          AS "communityConfidence",
+        s."communityReportsWindow"       AS "communityReportsWindow",
+        s."communitySignalAt"            AS "communitySignalAt"
       FROM "Service" s
       LEFT JOIN LATERAL (
         SELECT o.status
@@ -78,23 +93,20 @@ export async function GET(
     }
 
     const service = result[0];
-    const probeStatus = service.status ?? "UNKNOWN";
+    const probeStatus = (service.status ?? "UNKNOWN") as ServiceStatus;
 
-    let displayStatus = probeStatus;
-
-    // Elevate to REPORTED_ISSUES if probes are OK but users are reporting
-    if (probeStatus === "OPERATIONAL") {
-      const reportCount = await prisma.$queryRaw<Array<{ count: bigint }>>`
-        SELECT COUNT(*) as count
-        FROM "CommunityReport" cr
-        INNER JOIN "Service" s ON s.id = cr."serviceId"
-        WHERE s.slug = ${serviceSlug}
-          AND cr."createdAt" >= NOW() - INTERVAL '2 hours'
-      `;
-      if (Number(reportCount[0]?.count ?? 0) >= 5) {
-        displayStatus = "REPORTED_ISSUES";
-      }
-    }
+    // Single source of truth — same resolution as every other surface. The old
+    // ad-hoc 2h≥5 community threshold is gone; community elevation comes from the
+    // cron-written, canary-gated, freshness-gated signal.
+    const resolved = resolveServiceStatus({
+      technicalStatus: probeStatus,
+      monitoringCapability: service.monitoringCapability,
+      community: communitySignalOf(service),
+    });
+    const displayStatus =
+      resolved.status === "DEGRADED" && (resolved.source === "COMMUNITY" || resolved.source === "BOTH")
+        ? "REPORTED_ISSUES"
+        : resolved.status;
 
     return new NextResponse(generateSVG(service.name, displayStatus), {
       status: 200,
