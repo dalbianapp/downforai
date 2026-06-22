@@ -15,10 +15,10 @@ interface ServiceCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  OPERATIONAL: "#16a34a",
-  DEGRADED: "#f59e0b",
-  OUTAGE: "#ef4444",
-  UNKNOWN: "#6b7280",
+  OPERATIONAL: "#16A34A",
+  DEGRADED: "#D97706",
+  OUTAGE: "#DC2626",
+  UNKNOWN: "#64748B",
 };
 
 // Catmull-Rom → Bézier cubiques (courbes lissées pro)
@@ -57,16 +57,19 @@ function sparklinePath(values: number[], width: number, height: number): string 
 }
 
 export function ServiceCard({ slug, name, category: _category, status, sparklineData, latencyMs, performanceLevel }: ServiceCardProps) {
-  // Dual color system: status color for dot, performance color for sparkline
-  const dotColor = statusColors[status] || "#6b7280";
-  const sparkColor = (status === "OUTAGE" || status === "UNKNOWN" || performanceLevel === "UNKNOWN")
-    ? (statusColors[status] || "#6b7280")
-    : getPerformanceColor(performanceLevel);
+  const dotColor = statusColors[status] || "#64748B";
+
+  // Sparkline: indigo glow for healthy/unknown, status color for issues
+  const sparkColor = status === "OUTAGE" ? "#DC2626" :
+                     status === "DEGRADED" ? "#D97706" :
+                     (performanceLevel === "SEVERE" || performanceLevel === "ELEVATED")
+                       ? getPerformanceColor(performanceLevel)
+                       : "#818CF8";
 
   const hasIssue = status === "OUTAGE" || status === "DEGRADED"
     || (performanceLevel !== "NORMAL" && performanceLevel !== "UNKNOWN");
 
-  // Card background and border based on status and performance
+  // Card background tinted on issues
   const cardBg =
     status === "OUTAGE" ? "#fef2f2" :
     status === "DEGRADED" ? "#fefce8" :
@@ -74,12 +77,13 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
     performanceLevel === "ELEVATED" ? "#fffbeb" :
     "#ffffff";
 
+  // Border: status-tinted for issues, standard grey for healthy
   const cardBorder =
     status === "OUTAGE" ? "#fecaca" :
     status === "DEGRADED" ? "#fef08a" :
     performanceLevel === "SEVERE" ? "#fecaca" :
     performanceLevel === "ELEVATED" ? "#fef3c7" :
-    "#f0f0f0";
+    "#E2E8F0";
 
   const svgW = 140;
   const svgH = 24;
@@ -100,47 +104,51 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
         style={{
           background: cardBg,
           border: `1px solid ${cardBorder}`,
-          borderRadius: '12px',
-          padding: '12px',
-          transition: 'all 0.15s ease',
-          cursor: 'pointer',
-          height: '100%',
+          borderRadius: "14px",
+          padding: "12px",
+          transition: "all 0.16s ease",
+          cursor: "pointer",
+          height: "100%",
+          boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(15,23,42,0.10)";
           e.currentTarget.style.borderColor = hasIssue
-            ? (cardBorder === '#fecaca' ? '#fca5a5' : cardBorder === '#fef08a' ? '#fde047' : cardBorder === '#fef3c7' ? '#fde68a' : '#e5e5e5')
-            : '#e5e5e5';
+            ? (status === "OUTAGE" ? "#fca5a5" : status === "DEGRADED" ? "#fde047" : "rgba(79,70,229,0.30)")
+            : "rgba(79,70,229,0.30)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 1px 2px rgba(15,23,42,0.04)";
           e.currentTarget.style.borderColor = cardBorder;
         }}
       >
         {/* Nom + dot */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "8px" }}>
           <div
             style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
               backgroundColor: dotColor,
               flexShrink: 0,
-              marginTop: '5px',
-              boxShadow: hasIssue ? `0 0 6px ${dotColor}40` : 'none',
+              marginTop: "5px",
+              boxShadow: `0 0 5px ${dotColor}60`,
+              animation: status === "OUTAGE" ? "pulse-led 1.8s ease-in-out infinite" : "none",
             }}
           />
           <span
             style={{
-              fontSize: '14px',
+              fontSize: "14px",
               fontWeight: 600,
-              color: '#171717',
+              color: "#0F172A",
               lineHeight: 1.3,
-              display: '-webkit-box',
+              display: "-webkit-box",
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical' as const,
-              overflow: 'hidden',
-              minHeight: '36px',
+              WebkitBoxOrient: "vertical" as const,
+              overflow: "hidden",
+              minHeight: "36px",
               flex: 1,
             }}
           >
@@ -148,14 +156,14 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
           </span>
         </div>
 
-        {/* Sparkline Bézier lissée */}
+        {/* Sparkline */}
         <div style={{ height: svgH }}>
           <svg
             width="100%"
             height={svgH}
             viewBox={`0 0 ${svgW} ${svgH}`}
             preserveAspectRatio="none"
-            style={{ display: 'block', opacity: 0.6 }}
+            style={{ display: "block", opacity: 0.65 }}
           >
             {pathD && (
               <path
@@ -173,12 +181,18 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
           </svg>
         </div>
 
-        {/* Latency */}
-        {latencyMs && (
-          <div style={{ fontSize: "11px", color: "#a3a3a3", textAlign: "right", marginTop: "2px" }}>
-            {latencyMs}ms
-          </div>
-        )}
+        {/* Latence — toujours visible, mono, "—" pour null */}
+        <div
+          className="mono"
+          style={{
+            fontSize: "11px",
+            color: latencyMs ? "#94A3B8" : "#CBD5E1",
+            textAlign: "right",
+            marginTop: "2px",
+          }}
+        >
+          {latencyMs ? `${latencyMs}ms` : "—"}
+        </div>
       </div>
     </Link>
   );

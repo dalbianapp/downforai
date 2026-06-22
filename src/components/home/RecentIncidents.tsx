@@ -22,9 +22,9 @@ interface RecentIncidentsProps {
 }
 
 const severityConfig = {
-  MINOR: { label: "Minor", dotColor: "#ca8a04", bgColor: "#fefce8", textColor: "#854d0e" },
-  MAJOR: { label: "Major", dotColor: "#dc2626", bgColor: "#fef2f2", textColor: "#991b1b" },
-  CRITICAL: { label: "Critical", dotColor: "#dc2626", bgColor: "#fef2f2", textColor: "#991b1b" },
+  MINOR: { label: "Minor", dotColor: "#D97706", bgColor: "#fefce8", textColor: "#854d0e" },
+  MAJOR: { label: "Major", dotColor: "#DC2626", bgColor: "#fef2f2", textColor: "#991b1b" },
+  CRITICAL: { label: "Critical", dotColor: "#DC2626", bgColor: "#fef2f2", textColor: "#991b1b" },
 };
 
 export function RecentIncidents({ incidents }: RecentIncidentsProps) {
@@ -34,14 +34,14 @@ export function RecentIncidents({ incidents }: RecentIncidentsProps) {
     <div
       style={{
         background: '#ffffff',
-        border: '1px solid #e5e5e5',
+        border: '1px solid #E2E8F0',
         borderRadius: '16px',
         padding: '24px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#171717' }}>Recent Incidents</h3>
-        <Link href="/incidents" style={{ fontSize: '13px', color: '#2563eb', fontWeight: 500 }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Recent Incidents</h3>
+        <Link href="/incidents" style={{ fontSize: '13px', color: '#4F46E5', fontWeight: 500, textDecoration: 'none' }}>
           View all →
         </Link>
       </div>
@@ -60,13 +60,13 @@ export function RecentIncidents({ incidents }: RecentIncidentsProps) {
                 gap: '12px',
                 padding: '14px 16px',
                 borderRadius: '12px',
-                border: '1px solid #f0f0f0',
-                background: '#fafafa',
+                border: '1px solid #F1F5F9',
+                background: '#F8FAFC',
                 transition: 'background 0.15s',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f5f5f5'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fafafa'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
             >
               {/* Severity dot */}
               <div
@@ -83,7 +83,6 @@ export function RecentIncidents({ incidents }: RecentIncidentsProps) {
               {/* Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                  {/* Severity badge */}
                   <span
                     style={{
                       fontSize: '10px',
@@ -98,22 +97,19 @@ export function RecentIncidents({ incidents }: RecentIncidentsProps) {
                   >
                     {config.label}
                   </span>
-                  {/* Service name */}
-                  <span style={{ fontSize: '12px', color: '#a3a3a3' }}>
+                  <span style={{ fontSize: '12px', color: '#94A3B8' }}>
                     {incident.service.name}
                   </span>
                 </div>
 
-                {/* Title */}
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#171717', marginBottom: '2px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', marginBottom: '2px' }}>
                   {incident.title}
                 </div>
 
-                {/* Meta */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#a3a3a3' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#94A3B8' }}>
                   <span>{timeAgo}</span>
                   {incident.status === 'RESOLVED' && (
-                    <span style={{ color: '#16a34a' }}>✓ Resolved</span>
+                    <span style={{ color: '#16A34A' }}>✓ Resolved</span>
                   )}
                 </div>
               </div>

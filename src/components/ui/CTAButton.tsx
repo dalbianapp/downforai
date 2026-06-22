@@ -7,7 +7,7 @@ export function CTAButton({ href, children }: { href: string; children: React.Re
       style={{
         display: 'inline-block',
         padding: '10px 24px',
-        background: '#2563eb',
+        background: '#4F46E5',
         color: '#ffffff',
         borderRadius: '10px',
         fontSize: '14px',
@@ -15,8 +15,8 @@ export function CTAButton({ href, children }: { href: string; children: React.Re
         textDecoration: 'none',
         transition: 'background 0.15s',
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = '#2563eb'; }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = '#4338CA'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = '#4F46E5'; }}
     >
       {children}
     </a>

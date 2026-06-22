@@ -4,28 +4,29 @@
 
 @layer base {
   :root {
-    --bg: #fafafa;
+    --bg: #F8FAFC;
     --surface: #ffffff;
-    --surface-hover: #f5f5f5;
-    --border: #e5e5e5;
-    --border-subtle: #f0f0f0;
-    --text: #171717;
-    --text-secondary: #525252;
-    --text-muted: #a3a3a3;
-    --text-dim: #d4d4d4;
-    --operational: #16a34a;
+    --surface-hover: #f1f5f9;
+    --border: #E2E8F0;
+    --border-subtle: #F1F5F9;
+    --text: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --text-dim: #CBD5E1;
+    --operational: #16A34A;
     --operational-bg: #f0fdf4;
     --operational-border: #bbf7d0;
-    --degraded: #ca8a04;
+    --degraded: #D97706;
     --degraded-bg: #fefce8;
     --degraded-border: #fef08a;
-    --outage: #dc2626;
+    --outage: #DC2626;
     --outage-bg: #fef2f2;
     --outage-border: #fecaca;
-    --unknown: #737373;
-    --unknown-bg: #f5f5f5;
-    --accent: #2563eb;
-    --accent-secondary: #7c3aed;
+    --unknown: #64748B;
+    --unknown-bg: #f8fafc;
+    --accent: #4F46E5;
+    --accent-secondary: #818CF8;
+    --brand-deep: #312E81;
   }
 
   * {
@@ -90,10 +91,22 @@
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  background: linear-gradient(90deg, #4F46E5, #06B6D4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Mono utility — tabular numbers for metrics */
+.mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
 }
 
 /* Scrollbar */

@@ -47,8 +47,8 @@ export function EditorialLinks() {
   return (
     <div
       style={{
-        background: "#fafafa",
-        border: "1px solid #e5e5e5",
+        background: "#F8FAFC",
+        border: "1px solid #E2E8F0",
         borderRadius: "16px",
         padding: "28px 24px",
       }}
@@ -58,14 +58,14 @@ export function EditorialLinks() {
           style={{
             fontSize: "17px",
             fontWeight: 700,
-            color: "#171717",
+            color: "#0F172A",
             margin: 0,
             marginBottom: "4px",
           }}
         >
           AI Reliability Research
         </h2>
-        <p style={{ fontSize: "13px", color: "#737373", margin: 0 }}>
+        <p style={{ fontSize: "13px", color: "#64748B", margin: 0 }}>
           Uptime data, incident reports, and monitoring guides
         </p>
       </div>
@@ -84,7 +84,7 @@ export function EditorialLinks() {
               display: "block",
               padding: "12px 14px",
               background: "#ffffff",
-              border: "1px solid #e5e5e5",
+              border: "1px solid #E2E8F0",
               borderRadius: "10px",
               textDecoration: "none",
             }}
@@ -93,13 +93,13 @@ export function EditorialLinks() {
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#171717",
+                color: "#0F172A",
                 marginBottom: "3px",
               }}
             >
               {link.title}
             </div>
-            <div style={{ fontSize: "12px", color: "#737373", lineHeight: 1.4 }}>
+            <div style={{ fontSize: "12px", color: "#64748B", lineHeight: 1.4 }}>
               {link.description}
             </div>
           </Link>

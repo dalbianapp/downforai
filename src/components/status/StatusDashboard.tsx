@@ -59,7 +59,7 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
     <div>
       {/* Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#171717', margin: 0 }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
           All Services
         </h2>
         <input
@@ -70,9 +70,9 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
           style={{
             padding: '8px 14px',
             borderRadius: '10px',
-            border: '1px solid #e5e5e5',
+            border: '1px solid #E2E8F0',
             fontSize: '13px',
-            color: '#171717',
+            color: '#0F172A',
             backgroundColor: '#ffffff',
             outline: 'none',
             width: '200px',
@@ -137,11 +137,19 @@ export function StatusDashboard({ services }: StatusDashboardProps) {
             if (!catServices || catServices.length === 0) return null;
             return (
               <div key={cat}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#525252', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#64748B', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   {formatCategoryLabel(cat)}
-                  <span style={{ fontSize: '13px', fontWeight: 400, color: '#a3a3a3' }}>
-                    ({catServices.length})
+                  <span className="mono" style={{ fontSize: '12px', fontWeight: 500, color: '#94A3B8', background: '#F1F5F9', padding: '1px 7px', borderRadius: '5px' }}>
+                    {catServices.length}
                   </span>
+                  {(() => {
+                    const officialCount = catServices.filter(s => s.badgeType === 'STATUS_PAGE_SYNC').length;
+                    return officialCount > 0 ? (
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: '#4F46E5', background: 'rgba(79,70,229,0.07)', border: '1px solid rgba(79,70,229,0.15)', padding: '1px 7px', borderRadius: '5px' }}>
+                        {officialCount} official
+                      </span>
+                    ) : null;
+                  })()}
                 </h3>
                 <div
                   style={{

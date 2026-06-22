@@ -199,6 +199,7 @@ export default async function HomePage() {
     total: services.length,
   };
   const limited = counts.total - counts.operational - counts.degraded - counts.outage;
+  const officialApiCount = services.filter((s) => s.badgeType === "STATUS_PAGE_SYNC").length;
 
   // Featured services for Bento: 4 most problematic + 2 biggest operational
   const problematicServices = services
@@ -242,6 +243,7 @@ export default async function HomePage() {
         outage={counts.outage}
         limited={limited}
         total={counts.total}
+        officialApiCount={officialApiCount}
       />
 
       {/* Bento Section - Featured Services (seulement si incidents) */}
@@ -428,20 +430,20 @@ export default async function HomePage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '14px 20px',
-            background: '#f0f9ff',
-            border: '1px solid #bae6fd',
+            background: 'rgba(79,70,229,0.05)',
+            border: '1px solid rgba(79,70,229,0.18)',
             borderRadius: '12px',
             textDecoration: 'none',
-            color: '#0c4a6e',
+            color: '#312E81',
           }}
         >
           <div>
             <span style={{ fontWeight: 700, fontSize: '14px' }}>AI Reliability Index</span>
-            <span style={{ fontSize: '13px', color: '#0369a1', marginLeft: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#4F46E5', marginLeft: '8px' }}>
               Uptime, latency p50/p95 &amp; incidents for 50 major AI services
             </span>
           </div>
-          <span style={{ fontSize: '13px', color: '#0369a1', flexShrink: 0 }}>View →</span>
+          <span style={{ fontSize: '13px', color: '#4F46E5', flexShrink: 0 }}>View →</span>
         </Link>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <Link

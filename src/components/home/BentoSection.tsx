@@ -77,10 +77,10 @@ export function BentoSection({ services }: BentoSectionProps) {
 
   const getStatusColor = (status: ServiceStatus) => {
     switch (status) {
-      case 'OUTAGE': return '#dc2626';
-      case 'DEGRADED': return '#ca8a04';
-      case 'OPERATIONAL': return '#16a34a';
-      default: return '#737373';
+      case 'OUTAGE': return '#DC2626';
+      case 'DEGRADED': return '#D97706';
+      case 'OPERATIONAL': return '#16A34A';
+      default: return '#64748B';
     }
   };
 
