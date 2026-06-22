@@ -65,26 +65,31 @@ export async function getSpeedIndex(category: ServiceCategory = "LLM"): Promise<
       JOIN "Service" svc
         ON svc.id = ss."serviceId" AND svc.category::text = ${categoryStr}
       WHERE o."observedAt" >= NOW() - INTERVAL '7 days'
+        AND (o."probeResult" IS NULL
+             OR o."probeResult"::text NOT IN (
+               'BLOCKED', 'RATE_LIMITED', 'TIMEOUT', 'DNS_FAIL',
+               'CONNECTION_FAIL', 'TLS_ERROR', 'UNKNOWN_FAILURE', 'PARSE_ERROR'
+             ))
     ),
     service_agg AS (
       SELECT
         ao."serviceId",
         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ao."latencyMs")
-          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0)
+          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0 AND ao."latencyMs" < 5000)
           AS p50_7d,
         PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ao."latencyMs")
-          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0)
+          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0 AND ao."latencyMs" < 5000)
           AS p95_7d,
         COUNT(ao.status)
           AS obs_7d,
         COUNT(ao.status) FILTER (WHERE ao.status = 'OPERATIONAL')
           AS obs_7d_op,
         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ao."latencyMs")
-          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0
+          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0 AND ao."latencyMs" < 5000
                   AND ao."observedAt" >= NOW() - INTERVAL '24 hours')
           AS p50_24h,
         PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ao."latencyMs")
-          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0
+          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0 AND ao."latencyMs" < 5000
                   AND ao."observedAt" >= NOW() - INTERVAL '24 hours')
           AS p95_24h,
         COUNT(ao.status) FILTER (WHERE ao."observedAt" >= NOW() - INTERVAL '24 hours')
@@ -94,7 +99,7 @@ export async function getSpeedIndex(category: ServiceCategory = "LLM"): Promise<
             AND ao."observedAt" >= NOW() - INTERVAL '24 hours')
           AS obs_24h_op,
         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ao."latencyMs")
-          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0
+          FILTER (WHERE ao."latencyMs" IS NOT NULL AND ao."latencyMs" > 0 AND ao."latencyMs" < 5000
                   AND ao."observedAt" >= NOW() - INTERVAL '48 hours'
                   AND ao."observedAt" <  NOW() - INTERVAL '24 hours')
           AS p50_prev_24h

@@ -3,15 +3,8 @@ import { MonitoringCapability } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatCategoryLabel } from "@/lib/utils";
 import { generateBreadcrumbJsonLd } from "@/lib/seo";
+import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
 import Link from "next/link";
-
-export const metadata: Metadata = {
-  title: "AI Reliability Index — Live Uptime & Latency for 50 AI Services",
-  description:
-    "Real-time reliability ranking of the 50 most-tracked AI services — part of 800+ monitored by DownForAI. Uptime, latency p50/p95, and incident counts updated hourly.",
-  alternates: { canonical: "/reliability-index" },
-  robots: { index: true, follow: true },
-};
 
 export const revalidate = 3600;
 
@@ -27,6 +20,23 @@ const PREMIUM_SLUGS = [
   "magnific", "lmarena", "cerebras", "sillytavern", "crushon-ai",
   "genspark", "devin", "tripo3d", "voicemod", "n8n",
 ];
+
+export async function generateMetadata(): Promise<Metadata> {
+  const count = await prisma.service.count({
+    where: {
+      slug: { in: PREMIUM_SLUGS },
+      monitoringCapability: {
+        notIn: [MonitoringCapability.BLOCKED_FROM_PROBES, MonitoringCapability.UNVERIFIABLE],
+      },
+    },
+  });
+  return {
+    title: `AI Reliability Index — Live Uptime & Latency for ${count} AI Services`,
+    description: `Real-time reliability ranking of ${count} major AI services — part of 800+ monitored by DownForAI. Uptime, latency p50/p95, and incident counts updated hourly.`,
+    alternates: { canonical: "/reliability-index" },
+    robots: { index: true, follow: true },
+  };
+}
 
 async function getReliabilityData() {
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -75,8 +85,8 @@ async function getReliabilityData() {
       };
 
       const latencies = allObs
-        .map((o) => o.latencyMs)
-        .filter((l): l is number => l !== null && l > 0)
+        .filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs))
+        .map((o) => o.latencyMs as number)
         .sort((a, b) => a - b);
 
       const p50 =
@@ -126,7 +136,7 @@ export default async function ReliabilityIndexPage() {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: "AI Reliability Index",
-    description: "Real-time uptime and latency data for the 50 most-tracked AI services — part of 800+ monitored by DownForAI",
+    description: `Real-time uptime and latency data for ${data.length} major AI services — part of 800+ monitored by DownForAI`,
     url: "https://downforai.com/reliability-index",
     creator: {
       "@type": "Organization",

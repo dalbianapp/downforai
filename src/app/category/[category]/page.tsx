@@ -5,6 +5,7 @@ import { calculateWorstStatus, formatCategoryLabel } from "@/lib/utils";
 import { badgeFromCapability } from "@/lib/badges";
 import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
+import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -59,6 +60,7 @@ async function getCategoryServices(category: string) {
     observedAt: Date | null;
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
     latencyMs: number | null;
+    probeResult: string | null;
   };
 
   const rows = await prisma.$queryRaw<RawRow[]>`
@@ -72,11 +74,12 @@ async function getCategoryServices(category: string) {
       ss.id           AS surface_id,
       o."observedAt",
       o.status,
-      o."latencyMs"
+      o."latencyMs",
+      o."probeResult"
     FROM "Service" s
     INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
     LEFT JOIN LATERAL (
-      SELECT "observedAt", status, "latencyMs"
+      SELECT "observedAt", status, "latencyMs", "probeResult"::text AS "probeResult"
       FROM "Observation"
       WHERE "serviceSurfaceId" = ss.id
       ORDER BY "observedAt" DESC
@@ -88,7 +91,7 @@ async function getCategoryServices(category: string) {
   // Regroupe : service (par slug) → surfaces → observations
   type SurfaceAccum = {
     id: string;
-    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null }[];
+    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null; probeResult: string | null }[];
   };
   type ServiceAccum = {
     slug: string;
@@ -126,6 +129,7 @@ async function getCategoryServices(category: string) {
         observedAt: row.observedAt,
         status: row.status,
         latencyMs: row.latencyMs,
+        probeResult: row.probeResult,
       });
     }
   }
@@ -149,13 +153,13 @@ async function getCategoryServices(category: string) {
     // Build sparkline data from real latency observations
     const sparklineData: number[] = allObservations
       .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())
-      .map((o) => o.latencyMs)
-      .filter((lat): lat is number => lat !== null)
+      .filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs))
+      .map((o) => o.latencyMs as number)
       .slice(-24);
 
     // Compute performance level
     const surfacePerformances = surfaces.map((surface) => {
-      const latencies = surface.observations.filter((o) => o.latencyMs !== null).map((o) => o.latencyMs as number);
+      const latencies = surface.observations.filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs)).map((o) => o.latencyMs as number);
       const last5 = latencies.slice(0, 5);
       const last72h = latencies;
       const lastObservedAt = surface.observations[0]?.observedAt || null;

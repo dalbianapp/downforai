@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
 
 export const revalidate = 3600;
 
@@ -58,8 +59,8 @@ export async function GET() {
       };
 
       const latencies = allObs
-        .map((o) => o.latencyMs)
-        .filter((l): l is number => l !== null && l > 0)
+        .filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs))
+        .map((o) => o.latencyMs as number)
         .sort((a, b) => a - b);
 
       const p50 =
