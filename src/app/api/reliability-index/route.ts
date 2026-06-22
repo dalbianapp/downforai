@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
+import { isValidForPublicLatency, AVAILABILITY_NON_MEASURABLE } from "@/lib/monitoring/probeValidity";
 
 export const revalidate = 3600;
 
@@ -52,10 +52,18 @@ export async function GET() {
       const obs24h = allObs.filter((o) => o.observedAt >= since24h);
       const obs7d = allObs.filter((o) => o.observedAt >= since7d);
 
+      // Availability = NON-OUTAGE rate. "Down" = hard OUTAGE only; DEGRADED is not
+      // downtime. Denominator = measurable observations (valid probe, real status);
+      // blocked/timeout probes are excluded so a block never counts as an outage.
       const uptime = (obs: typeof allObs) => {
-        if (obs.length === 0) return null;
-        const operational = obs.filter((o) => o.status === "OPERATIONAL").length;
-        return parseFloat(((operational / obs.length) * 100).toFixed(4));
+        const measurable = obs.filter(
+          (o) =>
+            (o.status === "OPERATIONAL" || o.status === "DEGRADED" || o.status === "OUTAGE") &&
+            (o.probeResult == null || !AVAILABILITY_NON_MEASURABLE.has(o.probeResult)),
+        );
+        if (measurable.length === 0) return null;
+        const up = measurable.filter((o) => o.status === "OPERATIONAL" || o.status === "DEGRADED").length;
+        return parseFloat(((up / measurable.length) * 100).toFixed(4));
       };
 
       const latencies = allObs

@@ -155,30 +155,32 @@ export async function getServiceDashboard(
     };
   });
 
-  // 4. 24h uptime % — null for non-measurable services; filtered denominator for others.
-  // Excludes from denominator any observation from a probe that was blocked/timed out/unknown
-  // (probeResult IS NULL = pre-PR6 observation, no probeResult stored → kept in denominator).
+  // 4. 24h availability % — non-OUTAGE rate. "Down" = hard OUTAGE only; DEGRADED is
+  // NOT downtime (shown separately via status). Denominator = measurable observations;
+  // we exclude probes that can't tell up-from-down (blocked/rate-limited/timeout/
+  // unknown/parse/TLS) but KEEP DNS_FAIL/CONNECTION_FAIL (genuine OUTAGE). This matches
+  // the leaderboard + badges API definition exactly (see AVAILABILITY_NON_MEASURABLE).
   let uptime24h: number | null = null;
   if (monCap !== "BLOCKED_FROM_PROBES" && monCap !== "UNVERIFIABLE") {
-    const uptimeRaw = await prisma.$queryRaw<[{ total: bigint; operational: bigint }]>`
+    const uptimeRaw = await prisma.$queryRaw<[{ total: bigint; up: bigint }]>`
       SELECT
         COUNT(*) FILTER (
           WHERE o.status IN ('OPERATIONAL','DEGRADED','OUTAGE')
             AND (o."probeResult" IS NULL OR o."probeResult"::text NOT IN
-                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR'))
+                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR','TLS_ERROR'))
         ) AS total,
         COUNT(*) FILTER (
-          WHERE o.status = 'OPERATIONAL'
+          WHERE o.status IN ('OPERATIONAL','DEGRADED')
             AND (o."probeResult" IS NULL OR o."probeResult"::text NOT IN
-                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR'))
-        ) AS operational
+                 ('BLOCKED','RATE_LIMITED','TIMEOUT','UNKNOWN_FAILURE','PARSE_ERROR','TLS_ERROR'))
+        ) AS up
       FROM "Observation" o
       INNER JOIN "ServiceSurface" ss ON ss.id = o."serviceSurfaceId"
       WHERE ss."serviceId" = ${service.id}
         AND o."observedAt" >= NOW() - INTERVAL '24 hours'
     `;
-    const { total, operational } = uptimeRaw[0];
-    uptime24h = total > 0n ? Number((operational * 10000n) / total) / 100 : null;
+    const { total, up } = uptimeRaw[0];
+    uptime24h = total > 0n ? Number((up * 10000n) / total) / 100 : null;
   }
 
   // 5. Incidents last 30 days — low cardinality table, findMany is fine

@@ -40,9 +40,11 @@ export function formatDuration(ms: number): string {
   return `${seconds}s`;
 }
 
+// Availability = non-OUTAGE rate. DEGRADED is NOT downtime (counted as up here),
+// consistent with the service pages, leaderboard, and badges API. "Down" = OUTAGE only.
 export function calculateUptimePercentage(statuses: string[]): number {
-  const operational = statuses.filter((s) => s === "OPERATIONAL").length;
-  return Math.round((operational / statuses.length) * 100);
+  const up = statuses.filter((s) => s === "OPERATIONAL" || s === "DEGRADED").length;
+  return Math.round((up / statuses.length) * 100);
 }
 
 export function getCategoryColor(category: string): string {
