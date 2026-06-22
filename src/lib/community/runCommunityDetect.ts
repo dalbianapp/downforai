@@ -111,6 +111,9 @@ export async function runCommunityDetect(opts: RunOptions): Promise<RunResult> {
       .map((s) => s.trim())
       .filter(Boolean),
   );
+  // Global mode: an explicit "*" in the allowlist elevates ALL services. Empty/absent
+  // list still means NOBODY (safe default — no accidental global from a misconfig).
+  const globalMode = canarySet.has("*");
 
   // ── Evaluation set: services with reports in the last 2 windows, plus any
   //    service that currently carries an elevated community signal (to resolve). ──
@@ -219,7 +222,7 @@ export async function runCommunityDetect(opts: RunOptions): Promise<RunResult> {
       : outageGuardActive && c.status === "OUTAGE"
         ? "DEGRADED"
         : c.status;
-    const isCanary = enabled && canarySet.has(c.svc.slug);
+    const isCanary = enabled && (globalMode || canarySet.has(c.svc.slug));
     const isElevated = guarded === "DEGRADED" || guarded === "OUTAGE";
 
     const persistStatus: ServiceStatus = isCanary ? guarded : "OPERATIONAL";
