@@ -440,7 +440,7 @@ export default async function HomePage() {
           <div>
             <span style={{ fontWeight: 700, fontSize: '14px' }}>AI Reliability Index</span>
             <span style={{ fontSize: '13px', color: '#4F46E5', marginLeft: '8px' }}>
-              Uptime, latency p50/p95 &amp; incidents for 50 major AI services
+              Deep-dive reliability data for the 50 most-tracked AI services — from 800+ monitored
             </span>
           </div>
           <span style={{ fontSize: '13px', color: '#4F46E5', flexShrink: 0 }}>View →</span>

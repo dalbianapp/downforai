@@ -196,7 +196,7 @@ export default function BadgesPage() {
           <code>{`curl https://downforai.com/api/reliability-index`}</code>
         </pre>
         <p style={{ fontSize: "13px", color: "#737373", marginTop: "10px" }}>
-          Returns 30-day uptime, p50/p95 latency, and incident counts for 50 major AI services.
+          Returns 30-day uptime, p50/p95 latency, and incident counts for the 50 most-tracked AI services (from 800+ monitored).
           See the{" "}
           <Link href="/reliability-index" style={{ color: "#2563eb" }}>
             Reliability Index →

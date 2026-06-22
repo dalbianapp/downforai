@@ -36,6 +36,8 @@ export async function generateMetadata({
   return {
     title,
     description,
+    openGraph: { description },
+    twitter: { description },
     robots: { index: true, follow: true },
     alternates: {
       canonical: `/category/${category}`,

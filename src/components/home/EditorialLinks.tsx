@@ -9,7 +9,7 @@ const EDITORIAL_LINKS = [
   {
     href: "/guides/ai-api-uptime-comparison-2026",
     title: "AI API Uptime Comparison 2026",
-    description: "Uptime, latency, and incident data compared across 50+ AI APIs.",
+    description: "Reliability deep-dive on 50 major AI services — from 800+ monitored.",
   },
   {
     href: "/reliability",

@@ -8,7 +8,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "AI Reliability Index — Live Uptime & Latency for 50 AI Services",
   description:
-    "Real-time reliability ranking of 50 major AI services. Uptime, latency p50/p95, and incident counts updated hourly. Free, public data.",
+    "Real-time reliability ranking of the 50 most-tracked AI services — part of 800+ monitored by DownForAI. Uptime, latency p50/p95, and incident counts updated hourly.",
   alternates: { canonical: "/reliability-index" },
   robots: { index: true, follow: true },
 };
@@ -126,7 +126,7 @@ export default async function ReliabilityIndexPage() {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: "AI Reliability Index",
-    description: "Real-time uptime and latency data for 50 major AI services",
+    description: "Real-time uptime and latency data for the 50 most-tracked AI services — part of 800+ monitored by DownForAI",
     url: "https://downforai.com/reliability-index",
     creator: {
       "@type": "Organization",

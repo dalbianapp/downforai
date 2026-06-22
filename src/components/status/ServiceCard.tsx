@@ -191,7 +191,7 @@ export function ServiceCard({ slug, name, category: _category, status, sparkline
             marginTop: "2px",
           }}
         >
-          {latencyMs ? `${latencyMs}ms` : "—"}
+          {status === "OUTAGE" ? "—" : latencyMs ? `${latencyMs}ms` : "—"}
         </div>
       </div>
     </Link>
