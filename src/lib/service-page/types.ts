@@ -12,11 +12,20 @@ export type SurfaceSnapshot = {
   officialStatus: string | null;
 };
 
-export type DiagnosisResult = {
-  label: string;
-  scope: "global" | "partial" | "local" | "unknown" | "inconclusive";
-  confidence: "HIGH" | "MEDIUM" | "LOW";
-  reasons: string[];
+// Everything the status panel needs — DERIVED ENTIRELY from resolveServiceStatus +
+// the real status origin. No independent re-classification (the old DiagnosisResult
+// invented causes and contradicted the resolved status).
+export type StatusExplanation = {
+  status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
+  // What actually drove the status: official status feed, our HTTP probe, the
+  // community signal, or the monitoring capability itself (blocked/unverifiable).
+  primarySource: "OFFICIAL" | "TECHNICAL" | "COMMUNITY" | "CAPABILITY";
+  signalSourceLabel: string;        // "official status API" | "official status page" | "public surface check"
+  monitoringConfidence: "High" | "Medium" | "Low"; // capability-based — SAME value the hero shows
+  communityConfidence: "CONFIRMED" | "PROBABLE" | null; // only when community-driven
+  reportsInWindow: number;
+  monitoringCapability: string;
+  officialComponentDetail: string | null; // null → the official feed gave no component-level detail
 };
 
 export type IncidentSummary = {
@@ -64,7 +73,7 @@ export type ServiceDashboardData = {
     reportsInWindow: number;
   };
   headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
-  diagnosis: DiagnosisResult;
+  statusExplanation: StatusExplanation;
   surfaces: SurfaceSnapshot[];
   uptime24h: number | null;       // percentage
   incidents30d: IncidentSummary[];

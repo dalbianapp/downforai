@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/db";
 import { TOP_SERVICE_CONTENT } from "@/content/top-services";
-import { classifyServiceIssue } from "./classifyServiceIssue";
 import { getServiceBySlug, getReports24hCount } from "@/lib/service-queries";
 import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
 import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { monitoringConfidence } from "@/components/service/_statusConfig";
 import type {
   ServiceDashboardData,
   SurfaceSnapshot,
   IncidentSummary,
+  StatusExplanation,
 } from "./types";
 
 // ── Public status derivation — respects monitoringCapability ─────────────────
@@ -15,6 +16,9 @@ import type {
 type PublicStatus = {
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
   headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
+  // What actually produced this status — used by the status panel to explain the
+  // real cause honestly (official feed vs HTTP probe vs non-measurable capability).
+  origin: "OFFICIAL" | "PROBE" | "CAPABILITY";
 };
 
 const STATUS_PRIORITY_VALID: Record<string, number> = {
@@ -28,10 +32,10 @@ function derivePublicStatus(
 ): PublicStatus {
   // 1. Non-measurable capabilities → never Degraded/Outage from our probes
   if (monitoringCapability === "BLOCKED_FROM_PROBES") {
-    return { overallStatus: "UNKNOWN", headline: "MONITORING_LIMITED" };
+    return { overallStatus: "UNKNOWN", headline: "MONITORING_LIMITED", origin: "CAPABILITY" };
   }
   if (monitoringCapability === "UNVERIFIABLE") {
-    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN" };
+    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN", origin: "CAPABILITY" };
   }
 
   // 2. Fresh Atlassian signal (≤ 30h) primes over HTTP probe failures
@@ -39,6 +43,7 @@ function derivePublicStatus(
     return {
       overallStatus: freshOfficialStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
       headline: null,
+      origin: "OFFICIAL",
     };
   }
 
@@ -47,7 +52,7 @@ function derivePublicStatus(
     (s) => s.status === "OPERATIONAL" || s.status === "DEGRADED" || s.status === "OUTAGE"
   );
   if (validSurfaces.length === 0) {
-    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN" };
+    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN", origin: "PROBE" };
   }
   const worstStatus = validSurfaces.reduce<string>(
     (worst, s) =>
@@ -57,6 +62,7 @@ function derivePublicStatus(
   return {
     overallStatus: worstStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
     headline: null,
+    origin: "PROBE",
   };
 }
 
@@ -214,15 +220,7 @@ export async function getServiceDashboard(
 
   // 6. Community reports — count queries hit the composite index
   //    @@index([serviceId, createdAt(sort: Desc)]) — safe
-  const [reports24hCount, reports2hCount] = await Promise.all([
-    getReports24hCount(service.id), // cached — shared with generateMetadata in the same request
-    prisma.communityReport.count({
-      where: {
-        serviceId: service.id,
-        createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-      },
-    }),
-  ]);
+  const reports24hCount = await getReports24hCount(service.id); // cached — shared with generateMetadata
 
   // Reports by type (24h) — groupBy on indexed column, low cardinality
   const reportsByType = await prisma.communityReport.groupBy({
@@ -251,16 +249,6 @@ export async function getServiceDashboard(
     },
   });
 
-  // 7. Classify scope (must run before overallStatus)
-  const hasOpenIncident = incidentsRaw.some((i) => i.status !== "RESOLVED");
-  const diagnosis = classifyServiceIssue({
-    surfaces,
-    reports24h: reports24hCount,
-    reports2h: reports2hCount,
-    hasOpenIncident,
-    monitoringCapability: monCap,
-  });
-
   // 8. Overall status — respects monitoringCapability + fresh Atlassian signal
   const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000;
   const freshOfficialStatus =
@@ -271,7 +259,7 @@ export async function getServiceDashboard(
         Date.now() - s.lastObservedAt.getTime() < THIRTY_HOURS_MS
     )?.officialStatus ?? null;
 
-  const { overallStatus: probeStatus, headline } = derivePublicStatus(
+  const { overallStatus: probeStatus, headline, origin: statusOrigin } = derivePublicStatus(
     monCap,
     surfaces,
     freshOfficialStatus,
@@ -301,6 +289,36 @@ export async function getServiceDashboard(
     reportsInWindow: resolved.reportsInWindow,
   };
 
+  // Status explanation — derived ENTIRELY from the resolved status + real origin.
+  // No independent re-classification (classifyServiceIssue is gone). The panel
+  // explains the verified cause; it never invents one.
+  const SIGNAL_SOURCE_LABEL: Record<string, string> = {
+    OFFICIAL_STATUS_API: "official status API",
+    OFFICIAL_STATUS_PAGE: "official status page",
+    BASIC_PUBLIC_SURFACE: "public surface check",
+    BLOCKED_FROM_PROBES: "blocked from probes",
+    UNVERIFIABLE: "unverifiable",
+  };
+  const community_ = resolved.source === "COMMUNITY" || resolved.source === "BOTH";
+  const primarySource: StatusExplanation["primarySource"] =
+    overallStatus === "REPORTED_ISSUES" || resolved.source === "COMMUNITY"
+      ? "COMMUNITY"
+      : statusOrigin === "CAPABILITY"
+        ? "CAPABILITY"
+        : statusOrigin === "OFFICIAL"
+          ? "OFFICIAL"
+          : "TECHNICAL";
+  const statusExplanation: StatusExplanation = {
+    status: overallStatus,
+    primarySource,
+    signalSourceLabel: SIGNAL_SOURCE_LABEL[monCap] ?? "public surface check",
+    monitoringConfidence: monitoringConfidence(monCap),
+    communityConfidence: community_ ? resolved.confidence : null,
+    reportsInWindow: resolved.reportsInWindow,
+    monitoringCapability: monCap,
+    officialComponentDetail: null, // Atlassian parse yields only a top-level indicator, no component names
+  };
+
   // 9. Top 50 editorial content (static, no DB query)
   const topContent = TOP_SERVICE_CONTENT[slug] ?? null;
 
@@ -314,7 +332,7 @@ export async function getServiceDashboard(
     overallStatus,
     community: communityDisplay,
     headline,
-    diagnosis,
+    statusExplanation,
     surfaces,
     uptime24h,
     incidents30d,

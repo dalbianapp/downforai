@@ -1,6 +1,5 @@
 import type {
   SurfaceSnapshot,
-  DiagnosisResult,
   IncidentSummary,
   ReportSummary,
 } from "@/lib/service-page/types";
@@ -20,7 +19,6 @@ interface Props {
   service: { name: string; slug: string; category: string; monitoringCapability: string };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
   community: CommunityDisplay;
-  diagnosis: DiagnosisResult;
   surfaces: SurfaceSnapshot[];
   uptime24h: number | null;
   incidents30d: IncidentSummary[];
@@ -89,7 +87,7 @@ function para1(
     OPERATIONAL:
       "Current status: operational — all surfaces are responding normally.",
     DEGRADED:
-      "Current status: degraded — one or more surfaces are returning slower-than-normal responses.",
+      "Current status: degraded — monitoring signals indicate a partial service issue.",
     OUTAGE:
       "Current status: outage — one or more surfaces are currently unavailable.",
     UNKNOWN:
@@ -138,7 +136,6 @@ function para2(
   incidents30d: IncidentSummary[],
   reportSummary: ReportSummary,
   lastIncident: { startedAt: Date } | null,
-  diagnosis: DiagnosisResult,
   community: CommunityDisplay
 ): string | null {
   const domain = DOMAIN[service.category] ?? "service";
@@ -197,13 +194,7 @@ function para2(
   // Reports only
   if (reports > 0) {
     const types = topTypes();
-    const scopeNote =
-      diagnosis.scope === "global"
-        ? " Reports point to a provider-wide issue."
-        : diagnosis.scope === "partial"
-        ? " Reports suggest a partial service disruption."
-        : "";
-    return `No tracked incidents in the last 30 days, but ${reports} community report${reports !== 1 ? "s" : ""} were submitted in the last 24 hours${types ? ` (primarily ${types})` : ""}.${scopeNote}`;
+    return `No tracked incidents in the last 30 days, but ${reports} community report${reports !== 1 ? "s" : ""} were submitted in the last 24 hours${types ? ` (primarily ${types})` : ""}.`;
   }
 
   // Last incident outside 30-day window
@@ -233,7 +224,6 @@ export function ReliabilitySummary({
   service,
   overallStatus,
   community,
-  diagnosis,
   surfaces,
   uptime24h,
   incidents30d,
@@ -241,7 +231,7 @@ export function ReliabilitySummary({
   lastIncident,
 }: Props) {
   const p1 = para1(service, surfaces, uptime24h, overallStatus, community);
-  const p2 = para2(service, incidents30d, reportSummary, lastIncident, diagnosis, community);
+  const p2 = para2(service, incidents30d, reportSummary, lastIncident, community);
   const confLabel = monitoringConfidence(service.monitoringCapability);
   const surfacesWithLatency = surfaces.filter((s) => s.p50Latency24h !== null).length;
 

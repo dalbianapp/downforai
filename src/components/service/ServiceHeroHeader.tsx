@@ -1,4 +1,4 @@
-import type { SurfaceSnapshot, DiagnosisResult, ReportSummary } from "@/lib/service-page/types";
+import type { SurfaceSnapshot, StatusExplanation, ReportSummary } from "@/lib/service-page/types";
 import type { TopServiceContent } from "@/content/top-services/types";
 import { getStatusConfig, monitoringConfidence } from "./_statusConfig";
 import SnippetMagnet from "./SnippetMagnet";
@@ -7,19 +7,19 @@ interface Props {
   service: { slug: string; name: string; monitoringCapability: string };
   overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";
   headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
-  diagnosis: DiagnosisResult;
+  statusExplanation: StatusExplanation;
   surfaces: SurfaceSnapshot[];
   reportSummary: ReportSummary;
   topContent: TopServiceContent | null;
   lastIncidentDate?: Date | null;
 }
 
-const SCOPE_LABEL: Record<string, string> = {
-  global: "Provider-wide issue",
-  partial: "Partial outage",
-  local: "Likely your side",
-  unknown: "Inconclusive",
-  inconclusive: "Inconclusive",
+// What drove the status — honest signal source, never "is it your fault".
+const SOURCE_LABEL: Record<string, string> = {
+  OFFICIAL: "Official status",
+  TECHNICAL: "Probe-monitored",
+  COMMUNITY: "Community-reported",
+  CAPABILITY: "Limited monitoring",
 };
 
 const CONFIDENCE_COLOR: Record<string, string> = {
@@ -32,7 +32,7 @@ export default function ServiceHeroHeader({
   service,
   overallStatus,
   headline,
-  diagnosis,
+  statusExplanation,
   surfaces,
   reportSummary,
   topContent,
@@ -180,7 +180,7 @@ export default function ServiceHeroHeader({
               border: "1px solid #e5e5e5",
             }}
           >
-            {SCOPE_LABEL[diagnosis.scope] ?? diagnosis.scope}
+            {SOURCE_LABEL[statusExplanation.primarySource] ?? "Monitored"}
           </span>
           <span style={{ fontSize: "11px", color: "#9ca3af" }}>
             {monitoringConfidence(service.monitoringCapability)} confidence

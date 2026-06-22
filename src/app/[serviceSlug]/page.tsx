@@ -18,7 +18,7 @@ import ServiceSignalStrip from "@/components/service/ServiceSignalStrip";
 import SurfaceHealthGrid from "@/components/service/SurfaceHealthGrid";
 import UptimeHeatStrip from "@/components/service/UptimeHeatStrip";
 import LatencySparklinePanel from "@/components/service/LatencySparklinePanel";
-import DiagnosisPanel from "@/components/service/DiagnosisPanel";
+import StatusExplanationPanel from "@/components/service/StatusExplanationPanel";
 import IncidentTimelinePanel from "@/components/service/IncidentTimelinePanel";
 import SymptomsPanel from "@/components/service/SymptomsPanel";
 import CommunityEvidencePanel from "@/components/service/CommunityEvidencePanel";
@@ -125,7 +125,7 @@ export default async function ServicePage({
   const dashboard = await getServiceDashboard(serviceSlug);
   if (!dashboard) notFound();
 
-  const { service, overallStatus, community, headline, diagnosis, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
+  const { service, overallStatus, community, headline, statusExplanation, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
 
   const lastIncident = await getLastResolvedIncident(service.id);
 
@@ -178,7 +178,7 @@ export default async function ServicePage({
         service={service}
         overallStatus={overallStatus}
         headline={headline}
-        diagnosis={diagnosis}
+        statusExplanation={statusExplanation}
         surfaces={surfaces}
         reportSummary={reportSummary}
         topContent={topContent}
@@ -200,7 +200,6 @@ export default async function ServicePage({
           service={service}
           overallStatus={overallStatus}
           community={community}
-          diagnosis={diagnosis}
           surfaces={surfaces}
           uptime24h={uptime24h}
           incidents30d={incidents30d}
@@ -249,11 +248,10 @@ export default async function ServicePage({
 
       {/* Diagnosis: "Is X down for everyone?" */}
       <div style={{ marginTop: "24px" }}>
-        <DiagnosisPanel
+        <StatusExplanationPanel
           serviceName={service.name}
-          diagnosis={diagnosis}
+          explanation={statusExplanation}
           surfaces={surfaces}
-          reportSummary={reportSummary}
         />
       </div>
 
