@@ -47,6 +47,7 @@ export function Footer() {
               <Link href="/methodology" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Methodology</Link>
               <Link href="/incidents" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Incidents</Link>
               <Link href="/developers" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Developers</Link>
+              <Link href="/badges" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Status Badges</Link>
               <Link href="/report" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Report an Issue</Link>
               <Link href="/contact" style={{ fontSize: "13px", color: "#94A3B8", textDecoration: "none" }}>Contact</Link>
             </div>
