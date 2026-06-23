@@ -64,6 +64,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     },
     {
+      url: `${baseUrl}/reports/state-of-ai-reliability-q2-2026`,
+      lastModified: new Date("2026-06-23T00:00:00Z"),
+      changeFrequency: "yearly",
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/report`,
       lastModified: DEPLOY_DATE,
       changeFrequency: "monthly",

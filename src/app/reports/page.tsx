@@ -63,9 +63,33 @@ export default async function ReportsIndexPage() {
       <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#171717", marginBottom: "8px", lineHeight: 1.2 }}>
         AI Outages Monthly Reports
       </h1>
-      <p style={{ fontSize: "16px", color: "#6b7280", marginBottom: "40px" }}>
+      <p style={{ fontSize: "16px", color: "#6b7280", marginBottom: "32px" }}>
         Monthly analysis of AI service disruptions, community reports, and reliability trends across 800+ monitored services.
       </p>
+
+      {/* Featured data report */}
+      <Link
+        href="/reports/state-of-ai-reliability-q2-2026"
+        style={{
+          display: "block",
+          padding: "20px 24px",
+          background: "#EEF2FF",
+          border: "1px solid #C7D2FE",
+          borderRadius: "14px",
+          textDecoration: "none",
+          marginBottom: "32px",
+        }}
+      >
+        <div style={{ fontSize: "12px", fontWeight: 700, color: "#4F46E5", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+          Featured · Data Report
+        </div>
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#171717", lineHeight: 1.3 }}>
+          The State of AI Reliability — Q2 2026
+        </div>
+        <div style={{ fontSize: "14px", color: "#475569", marginTop: "4px" }}>
+          Only 16% of 817 monitored AI services expose a verified status feed — and just 27% of LLMs. <span style={{ color: "#4F46E5", fontWeight: 600 }}>Read the report →</span>
+        </div>
+      </Link>
 
       {months.length === 0 ? (
         <div
