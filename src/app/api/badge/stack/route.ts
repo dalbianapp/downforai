@@ -3,7 +3,10 @@ import { prisma } from "@/lib/db";
 import { Prisma, type ServiceStatus } from "@prisma/client";
 import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
 
-export const dynamic = "force-dynamic";
+// NOTE: intentionally NOT `dynamic = "force-dynamic"`. The handler is already
+// dynamic (reads ?services from request.url), and force-dynamic makes Vercel drop
+// our s-maxage so the CDN never caches the badge — every render would hit Neon.
+// Without it, Vercel honours the Cache-Control below and caches per-URL at the edge.
 
 const CACHE_SECONDS = 120; // 2 min — within the 60–300s target
 const MAX_SERVICES = 25;   // guard against abuse / oversized requests
