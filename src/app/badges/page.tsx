@@ -1,31 +1,58 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { prisma } from "@/lib/db";
 import { generateBreadcrumbJsonLd } from "@/lib/seo";
+import BadgeGenerator from "@/components/badges/BadgeGenerator";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Free AI Status Badges for Your README — DownForAI",
+  title: "Free AI Status Badges & AI Dependencies Badge | DownForAI",
   description:
-    "Add a live AI service status badge to your GitHub README, docs, or dashboard. Free, no API key, no signup. Supports 775+ AI services.",
+    "Generate a live status badge for your README — single AI service or a multi-service 'AI dependencies' badge. Real-time status for 800+ AI services. Free, no API key, no signup.",
   alternates: { canonical: "/badges" },
   robots: { index: true, follow: true },
 };
 
-const POPULAR_BADGES = [
-  { slug: "openai", name: "OpenAI" },
-  { slug: "anthropic", name: "Anthropic" },
-  { slug: "google-gemini", name: "Google Gemini" },
-  { slug: "deepseek", name: "DeepSeek" },
-  { slug: "xai-grok", name: "xAI Grok" },
-  { slug: "perplexity", name: "Perplexity" },
-  { slug: "groq", name: "Groq" },
-  { slug: "mistral", name: "Mistral" },
-  { slug: "midjourney", name: "Midjourney" },
-  { slug: "github-copilot", name: "GitHub Copilot" },
-  { slug: "cursor", name: "Cursor" },
-  { slug: "replicate", name: "Replicate" },
+const REPO_URL = "https://github.com/dalbianapp/downforai-status-badges";
+const DATASET_URL = "https://downforai.com/ai-status-services.json";
+
+const EXAMPLES: { title: string; src: string; md: string }[] = [
+  {
+    title: "OpenAI (single service)",
+    src: "/api/badge/openai.svg",
+    md: "[![OpenAI status](https://downforai.com/api/badge/openai.svg)](https://downforai.com/openai)",
+  },
+  {
+    title: "Anthropic (single service)",
+    src: "/api/badge/anthropic.svg",
+    md: "[![Anthropic status](https://downforai.com/api/badge/anthropic.svg)](https://downforai.com/anthropic)",
+  },
+  {
+    title: "AI dependencies (OpenAI + Anthropic + Gemini)",
+    src: "/api/badge/stack?services=openai,anthropic,google-gemini",
+    md: "[![AI dependencies status](https://downforai.com/api/badge/stack?services=openai,anthropic,google-gemini)](https://downforai.com/)",
+  },
 ];
 
-export default function BadgesPage() {
+const INK = "#0F172A";
+const MUTED = "#475569";
+const FAINT = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PANEL = "#F8FAFC";
+const ACCENT = "var(--accent)";
+
+const codeBlock: React.CSSProperties = {
+  background: "#0F172A", color: "#E2E8F0", padding: "12px 14px", borderRadius: "8px",
+  fontSize: "12px", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", display: "block",
+};
+
+export default async function BadgesPage() {
+  const services = await prisma.service.findMany({
+    select: { slug: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://downforai.com" },
     { name: "Status Badges", url: "https://downforai.com/badges" },
@@ -33,200 +60,81 @@ export default function BadgesPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "32px 16px" }}>
-        <h1 style={{ fontSize: "32px", fontWeight: 800, marginBottom: "16px" }}>
-          Free AI Status Badges
+      <div style={{ maxWidth: "860px", margin: "0 auto", padding: "32px 16px" }}>
+        <h1 style={{ fontSize: "clamp(26px,4vw,34px)", fontWeight: 800, color: INK, letterSpacing: "-0.5px", marginBottom: "12px" }}>
+          AI Status Badges
         </h1>
-        <p style={{ fontSize: "16px", color: "#525252", lineHeight: 1.6, marginBottom: "32px" }}>
-          Show real-time AI service status in your README, docs, or dashboard. Free, no API key,
-          no signup. Auto-updates every 5 minutes.
+        <p style={{ fontSize: "16px", color: MUTED, lineHeight: 1.6, marginBottom: "8px", maxWidth: "720px" }}>
+          Show live AI service status in your README, docs, or dashboard. Build a single-service badge or an{" "}
+          <strong>“AI dependencies”</strong> badge that aggregates your whole AI stack into one status. Free, no API key, no signup.
+        </p>
+        <p style={{ fontSize: "13px", color: FAINT, marginBottom: "28px" }}>
+          Every badge links back to its live DownForAI page. No JavaScript, no tracking, GDPR-friendly.
         </p>
 
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px" }}>Quick Start</h2>
-        <p style={{ fontSize: "14px", color: "#525252", marginBottom: "10px" }}>
-          Copy this Markdown into your README:
-        </p>
-        <pre
-          style={{
-            background: "#1e1e1e",
-            color: "#e5e5e5",
-            padding: "16px",
-            borderRadius: "8px",
-            overflowX: "auto",
-            fontSize: "13px",
-            lineHeight: 1.6,
-          }}
-        >
-          <code>{`[![OpenAI Status](https://downforai.com/api/badge/openai.svg)](https://downforai.com/openai)`}</code>
-        </pre>
-        <p style={{ fontSize: "13px", color: "#737373", marginTop: "10px" }}>
-          Replace <code style={{ background: "#f3f4f6", padding: "1px 5px", borderRadius: "3px" }}>openai</code> with any AI service slug.{" "}
-          <Link href="/" style={{ color: "#2563eb" }}>
-            Browse all 775+ services →
-          </Link>
-        </p>
+        {/* Generator */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: INK, marginBottom: "12px" }}>Badge generator</h2>
+        <BadgeGenerator services={services} />
 
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px", marginTop: "40px" }}>
-          Popular Badges
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "12px",
-          }}
-        >
-          {POPULAR_BADGES.map((b) => (
-            <div
-              key={b.slug}
-              style={{
-                padding: "16px",
-                border: "1px solid #e5e5e5",
-                borderRadius: "8px",
-                background: "#ffffff",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "12px",
-                }}
-              >
-                <Link
-                  href={`/${b.slug}`}
-                  style={{ fontWeight: 600, fontSize: "14px", color: "#171717", textDecoration: "none" }}
-                >
-                  {b.name}
-                </Link>
+        {/* Ready-to-copy examples */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: INK, margin: "40px 0 12px" }}>Ready to copy</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {EXAMPLES.map((ex) => (
+            <div key={ex.title} style={{ border: `1px solid ${BORDER}`, borderRadius: "12px", padding: "16px", background: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "10px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "14px", fontWeight: 600, color: INK }}>{ex.title}</span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/badge/${b.slug}.svg`}
-                  alt={`${b.name} status`}
-                  style={{ height: "20px" }}
-                />
+                <img src={ex.src} alt={`${ex.title} badge`} style={{ height: "20px" }} />
               </div>
-              <details style={{ fontSize: "12px" }}>
-                <summary style={{ cursor: "pointer", color: "#2563eb", userSelect: "none" }}>
-                  Show code
-                </summary>
-                <pre
-                  style={{
-                    background: "#f5f5f5",
-                    padding: "8px",
-                    borderRadius: "4px",
-                    marginTop: "8px",
-                    overflowX: "auto",
-                    fontSize: "11px",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <code>{`[![${b.name} Status](https://downforai.com/api/badge/${b.slug}.svg)](https://downforai.com/${b.slug})`}</code>
-                </pre>
-              </details>
+              <code style={codeBlock}>{ex.md}</code>
             </div>
           ))}
         </div>
 
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px", marginTop: "40px" }}>
-          HTML version
-        </h2>
-        <pre
-          style={{
-            background: "#1e1e1e",
-            color: "#e5e5e5",
-            padding: "16px",
-            borderRadius: "8px",
-            overflowX: "auto",
-            fontSize: "13px",
-            lineHeight: 1.6,
-          }}
-        >
-          <code>{`<a href="https://downforai.com/openai">
-  <img src="https://downforai.com/api/badge/openai.svg" alt="OpenAI Status" />
-</a>`}</code>
-        </pre>
-
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px", marginTop: "40px" }}>
-          JSON Status API
-        </h2>
-        <p style={{ fontSize: "14px", color: "#525252", marginBottom: "10px" }}>
-          Need programmatic access? Fetch the live status as JSON:
-        </p>
-        <pre
-          style={{
-            background: "#1e1e1e",
-            color: "#e5e5e5",
-            padding: "16px",
-            borderRadius: "8px",
-            overflowX: "auto",
-            fontSize: "13px",
-            lineHeight: 1.6,
-          }}
-        >
-          <code>{`curl https://downforai.com/api/status/openai`}</code>
-        </pre>
-        <p style={{ fontSize: "13px", color: "#737373", marginTop: "10px" }}>
-          Works with any service slug. Returns status, latency, and badge URL.
-        </p>
-
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px", marginTop: "40px" }}>
-          Aggregated Reliability Data
-        </h2>
-        <p style={{ fontSize: "14px", color: "#525252", marginBottom: "10px" }}>
-          Looking for uptime percentages and incident counts?
-        </p>
-        <pre
-          style={{
-            background: "#1e1e1e",
-            color: "#e5e5e5",
-            padding: "16px",
-            borderRadius: "8px",
-            overflowX: "auto",
-            fontSize: "13px",
-            lineHeight: 1.6,
-          }}
-        >
-          <code>{`curl https://downforai.com/api/reliability-index`}</code>
-        </pre>
-        <p style={{ fontSize: "13px", color: "#737373", marginTop: "10px" }}>
-          Returns 30-day uptime, p50/p95 latency, and incident counts for the 50 most-tracked AI services (from 800+ monitored).
-          See the{" "}
-          <Link href="/reliability-index" style={{ color: "#2563eb" }}>
-            Reliability Index →
-          </Link>
-        </p>
-
-        <div
-          style={{
-            marginTop: "48px",
-            padding: "20px",
-            background: "#f9fafb",
-            borderRadius: "8px",
-            fontSize: "13px",
-            color: "#525252",
-            lineHeight: 1.7,
-          }}
-        >
-          <strong>How badges work:</strong> Each badge is an SVG image generated server-side and
-          cached at the CDN for 5 minutes. Status reflects the latest probe result — if 5+ users
-          report an issue in 2 hours, the badge shows "reported issues" even if probes are green.
-          No JavaScript, no tracking, GDPR-friendly.
+        {/* How the AI dependencies badge works */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: INK, margin: "40px 0 12px" }}>How the AI dependencies badge works</h2>
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: "12px", padding: "18px 22px", fontSize: "14px", color: MUTED, lineHeight: 1.7 }}>
+          <p style={{ margin: "0 0 8px" }}>
+            The stack badge (<code>/api/badge/stack?services=…</code>) aggregates the worst current status across the services you list:
+          </p>
+          <ul style={{ margin: 0, paddingLeft: "20px" }}>
+            <li><strong style={{ color: "#16A34A" }}>operational</strong> — every dependency is operational</li>
+            <li><strong style={{ color: "#CA8A04" }}>degraded</strong> — at least one dependency is degraded or community-reported</li>
+            <li><strong style={{ color: "#DC2626" }}>outage</strong> — at least one dependency has a confirmed outage</li>
+            <li><strong style={{ color: "#6B7280" }}>unknown</strong> — at least one dependency can’t be verified (or an unknown slug)</li>
+          </ul>
+          <p style={{ margin: "10px 0 0" }}>
+            Status comes from the same resolver as the rest of DownForAI (official status feeds + HTTP probes + community signal). Add <code>&amp;style=compact</code> for a compact coloured-dot badge. Up to <strong>25</strong> services are evaluated per badge; beyond that the badge shows <strong>unknown</strong> rather than risk a falsely-green result.
+          </p>
         </div>
 
-        <p style={{ marginTop: "32px", fontSize: "13px", color: "#737373" }}>
-          Missing a service?{" "}
-          <Link href="/contact" style={{ color: "#2563eb" }}>
-            Contact us
-          </Link>{" "}
-          — we monitor 775+ AI services.
+        {/* HTML + JSON API */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: INK, margin: "40px 0 12px" }}>HTML &amp; JSON</h2>
+        <p style={{ fontSize: "14px", color: MUTED, margin: "0 0 8px" }}>HTML version of any badge:</p>
+        <code style={codeBlock}>{`<a href="https://downforai.com/openai"><img src="https://downforai.com/api/badge/openai.svg" alt="OpenAI status" /></a>`}</code>
+        <p style={{ fontSize: "14px", color: MUTED, margin: "16px 0 8px" }}>Need raw JSON instead of an image?</p>
+        <code style={codeBlock}>{`curl https://downforai.com/api/status/openai`}</code>
+
+        {/* Open dataset */}
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: INK, margin: "40px 0 12px" }}>Open dataset (CC-BY-4.0)</h2>
+        <p style={{ fontSize: "14px", color: MUTED, lineHeight: 1.6, margin: "0 0 8px", maxWidth: "720px" }}>
+          A machine-readable directory of every monitored AI service — slug, name, category, DownForAI URL, badge URL, official
+          status URL, and monitoring confidence. Free to reuse under{" "}
+          <a href="https://creativecommons.org/licenses/by/4.0/" style={{ color: ACCENT }} rel="noopener" target="_blank">CC-BY-4.0</a>.
         </p>
+        <code style={codeBlock}>{`curl ${DATASET_URL}`}</code>
+        <p style={{ fontSize: "13px", color: FAINT, marginTop: "8px" }}>
+          <a href={DATASET_URL} style={{ color: ACCENT }} rel="noopener" target="_blank">View the dataset →</a>
+        </p>
+
+        {/* Footer links */}
+        <div style={{ marginTop: "40px", display: "flex", gap: "10px 20px", flexWrap: "wrap", fontSize: "14px" }}>
+          <a href={REPO_URL} style={{ color: ACCENT }} rel="noopener" target="_blank">Badge assets on GitHub →</a>
+          <Link href="/reliability-index" style={{ color: ACCENT }}>AI Reliability Leaderboard →</Link>
+          <Link href="/" style={{ color: ACCENT }}>Browse all 800+ services →</Link>
+        </div>
       </div>
     </>
   );
