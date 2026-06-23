@@ -1,8 +1,7 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { ServiceCategory } from "@prisma/client";
-import { GLOBAL_ERRORS, TIER_1_SERVICES, getSymptomsForCategory } from "@/lib/ai-symptoms";
-import { getErrorsForCategory } from "@/lib/error-playbooks";
+import { GLOBAL_ERRORS } from "@/lib/ai-symptoms";
 import { getIncidentMonthSummaries, getIncidentServiceSummaries } from "@/lib/incidents/queries";
 
 // Date de déploiement stable pour les pages statiques
@@ -114,48 +113,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // Service-specific error pages (~806 routes: 201 services × 3-5 errors each)
-  const serviceErrorRoutes: MetadataRoute.Sitemap = [];
-  for (const service of services) {
-    const errors = getErrorsForCategory(service.category);
-    for (const error of errors) {
-      serviceErrorRoutes.push({
-        url: `${baseUrl}/${service.slug}/error/${error.slug}`,
-        lastModified: service.updatedAt, // Use parent service's updatedAt
-        changeFrequency: "daily" as const,
-        priority: 0.6,
-      });
-    }
-  }
-
-  // Down pages (all services)
-  const downRoutes: MetadataRoute.Sitemap = services.map((service) => ({
-    url: `${baseUrl}/${service.slug}/down`,
-    lastModified: service.updatedAt,
-    changeFrequency: "daily" as const,
-    priority: 0.7,
-  }));
-
-  // Symptom pages (~60 routes: Tier 1 services × 3 symptoms each)
-  const symptomRoutes: MetadataRoute.Sitemap = [];
-  const tier1ServicesData = services.filter((s) => TIER_1_SERVICES.includes(s.slug));
-  for (const service of tier1ServicesData) {
-    const symptoms = getSymptomsForCategory(service.category);
-    for (const symptom of symptoms) {
-      symptomRoutes.push({
-        url: `${baseUrl}/${service.slug}/${symptom}`,
-        lastModified: service.updatedAt, // Use parent service's updatedAt
-        changeFrequency: "daily" as const,
-        priority: 0.65,
-      });
-    }
-  }
-
-  // /[slug]/down, /[slug]/error/*, /[slug]/[symptom] intentionally excluded
-  // (noindexed, canonical points to /[slug])
-  void serviceErrorRoutes;
-  void downRoutes;
-  void symptomRoutes;
+  // NOTE: /[slug]/down, /[slug]/error/* and /[slug]/[symptom] are permanently
+  // removed (HTTP 410 via middleware) — they are no longer built here.
 
   // Monthly incident archive routes
   const monthlyIncidentRoutes: MetadataRoute.Sitemap = months.map((m) => ({

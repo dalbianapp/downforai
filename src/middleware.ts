@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isLegacyGoneRoute } from "@/lib/legacy-routes";
 
 // Bots that waste resources without any SEO or AI value
 const BLOCKED_BOTS = [
@@ -33,6 +34,24 @@ export function middleware(request: NextRequest) {
   // Block parasite bots before any other logic
   if (BLOCKED_BOTS.some((bot) => userAgent.includes(bot))) {
     return new NextResponse("Forbidden", { status: 403 });
+  }
+
+  // 410 Gone for the permanently-removed legacy pages
+  // (/[slug]/down · /[slug]/[symptom] · /[slug]/error/[errorSlug]). Runs before
+  // any redirect so the 410 signal is what Google sees.
+  if (isLegacyGoneRoute(pathname)) {
+    return new NextResponse("410 Gone — this page has been permanently removed.", {
+      status: 410,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
+  // OpenGraph image routes waste crawl budget (explored-not-indexed). Keep them
+  // reachable for social rendering, but tell crawlers not to index them.
+  if (pathname.endsWith("/opengraph-image")) {
+    const res = NextResponse.next();
+    res.headers.set("X-Robots-Tag", "noindex");
+    return res;
   }
 
   // Return 410 Gone for permanently removed services
