@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { calculateWorstStatus } from "@/lib/utils";
+import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 
 export async function GET(_request: NextRequest) {
   const services = await prisma.service.findMany({
     include: {
       surfaces: {
+        where: { isEnabled: true },
         include: {
           observations: {
             where: {
@@ -22,13 +24,17 @@ export async function GET(_request: NextRequest) {
   });
 
   const formatted = services.map((service) => {
-    const allObservations = service.surfaces.flatMap((s) => s.observations);
-
-    let status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" = "UNKNOWN";
-    if (allObservations.length > 0) {
-      const statuses = allObservations.map((o) => o.status);
-      status = calculateWorstStatus(statuses);
-    }
+    // Displayed status = CURRENT state via the single site-wide derivation
+    // (latest observation PER surface + official-prime + community fold).
+    const latestPerSurface = service.surfaces
+      .map((s) => s.observations[0])
+      .filter((o): o is NonNullable<typeof o> => o != null)
+      .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
+    const status = resolveDisplayStatus(
+      service.monitoringCapability,
+      latestPerSurface,
+      communitySignalOf(service),
+    ).status;
 
     return {
       id: service.id,

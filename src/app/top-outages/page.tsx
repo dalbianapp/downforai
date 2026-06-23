@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { ServiceCategory } from "@prisma/client";
 import { formatCategoryLabel } from "@/lib/utils";
+import { getDisplayStatusMap } from "@/lib/status/getDisplayStatus";
 import { TopOutagesFilters } from "./TopOutagesFilters";
 
 export const dynamic = "force-dynamic";
@@ -80,17 +81,7 @@ async function getTopReports(period: Period, categoryFilter: string): Promise<Re
     slug: string;
     category: string;
     report_count: bigint | number;
-    current_status: string | null;
   };
-
-  const statusSubquery = `(
-    SELECT o.status
-    FROM "ServiceSurface" ss
-    JOIN "Observation" o ON o."serviceSurfaceId" = ss.id
-    WHERE ss."serviceId" = s.id AND ss."isEnabled" = true
-      AND o."observedAt" >= NOW() - INTERVAL '6 hours'
-    ORDER BY o."observedAt" DESC LIMIT 1
-  )`;
 
   let rows: RawRow[];
 
@@ -106,12 +97,7 @@ async function getTopReports(period: Period, categoryFilter: string): Promise<Re
         ORDER BY report_count DESC
         LIMIT 20
       )
-      SELECT s.id, s.name, s.slug, s.category, rc.report_count,
-        (SELECT o.status FROM "ServiceSurface" ss
-         JOIN "Observation" o ON o."serviceSurfaceId" = ss.id
-         WHERE ss."serviceId" = s.id AND ss."isEnabled" = true
-           AND o."observedAt" >= NOW() - INTERVAL '6 hours'
-         ORDER BY o."observedAt" DESC LIMIT 1) AS current_status
+      SELECT s.id, s.name, s.slug, s.category, rc.report_count
       FROM rc JOIN "Service" s ON s.id = rc."serviceId"
       ORDER BY rc.report_count DESC
     `;
@@ -129,19 +115,15 @@ async function getTopReports(period: Period, categoryFilter: string): Promise<Re
         ORDER BY report_count DESC
         LIMIT 20
       )
-      SELECT s.id, s.name, s.slug, s.category, rc.report_count,
-        (SELECT o.status FROM "ServiceSurface" ss
-         JOIN "Observation" o ON o."serviceSurfaceId" = ss.id
-         WHERE ss."serviceId" = s.id AND ss."isEnabled" = true
-           AND o."observedAt" >= NOW() - INTERVAL '6 hours'
-         ORDER BY o."observedAt" DESC LIMIT 1) AS current_status
+      SELECT s.id, s.name, s.slug, s.category, rc.report_count
       FROM rc JOIN "Service" s ON s.id = rc."serviceId"
       ORDER BY rc.report_count DESC
     `;
   }
 
-  // Suppress unused variable warning for statusSubquery
-  void statusSubquery;
+  // Current status via the single site-wide derivation (current state +
+  // official-prime + community fold) — same source as every other surface.
+  const statusMap = await getDisplayStatusMap(rows.map((r) => r.slug));
 
   return rows.map((r) => ({
     id: r.id,
@@ -149,7 +131,7 @@ async function getTopReports(period: Period, categoryFilter: string): Promise<Re
     slug: r.slug,
     category: r.category,
     reportCount: Number(r.report_count),
-    currentStatus: r.current_status,
+    currentStatus: statusMap.get(r.slug)?.display.status ?? null,
   }));
 }
 

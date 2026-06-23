@@ -1,12 +1,13 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { StatusDashboard } from "@/components/status/StatusDashboard";
-import { calculateWorstStatus, formatCategoryLabel } from "@/lib/utils";
+import { formatCategoryLabel } from "@/lib/utils";
 import { badgeFromCapability } from "@/lib/badges";
 import { ServiceCategory } from "@prisma/client";
 import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
 import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
-import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -66,6 +67,7 @@ async function getCategoryServices(category: string) {
     status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
     latencyMs: number | null;
     probeResult: string | null;
+    officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
   };
 
   const rows = await prisma.$queryRaw<RawRow[]>`
@@ -84,11 +86,12 @@ async function getCategoryServices(category: string) {
       o."observedAt",
       o.status,
       o."latencyMs",
-      o."probeResult"
+      o."probeResult",
+      o."officialStatus"
     FROM "Service" s
     INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
     LEFT JOIN LATERAL (
-      SELECT "observedAt", status, "latencyMs", "probeResult"::text AS "probeResult"
+      SELECT "observedAt", status, "latencyMs", "probeResult"::text AS "probeResult", "officialStatus"::text AS "officialStatus"
       FROM "Observation"
       WHERE "serviceSurfaceId" = ss.id
       ORDER BY "observedAt" DESC
@@ -100,7 +103,7 @@ async function getCategoryServices(category: string) {
   // Regroupe : service (par slug) → surfaces → observations
   type SurfaceAccum = {
     id: string;
-    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null; probeResult: string | null }[];
+    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null; probeResult: string | null; officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null }[];
   };
   type ServiceAccum = {
     slug: string;
@@ -147,6 +150,7 @@ async function getCategoryServices(category: string) {
         status: row.status,
         latencyMs: row.latencyMs,
         probeResult: row.probeResult,
+        officialStatus: row.officialStatus,
       });
     }
   }
@@ -155,24 +159,23 @@ async function getCategoryServices(category: string) {
     const surfaces = Array.from(service.surfaces.values());
     const allObservations = surfaces.flatMap((s) => s.observations);
 
-    // Filter recent observations (last 6 hours) for status determination
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-    const recentObservations = allObservations.filter((o) => o.observedAt >= sixHoursAgo);
+    // Displayed status = CURRENT state: latest observation PER surface + official-
+    // prime + community fold — the SINGLE site-wide derivation (no worst-of window).
+    const latestPerSurface = surfaces
+      .map((s) =>
+        s.observations.reduce<(typeof s.observations)[number] | null>(
+          (latest, o) => (latest === null || o.observedAt > latest.observedAt ? o : latest),
+          null,
+        ),
+      )
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+      .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
 
-    // If no observations in last 6 hours, status is UNKNOWN
-    let status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" = "UNKNOWN";
-
-    if (recentObservations.length > 0) {
-      const statuses = recentObservations.map((o) => o.status);
-      status = calculateWorstStatus(statuses);
-    }
-
-    // Single source of truth: fold in the community signal (canary-gated, fresh).
-    status = resolveServiceStatus({
-      technicalStatus: status,
-      monitoringCapability: service.monitoringCapability,
-      community: communitySignalOf(service),
-    }).status;
+    const status = resolveDisplayStatus(
+      service.monitoringCapability,
+      latestPerSurface,
+      communitySignalOf(service),
+    ).status;
 
     // Build sparkline data from real latency observations
     const sparklineData: number[] = allObservations

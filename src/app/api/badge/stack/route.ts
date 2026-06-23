@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { Prisma, type ServiceStatus } from "@prisma/client";
-import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { type ServiceStatus } from "@prisma/client";
+import { getDisplayStatusMap } from "@/lib/status/getDisplayStatus";
 
 // NOTE: intentionally NOT `dynamic = "force-dynamic"`. The handler is already
 // dynamic (reads ?services from request.url), and force-dynamic makes Vercel drop
@@ -121,47 +120,14 @@ export async function GET(request: NextRequest) {
       return svgResponse(render("unknown"), 60);
     }
 
-    const rows = await prisma.$queryRaw<Array<{
-      slug: string;
-      status: string | null;
-      monitoringCapability: string;
-      communityStatus: ServiceStatus | null;
-      communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-      communityReportsWindow: number | null;
-      communitySignalAt: Date | null;
-    }>>(Prisma.sql`
-      SELECT s.slug, latest.status,
-        s."monitoringCapability"::text AS "monitoringCapability",
-        s."communityStatus"            AS "communityStatus",
-        s."communityConfidence"        AS "communityConfidence",
-        s."communityReportsWindow"     AS "communityReportsWindow",
-        s."communitySignalAt"          AS "communitySignalAt"
-      FROM "Service" s
-      LEFT JOIN LATERAL (
-        SELECT o.status FROM "Observation" o
-        INNER JOIN "ServiceSurface" ss ON ss.id = o."serviceSurfaceId"
-        WHERE ss."serviceId" = s.id ORDER BY o."observedAt" DESC LIMIT 1
-      ) latest ON true
-      WHERE s.slug IN (${Prisma.join(slugs)})
-    `);
-
-    const found = new Map(rows.map((r) => [r.slug, r]));
+    // Single site-wide derivation (current state + official-prime + community).
+    const statuses = await getDisplayStatusMap(slugs);
 
     // Worst-of across every REQUESTED slug. A slug not in the DB → unknown.
     let worst: Severity = truncated ? "unknown" : "operational";
     for (const slug of slugs) {
-      const r = found.get(slug);
-      let sev: Severity;
-      if (!r) {
-        sev = "unknown";
-      } else {
-        const resolved = resolveServiceStatus({
-          technicalStatus: (r.status ?? "UNKNOWN") as ServiceStatus,
-          monitoringCapability: r.monitoringCapability,
-          community: communitySignalOf(r),
-        });
-        sev = severityOf(resolved.status);
-      }
+      const entry = statuses.get(slug);
+      const sev: Severity = entry ? severityOf(entry.display.status) : "unknown";
       if (RANK[sev] > RANK[worst]) worst = sev;
     }
 

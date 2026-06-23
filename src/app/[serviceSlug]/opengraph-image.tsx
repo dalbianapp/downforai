@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
-import { calculateWorstStatus } from "@/lib/utils";
+import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 
 export const runtime = "nodejs"; // Use nodejs runtime to allow Prisma
 export const alt = "Service Status";
@@ -15,6 +16,7 @@ export default async function Image({ params }: { params: Promise<{ serviceSlug:
     where: { slug: serviceSlug },
     include: {
       surfaces: {
+        where: { isEnabled: true },
         include: {
           observations: {
             orderBy: { observedAt: "desc" },
@@ -47,13 +49,17 @@ export default async function Image({ params }: { params: Promise<{ serviceSlug:
     );
   }
 
-  // Calculate status
-  const latestObservations = service.surfaces
-    .flatMap((s) => s.observations)
-    .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
-
-  const statuses = latestObservations.map((o) => o.status).filter((s) => s !== "UNKNOWN");
-  const overallStatus = statuses.length > 0 ? calculateWorstStatus(statuses) : "UNKNOWN";
+  // Status = CURRENT state via the single site-wide derivation (latest observation
+  // per surface + official-prime + community fold) — matches the service page.
+  const latestPerSurface = service.surfaces
+    .map((s) => s.observations[0])
+    .filter((o): o is NonNullable<typeof o> => o != null)
+    .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
+  const overallStatus = resolveDisplayStatus(
+    service.monitoringCapability,
+    latestPerSurface,
+    communitySignalOf(service),
+  ).status;
 
   const statusConfig = {
     OPERATIONAL: { color: "#16a34a", label: "Operational", emoji: "✅" },

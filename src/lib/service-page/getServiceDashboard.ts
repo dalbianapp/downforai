@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db";
 import { TOP_SERVICE_CONTENT } from "@/content/top-services";
 import { getServiceBySlug, getReports24hCount } from "@/lib/service-queries";
 import { isNonMeasurableCapability } from "@/lib/monitoring/probeValidity";
-import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 import { monitoringConfidence } from "@/components/service/_statusConfig";
 import type {
   ServiceDashboardData,
@@ -11,62 +12,9 @@ import type {
   StatusExplanation,
 } from "./types";
 
-// ── Public status derivation — respects monitoringCapability ─────────────────
-
-type PublicStatus = {
-  overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN";
-  headline: "MONITORING_LIMITED" | "STATUS_UNCERTAIN" | null;
-  // What actually produced this status — used by the status panel to explain the
-  // real cause honestly (official feed vs HTTP probe vs non-measurable capability).
-  origin: "OFFICIAL" | "PROBE" | "CAPABILITY";
-};
-
-const STATUS_PRIORITY_VALID: Record<string, number> = {
-  OUTAGE: 3, DEGRADED: 2, OPERATIONAL: 0,
-};
-
-function derivePublicStatus(
-  monitoringCapability: string,
-  surfaces: SurfaceSnapshot[],
-  freshOfficialStatus: string | null,
-): PublicStatus {
-  // 1. Non-measurable capabilities → never Degraded/Outage from our probes
-  if (monitoringCapability === "BLOCKED_FROM_PROBES") {
-    return { overallStatus: "UNKNOWN", headline: "MONITORING_LIMITED", origin: "CAPABILITY" };
-  }
-  if (monitoringCapability === "UNVERIFIABLE") {
-    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN", origin: "CAPABILITY" };
-  }
-
-  // 2. Fresh Atlassian signal (≤ 30h) primes over HTTP probe failures
-  if (monitoringCapability === "OFFICIAL_STATUS_API" && freshOfficialStatus !== null) {
-    return {
-      overallStatus: freshOfficialStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
-      headline: null,
-      origin: "OFFICIAL",
-    };
-  }
-
-  // 3. Worst-of valid observations only (UNKNOWN excluded from aggregate)
-  const validSurfaces = surfaces.filter(
-    (s) => s.status === "OPERATIONAL" || s.status === "DEGRADED" || s.status === "OUTAGE"
-  );
-  if (validSurfaces.length === 0) {
-    return { overallStatus: "UNKNOWN", headline: "STATUS_UNCERTAIN", origin: "PROBE" };
-  }
-  const worstStatus = validSurfaces.reduce<string>(
-    (worst, s) =>
-      STATUS_PRIORITY_VALID[s.status] > STATUS_PRIORITY_VALID[worst] ? s.status : worst,
-    "OPERATIONAL"
-  );
-  return {
-    overallStatus: worstStatus as "OPERATIONAL" | "DEGRADED" | "OUTAGE",
-    headline: null,
-    origin: "PROBE",
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
+// Technical-status derivation now lives in src/lib/status/deriveTechnicalStatus.ts
+// (shared by every surface). getServiceDashboard maps its latest-per-surface
+// snapshots into resolveDisplayStatus below.
 
 export async function getServiceDashboard(
   slug: string
@@ -249,31 +197,17 @@ export async function getServiceDashboard(
     },
   });
 
-  // 8. Overall status — respects monitoringCapability + fresh Atlassian signal
-  const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000;
-  const freshOfficialStatus =
-    surfaces.find(
-      (s) =>
-        s.officialStatus !== null &&
-        s.lastObservedAt !== null &&
-        Date.now() - s.lastObservedAt.getTime() < THIRTY_HOURS_MS
-    )?.officialStatus ?? null;
-
-  const { overallStatus: probeStatus, headline, origin: statusOrigin } = derivePublicStatus(
+  // 8. Overall status — the SINGLE site-wide derivation: current state (latest
+  // observation per surface + fresh-official-primes), then the cron-written
+  // community fold (canary-gated, freshness-gated). resolveDisplayStatus =
+  // deriveTechnicalStatus → resolveServiceStatus in one call.
+  const resolved = resolveDisplayStatus(
     monCap,
-    surfaces,
-    freshOfficialStatus,
+    surfaces.map((s) => ({ status: s.status, officialStatus: s.officialStatus, observedAt: s.lastObservedAt })),
+    communitySignalOf(service),
   );
-
-  // Single source of truth: resolveServiceStatus combines the technical signal
-  // (probeStatus) with the cron-written community signal (canary-gated, freshness-
-  // gated). The old ad-hoc reports2h≥5 elevation via classifyServiceIssue is GONE —
-  // classifyServiceIssue now only produces the descriptive narrative below.
-  const resolved = resolveServiceStatus({
-    technicalStatus: probeStatus,
-    monitoringCapability: monCap,
-    community: communitySignalOf(service),
-  });
+  const headline = resolved.headline;
+  const statusOrigin = resolved.origin;
   // Map back to the page's status vocabulary: a community-elevated DEGRADED shows
   // as the existing REPORTED_ISSUES display state (keeps all downstream styling/copy).
   let overallStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | "REPORTED_ISSUES";

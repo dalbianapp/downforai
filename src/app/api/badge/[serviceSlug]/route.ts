@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import type { ServiceStatus } from "@prisma/client";
-import { resolveServiceStatus, communitySignalOf } from "@/lib/status/resolveServiceStatus";
+import { getDisplayStatusMap } from "@/lib/status/getDisplayStatus";
 
 export const revalidate = 600;
 
@@ -54,35 +52,12 @@ export async function GET(
   const { serviceSlug } = await params;
 
   try {
-    const result = await prisma.$queryRaw<Array<{
-      name: string;
-      status: string | null;
-      monitoringCapability: string;
-      communityStatus: ServiceStatus | null;
-      communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-      communityReportsWindow: number | null;
-      communitySignalAt: Date | null;
-    }>>`
-      SELECT s.name, latest.status,
-        s."monitoringCapability"::text   AS "monitoringCapability",
-        s."communityStatus"              AS "communityStatus",
-        s."communityConfidence"          AS "communityConfidence",
-        s."communityReportsWindow"       AS "communityReportsWindow",
-        s."communitySignalAt"            AS "communitySignalAt"
-      FROM "Service" s
-      LEFT JOIN LATERAL (
-        SELECT o.status
-        FROM "Observation" o
-        INNER JOIN "ServiceSurface" ss ON ss.id = o."serviceSurfaceId"
-        WHERE ss."serviceId" = s.id
-        ORDER BY o."observedAt" DESC
-        LIMIT 1
-      ) latest ON true
-      WHERE s.slug = ${serviceSlug}
-      LIMIT 1
-    `;
+    // Single source of truth — same derivation as every other surface (current
+    // state + official-prime + cron-written, canary/freshness-gated community fold).
+    const statuses = await getDisplayStatusMap([serviceSlug]);
+    const entry = statuses.get(serviceSlug);
 
-    if (result.length === 0) {
+    if (!entry) {
       return new NextResponse(generateSVG("unknown", "UNKNOWN"), {
         status: 404,
         headers: {
@@ -92,23 +67,13 @@ export async function GET(
       });
     }
 
-    const service = result[0];
-    const probeStatus = (service.status ?? "UNKNOWN") as ServiceStatus;
-
-    // Single source of truth — same resolution as every other surface. The old
-    // ad-hoc 2h≥5 community threshold is gone; community elevation comes from the
-    // cron-written, canary-gated, freshness-gated signal.
-    const resolved = resolveServiceStatus({
-      technicalStatus: probeStatus,
-      monitoringCapability: service.monitoringCapability,
-      community: communitySignalOf(service),
-    });
+    const { name, display } = entry;
     const displayStatus =
-      resolved.status === "DEGRADED" && (resolved.source === "COMMUNITY" || resolved.source === "BOTH")
+      display.status === "DEGRADED" && (display.source === "COMMUNITY" || display.source === "BOTH")
         ? "REPORTED_ISSUES"
-        : resolved.status;
+        : display.status;
 
-    return new NextResponse(generateSVG(service.name, displayStatus), {
+    return new NextResponse(generateSVG(name, displayStatus), {
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml",

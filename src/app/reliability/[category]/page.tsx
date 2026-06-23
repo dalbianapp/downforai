@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ServiceCategory } from "@prisma/client";
 import { formatCategoryLabel } from "@/lib/utils";
+import { getDisplayStatusMap } from "@/lib/status/getDisplayStatus";
 
 export const revalidate = 3600;
 
@@ -75,21 +76,12 @@ async function getCategoryReliability(categoryEnum: ServiceCategory): Promise<Ra
     name: string;
     slug: string;
     report_count: bigint | number;
-    current_status: string | null;
   };
 
   const rows = await prisma.$queryRaw<RawRow[]>`
     SELECT
       s.id, s.name, s.slug,
-      CAST(COUNT(cr.id) AS INTEGER) AS report_count,
-      (
-        SELECT o.status
-        FROM "ServiceSurface" ss
-        JOIN "Observation" o ON o."serviceSurfaceId" = ss.id
-        WHERE ss."serviceId" = s.id AND ss."isEnabled" = true
-          AND o."observedAt" >= NOW() - INTERVAL '6 hours'
-        ORDER BY o."observedAt" DESC LIMIT 1
-      ) AS current_status
+      CAST(COUNT(cr.id) AS INTEGER) AS report_count
     FROM "Service" s
     LEFT JOIN "CommunityReport" cr
       ON cr."serviceId" = s.id
@@ -102,12 +94,16 @@ async function getCategoryReliability(categoryEnum: ServiceCategory): Promise<Ra
     ORDER BY report_count ASC, s.name ASC
   `;
 
+  // Current status via the single site-wide derivation (current state +
+  // official-prime + community fold) — same source as every other surface.
+  const statusMap = await getDisplayStatusMap(rows.map((r) => r.slug));
+
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
     slug: r.slug,
     reportCount: Number(r.report_count),
-    currentStatus: r.current_status,
+    currentStatus: statusMap.get(r.slug)?.display.status ?? null,
   }));
 }
 
