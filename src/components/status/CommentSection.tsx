@@ -152,7 +152,7 @@ export function CommentSection({ serviceSlug, serviceName }: CommentSectionProps
         )}
         {success && (
           <div style={{ marginTop: "8px", fontSize: "13px", color: "#16a34a" }}>
-            Comment posted! An AI reply will appear shortly.
+            Comment posted!
           </div>
         )}
       </form>

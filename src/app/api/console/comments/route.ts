@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   try {
     if (source === "standalone") {
-      const [comments, total] = await Promise.all([
+      const [rows, total] = await Promise.all([
         prisma.comment.findMany({
           select: {
             id: true,
@@ -43,6 +43,14 @@ export async function GET(request: NextRequest) {
         }),
         prisma.comment.count(),
       ]);
+      // Console contract: service{name,slug} + message + adminReply (alias of aiReply so
+      // the console's "replied?" / unreplied-count logic works). Raw fields kept too.
+      const comments = rows.map((c) => ({
+        ...c,
+        author: c.pseudo,
+        message: c.content,
+        adminReply: c.aiReply,
+      }));
       return NextResponse.json({ comments, total });
     }
 

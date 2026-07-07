@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createHash } from "crypto";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function hashIp(ip: string): string {
   return createHash("sha256").update(ip + (process.env.IP_SALT || "downforai")).digest("hex");
@@ -110,35 +107,9 @@ export async function POST(request: NextRequest) {
     select: { id: true, pseudo: true, content: true, aiReply: true, createdAt: true },
   });
 
-  // Generate AI reply asynchronously (don't await — return comment immediately)
-  generateAiReply(comment.id, service.name, cleanContent).catch(console.error);
+  // 🔴 Auto AI reply on post REMOVED: replies are now GENERATED + HUMAN-REVIEWED in the
+  // Dalbian console (guardrailed English prompt) before publishing into aiReply. This
+  // avoids un-reviewed AI replies going public with a generic, guardrail-free prompt.
 
   return NextResponse.json({ comment }, { status: 201 });
-}
-
-async function generateAiReply(commentId: string, serviceName: string, content: string) {
-  try {
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 256,
-      messages: [
-        {
-          role: "user",
-          content: `You are a helpful assistant for DownForAI, a service status monitoring site for AI services. A user left a comment about ${serviceName}. Reply helpfully and concisely in the same language as the comment. Keep your reply under 3 sentences. Do not repeat the service name unnecessarily.\n\nUser comment: "${content}"`,
-        },
-      ],
-    });
-
-    const aiReply =
-      message.content[0].type === "text" ? message.content[0].text.trim() : null;
-
-    if (aiReply) {
-      await prisma.comment.update({
-        where: { id: commentId },
-        data: { aiReply },
-      });
-    }
-  } catch (err) {
-    console.error("AI reply generation failed:", err);
-  }
 }
