@@ -10,7 +10,7 @@ import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
 import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   return Object.values(ServiceCategory).map((category) => ({
