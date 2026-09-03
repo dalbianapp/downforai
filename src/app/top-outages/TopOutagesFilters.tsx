@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
 
 const PERIODS = [
@@ -18,19 +17,13 @@ const ALL_CATEGORIES = [
 interface Props {
   currentPeriod: string;
   currentCategory: string;
+  // Filters are pure client state now (no query-string navigation): the page is
+  // static/ISR and must not depend on searchParams, otherwise every crawler hit
+  // renders it dynamically and wakes the database.
+  onChange: (period: string, category: string) => void;
 }
 
-export function TopOutagesFilters({ currentPeriod, currentCategory }: Props) {
-  const router = useRouter();
-
-  const navigate = (period: string, category: string) => {
-    const params = new URLSearchParams();
-    if (period !== "24h") params.set("period", period);
-    if (category !== "all") params.set("category", category);
-    const qs = params.toString();
-    router.push(`/top-outages${qs ? `?${qs}` : ""}`);
-  };
-
+export function TopOutagesFilters({ currentPeriod, currentCategory, onChange }: Props) {
   const btnStyle = (active: boolean): React.CSSProperties => ({
     padding: "6px 14px",
     fontSize: "13px",
@@ -52,7 +45,7 @@ export function TopOutagesFilters({ currentPeriod, currentCategory }: Props) {
         {PERIODS.map((p) => (
           <button
             key={p.value}
-            onClick={() => navigate(p.value, currentCategory)}
+            onClick={() => onChange(p.value, currentCategory)}
             style={btnStyle(currentPeriod === p.value)}
           >
             {p.label}
@@ -65,7 +58,7 @@ export function TopOutagesFilters({ currentPeriod, currentCategory }: Props) {
         {ALL_CATEGORIES.map((c) => (
           <button
             key={c.value}
-            onClick={() => navigate(currentPeriod, c.value)}
+            onClick={() => onChange(currentPeriod, c.value)}
             style={btnStyle(currentCategory === c.value)}
           >
             {c.label}

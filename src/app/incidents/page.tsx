@@ -9,7 +9,13 @@ import { IncidentCard } from "@/components/incidents/IncidentCard";
 import { IncidentStatsBar } from "@/components/incidents/IncidentStatsBar";
 import { MonthArchiveGrid } from "@/components/incidents/MonthArchiveGrid";
 
+// Static + ISR. Pagination used to come from `?page=` searchParams, which makes the
+// route dynamic (rendered on every request, ignoring `revalidate`) and gave crawlers
+// an endless surface that woke the Neon compute every couple of minutes. The archive
+// now shows the latest incidents here and delegates browsing to the month pages.
 export const revalidate = 3600;
+
+const LATEST_COUNT = 20;
 
 export const metadata: Metadata = {
   title: "AI Incidents Archive — Real outages across 800+ AI services | DownForAI",
@@ -19,27 +25,12 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-type SearchParams = {
-  page?: string;
-  month?: string;
-};
-
-export default async function IncidentsArchivePage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
-  const perPage = 20;
-
+export default async function IncidentsArchivePage() {
   const [incidentsResult, months, stats] = await Promise.all([
-    getPublishableIncidents({ page, perPage }),
+    getPublishableIncidents({ page: 1, perPage: LATEST_COUNT }),
     getIncidentMonthSummaries(),
     getIncidentArchiveStats(),
   ]);
-
-  const totalPages = Math.ceil(incidentsResult.total / perPage);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -94,7 +85,7 @@ export default async function IncidentsArchivePage({
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#171717", marginBottom: "16px" }}>
             Browse by month
           </h2>
-          <MonthArchiveGrid months={months} activeMonth={params.month} />
+          <MonthArchiveGrid months={months} />
         </section>
 
         {/* Incident list */}
@@ -128,55 +119,11 @@ export default async function IncidentsArchivePage({
           )}
         </section>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <nav
-            aria-label="Pagination"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "8px",
-              paddingTop: "24px",
-              borderTop: "1px solid #e5e5e5",
-            }}
-          >
-            {page > 1 && (
-              <Link
-                href={`/incidents?page=${page - 1}`}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid #e5e5e5",
-                  fontSize: "13px",
-                  color: "#171717",
-                  textDecoration: "none",
-                  background: "#ffffff",
-                }}
-              >
-                ← Previous
-              </Link>
-            )}
-            <span style={{ padding: "8px 16px", fontSize: "13px", color: "#525252" }}>
-              Page {page} of {totalPages}
-            </span>
-            {page < totalPages && (
-              <Link
-                href={`/incidents?page=${page + 1}`}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid #e5e5e5",
-                  fontSize: "13px",
-                  color: "#171717",
-                  textDecoration: "none",
-                  background: "#ffffff",
-                }}
-              >
-                Next →
-              </Link>
-            )}
-          </nav>
+        {/* Older incidents live on the month pages (static, one per month) */}
+        {incidentsResult.total > LATEST_COUNT && (
+          <p style={{ textAlign: "center", fontSize: "13px", color: "#525252", paddingTop: "24px", borderTop: "1px solid #e5e5e5", margin: 0 }}>
+            Showing the {LATEST_COUNT} most recent incidents. Browse older ones by month above.
+          </p>
         )}
 
         {/* Footer link */}

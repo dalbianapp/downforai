@@ -5,7 +5,12 @@ import { prisma } from "@/lib/db";
 import { getPublishableIncidents } from "@/lib/incidents/queries";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
 
+// Static + ISR: no searchParams (a `?page=` dependency makes the route dynamic and
+// lets crawlers wake the database on every hit). A service's full publishable
+// history fits on one page.
 export const revalidate = 3600;
+
+const SERVICE_PAGE_SIZE = 100;
 
 export async function generateMetadata({
   params,
@@ -29,15 +34,10 @@ export async function generateMetadata({
 
 export default async function IncidentByServicePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ serviceSlug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { serviceSlug } = await params;
-  const { page: pageParam } = await searchParams;
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
-  const perPage = 30;
 
   const service = await prisma.service.findUnique({
     where: { slug: serviceSlug },
@@ -45,8 +45,7 @@ export default async function IncidentByServicePage({
   });
   if (!service) notFound();
 
-  const result = await getPublishableIncidents({ page, perPage, serviceSlug });
-  const totalPages = Math.ceil(result.total / perPage);
+  const result = await getPublishableIncidents({ page: 1, perPage: SERVICE_PAGE_SIZE, serviceSlug });
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -109,39 +108,6 @@ export default async function IncidentByServicePage({
               <IncidentCard key={incident.id} incident={incident} />
             ))}
           </div>
-        )}
-
-        {totalPages > 1 && (
-          <nav
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "8px",
-              paddingTop: "24px",
-              borderTop: "1px solid #e5e5e5",
-            }}
-          >
-            {page > 1 && (
-              <Link
-                href={`/incidents/service/${serviceSlug}?page=${page - 1}`}
-                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #e5e5e5", fontSize: "13px", color: "#171717", textDecoration: "none", background: "#ffffff" }}
-              >
-                ← Previous
-              </Link>
-            )}
-            <span style={{ padding: "8px 16px", fontSize: "13px", color: "#525252" }}>
-              Page {page} of {totalPages}
-            </span>
-            {page < totalPages && (
-              <Link
-                href={`/incidents/service/${serviceSlug}?page=${page + 1}`}
-                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #e5e5e5", fontSize: "13px", color: "#171717", textDecoration: "none", background: "#ffffff" }}
-              >
-                Next →
-              </Link>
-            )}
-          </nav>
         )}
 
         <div style={{ paddingTop: "16px", borderTop: "1px solid #e5e5e5" }}>

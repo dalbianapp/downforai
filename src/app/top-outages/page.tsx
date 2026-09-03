@@ -1,69 +1,28 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import { ServiceCategory } from "@prisma/client";
-import { formatCategoryLabel } from "@/lib/utils";
 import { getDisplayStatusMap } from "@/lib/status/getDisplayStatus";
-import { TopOutagesFilters } from "./TopOutagesFilters";
+import { TopOutagesBoard, type Period, type ReportedService } from "./TopOutagesBoard";
 
-export const dynamic = "force-dynamic";
+// Static + ISR. This page used to be `force-dynamic` with query-string filters, so
+// every crawler hit (and every filter combination) rendered it fresh against the
+// database and kept the Neon compute awake. It now renders a snapshot of all four
+// periods at most once per hour; period/category filtering happens client-side.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Top AI Outages — Most Reported AI Services Today | DownForAI",
   description:
-    "Real-time ranking of the most reported AI services. See which AI tools are experiencing issues right now, based on community reports.",
+    "Ranking of the most reported AI services. See which AI tools are experiencing issues right now, based on community reports.",
   alternates: { canonical: "/top-outages" },
   robots: { index: true, follow: true },
 };
 
-const PERIODS = {
+const PERIODS: Record<Period, number> = {
   "24h": 24 * 60 * 60 * 1000,
   "7d": 7 * 24 * 60 * 60 * 1000,
   "30d": 30 * 24 * 60 * 60 * 1000,
   "90d": 90 * 24 * 60 * 60 * 1000,
-} as const;
-type Period = keyof typeof PERIODS;
-
-const PERIOD_LABELS: Record<Period, string> = {
-  "24h": "last 24 hours",
-  "7d": "last 7 days",
-  "30d": "last 30 days",
-  "90d": "last 90 days",
 };
-
-const RANK_MEDALS = ["🥇", "🥈", "🥉"];
-
-type ReportedService = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  reportCount: number;
-  currentStatus: string | null;
-};
-
-function StatusBadge({ status }: { status: string | null }) {
-  const s = status ?? "UNKNOWN";
-  const cfg: Record<string, { bg: string; color: string; label: string }> = {
-    OPERATIONAL: { bg: "#dcfce7", color: "#166534", label: "Operational" },
-    DEGRADED: { bg: "#fef3c7", color: "#92400e", label: "Degraded" },
-    OUTAGE: { bg: "#fee2e2", color: "#991b1b", label: "Outage" },
-    UNKNOWN: { bg: "#f5f5f5", color: "#525252", label: "Unknown" },
-  };
-  const c = cfg[s] ?? cfg.UNKNOWN;
-  return (
-    <span style={{
-      background: c.bg,
-      color: c.color,
-      padding: "2px 8px",
-      borderRadius: "9999px",
-      fontSize: "12px",
-      fontWeight: 600,
-      whiteSpace: "nowrap" as const,
-    }}>
-      {c.label}
-    </span>
-  );
-}
 
 function getDisruptionConfig(score: number) {
   if (score < 2) return { label: "Stable", color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" };
@@ -72,8 +31,11 @@ function getDisruptionConfig(score: number) {
   return { label: "Major crisis", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" };
 }
 
-async function getTopReports(period: Period, categoryFilter: string): Promise<ReportedService[]> {
-  const dateFilter = new Date(Date.now() - PERIODS[period]);
+// Every service with at least one visible report, per period (no LIMIT: the client
+// filters by category and keeps the top 20). The report table is small (~1k rows),
+// so this is four cheap aggregates + one status lookup per regeneration.
+async function getReportsByPeriod(): Promise<Record<Period, ReportedService[]>> {
+  const now = Date.now();
 
   type RawRow = {
     id: string;
@@ -83,56 +45,41 @@ async function getTopReports(period: Period, categoryFilter: string): Promise<Re
     report_count: bigint | number;
   };
 
-  let rows: RawRow[];
-
-  if (categoryFilter === "all") {
-    rows = await prisma.$queryRaw<RawRow[]>`
-      WITH rc AS (
-        SELECT cr."serviceId", COUNT(*)::int AS report_count
+  const periods = Object.keys(PERIODS) as Period[];
+  const perPeriod = await Promise.all(
+    periods.map(async (period) => {
+      const dateFilter = new Date(now - PERIODS[period]);
+      const rows = await prisma.$queryRaw<RawRow[]>`
+        SELECT s.id, s.name, s.slug, s.category::text AS category, COUNT(*)::int AS report_count
         FROM "CommunityReport" cr
+        JOIN "Service" s ON s.id = cr."serviceId"
         WHERE cr."createdAt" >= ${dateFilter}
           AND cr."isSpam" = false
           AND cr."isVisible" = true
-        GROUP BY cr."serviceId"
+        GROUP BY s.id, s.name, s.slug, s.category
         ORDER BY report_count DESC
-        LIMIT 20
-      )
-      SELECT s.id, s.name, s.slug, s.category, rc.report_count
-      FROM rc JOIN "Service" s ON s.id = rc."serviceId"
-      ORDER BY rc.report_count DESC
-    `;
-  } else {
-    const categoryEnum = categoryFilter.toUpperCase().replace(/-/g, "_") as ServiceCategory;
-    rows = await prisma.$queryRaw<RawRow[]>`
-      WITH rc AS (
-        SELECT cr."serviceId", COUNT(*)::int AS report_count
-        FROM "CommunityReport" cr
-        JOIN "Service" sv ON sv.id = cr."serviceId" AND sv.category = ${categoryEnum}::"ServiceCategory"
-        WHERE cr."createdAt" >= ${dateFilter}
-          AND cr."isSpam" = false
-          AND cr."isVisible" = true
-        GROUP BY cr."serviceId"
-        ORDER BY report_count DESC
-        LIMIT 20
-      )
-      SELECT s.id, s.name, s.slug, s.category, rc.report_count
-      FROM rc JOIN "Service" s ON s.id = rc."serviceId"
-      ORDER BY rc.report_count DESC
-    `;
-  }
+      `;
+      return [period, rows] as const;
+    })
+  );
 
   // Current status via the single site-wide derivation (current state +
   // official-prime + community fold) — same source as every other surface.
-  const statusMap = await getDisplayStatusMap(rows.map((r) => r.slug));
+  const slugs = [...new Set(perPeriod.flatMap(([, rows]) => rows.map((r) => r.slug)))];
+  const statusMap = slugs.length > 0 ? await getDisplayStatusMap(slugs) : null;
 
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    slug: r.slug,
-    category: r.category,
-    reportCount: Number(r.report_count),
-    currentStatus: statusMap.get(r.slug)?.display.status ?? null,
-  }));
+  const result = {} as Record<Period, ReportedService[]>;
+  for (const [period, rows] of perPeriod) {
+    result[period] = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      category: r.category,
+      reportCount: Number(r.report_count),
+      currentStatus: statusMap?.get(r.slug)?.display.status ?? null,
+    }));
+  }
+  return result;
 }
 
 async function getDisruptionScore(): Promise<number> {
@@ -153,22 +100,12 @@ async function getDisruptionScore(): Promise<number> {
   return Math.min(10, Math.round(raw * 10) / 10);
 }
 
-export default async function TopOutagesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ period?: string; category?: string }>;
-}) {
-  const sp = await searchParams;
-  const period = (sp.period && sp.period in PERIODS ? sp.period : "24h") as Period;
-  const categoryFilter = sp.category || "all";
-
-  const [services, disruptionScore] = await Promise.all([
-    getTopReports(period, categoryFilter),
+export default async function TopOutagesPage() {
+  const [data, disruptionScore] = await Promise.all([
+    getReportsByPeriod(),
     getDisruptionScore(),
   ]);
 
-  const top3 = services.slice(0, 3);
-  const rest = services.slice(3);
   const disruptionCfg = getDisruptionConfig(disruptionScore);
 
   const breadcrumbJsonLd = {
@@ -196,7 +133,7 @@ export default async function TopOutagesPage({
         Top AI Outages Right Now
       </h1>
       <p style={{ fontSize: "16px", color: "#6b7280", marginBottom: "24px", lineHeight: 1.6 }}>
-        Ranking of the most reported AI services by users. Based on real-time community reports.
+        Ranking of the most reported AI services by users. Based on community reports, refreshed hourly.
       </p>
 
       {/* AI Disruption Index */}
@@ -231,95 +168,8 @@ export default async function TopOutagesPage({
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "12px", padding: "16px 20px", marginBottom: "24px" }}>
-        <TopOutagesFilters currentPeriod={period} currentCategory={categoryFilter} />
-      </div>
-
-      {/* No results */}
-      {services.length === 0 && (
-        <div style={{
-          background: "#f0fdf4",
-          border: "1px solid #bbf7d0",
-          borderRadius: "12px",
-          padding: "48px 32px",
-          textAlign: "center" as const,
-          marginBottom: "24px",
-        }}>
-          <div style={{ fontSize: "40px", marginBottom: "12px" }}>✅</div>
-          <div style={{ fontSize: "18px", fontWeight: 700, color: "#166534", marginBottom: "8px" }}>
-            No outages reported in this period
-          </div>
-          <div style={{ fontSize: "14px", color: "#16a34a" }}>
-            The AI ecosystem is running smoothly.
-          </div>
-        </div>
-      )}
-
-      {/* Podium — top 3 */}
-      {top3.length > 0 && (
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" as const, marginBottom: "16px" }}>
-          {top3.map((service, i) => (
-            <div key={service.id} style={{
-              flex: "1 1 200px",
-              background: "#ffffff",
-              border: "1px solid #e5e5e5",
-              borderRadius: "16px",
-              padding: "20px",
-              textAlign: "center" as const,
-              boxShadow: i === 0 ? "0 4px 16px rgba(0,0,0,0.08)" : "none",
-            }}>
-              <div style={{ fontSize: "32px", marginBottom: "8px" }}>{RANK_MEDALS[i]}</div>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "#a3a3a3", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: "6px" }}>
-                {formatCategoryLabel(service.category)}
-              </div>
-              <a href={`/${service.slug}`} style={{ fontSize: "15px", fontWeight: 700, color: "#171717", textDecoration: "none", display: "block", marginBottom: "10px" }}>
-                {service.name}
-              </a>
-              <div style={{ marginBottom: "10px" }}>
-                <StatusBadge status={service.currentStatus} />
-              </div>
-              <div style={{ fontSize: "24px", fontWeight: 800, color: "#dc2626" }}>
-                {service.reportCount}
-              </div>
-              <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                report{service.reportCount !== 1 ? "s" : ""} ({PERIOD_LABELS[period]})
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Rank 4–20 */}
-      {rest.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #e5e5e5", borderRadius: "16px", overflow: "hidden", marginBottom: "24px" }}>
-          {rest.map((service, i) => (
-            <div key={service.id} style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "14px 20px",
-              borderBottom: i < rest.length - 1 ? "1px solid #f5f5f5" : "none",
-            }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#a3a3a3", minWidth: "28px", flexShrink: 0 }}>
-                #{i + 4}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <a href={`/${service.slug}`} style={{ fontSize: "15px", fontWeight: 600, color: "#171717", textDecoration: "none" }}>
-                  {service.name}
-                </a>
-                <div style={{ fontSize: "12px", color: "#a3a3a3", marginTop: "1px" }}>
-                  {formatCategoryLabel(service.category)}
-                </div>
-              </div>
-              <StatusBadge status={service.currentStatus} />
-              <span style={{ fontSize: "15px", fontWeight: 700, color: "#dc2626", minWidth: "32px", textAlign: "right" as const, flexShrink: 0 }}>
-                {service.reportCount}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Filters + podium + ranking (client-side over the static snapshot) */}
+      <TopOutagesBoard data={data} />
 
       {/* Methodology */}
       <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "20px 24px" }}>

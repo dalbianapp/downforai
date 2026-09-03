@@ -7,7 +7,12 @@ import {
 } from "@/lib/incidents/queries";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
 
+// Static + ISR: no searchParams (a `?page=` dependency makes the route dynamic and
+// lets crawlers wake the database on every hit). A month holds < 100 publishable
+// incidents, so the whole month is listed on one page.
 export const revalidate = 3600;
+
+const MONTH_PAGE_SIZE = 100;
 
 function isValidMonthKey(key: string): boolean {
   if (!/^\d{4}-\d{2}$/.test(key)) return false;
@@ -41,20 +46,14 @@ export async function generateMetadata({
 
 export default async function IncidentMonthPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ monthKey: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { monthKey } = await params;
   if (!isValidMonthKey(monthKey)) notFound();
 
-  const { page: pageParam } = await searchParams;
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
-  const perPage = 30;
-
   const [result, months] = await Promise.all([
-    getPublishableIncidents({ page, perPage, monthKey }),
+    getPublishableIncidents({ page: 1, perPage: MONTH_PAGE_SIZE, monthKey }),
     getIncidentMonthSummaries(),
   ]);
 
@@ -69,8 +68,6 @@ export default async function IncidentMonthPage({
       year: "numeric",
       timeZone: "UTC",
     });
-
-  const totalPages = Math.ceil(result.total / perPage);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -130,39 +127,6 @@ export default async function IncidentMonthPage({
               <IncidentCard key={incident.id} incident={incident} />
             ))}
           </div>
-        )}
-
-        {totalPages > 1 && (
-          <nav
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "8px",
-              paddingTop: "24px",
-              borderTop: "1px solid #e5e5e5",
-            }}
-          >
-            {page > 1 && (
-              <Link
-                href={`/incidents/${monthKey}?page=${page - 1}`}
-                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #e5e5e5", fontSize: "13px", color: "#171717", textDecoration: "none", background: "#ffffff" }}
-              >
-                ← Previous
-              </Link>
-            )}
-            <span style={{ padding: "8px 16px", fontSize: "13px", color: "#525252" }}>
-              Page {page} of {totalPages}
-            </span>
-            {page < totalPages && (
-              <Link
-                href={`/incidents/${monthKey}?page=${page + 1}`}
-                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #e5e5e5", fontSize: "13px", color: "#171717", textDecoration: "none", background: "#ffffff" }}
-              >
-                Next →
-              </Link>
-            )}
-          </nav>
         )}
 
         <div style={{ paddingTop: "16px", borderTop: "1px solid #e5e5e5" }}>

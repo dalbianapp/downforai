@@ -87,7 +87,7 @@ export async function getPublishableIncidents(input: {
   status?: IncidentStatus;
 }): Promise<{ incidents: PublishableIncident[]; total: number }> {
   const page = input.page ?? 1;
-  const perPage = Math.min(input.perPage ?? 20, 50);
+  const perPage = Math.min(input.perPage ?? 20, 100);
   const offset = (page - 1) * perPage;
 
   const conditions: string[] = [BASE_WHERE.trim()];

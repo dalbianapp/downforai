@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
 import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export async function GET(
   _req: Request,
@@ -64,7 +64,7 @@ export async function GET(
     {
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=60, s-maxage=60",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
     }
   );
