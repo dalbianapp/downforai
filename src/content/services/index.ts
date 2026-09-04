@@ -4,6 +4,7 @@ import { IMAGE } from "./image";
 import { VIDEO } from "./video";
 import { AUDIO } from "./audio";
 import { DEV } from "./dev";
+import { DEV_2 } from "./dev-2";
 import { INFRA } from "./infra";
 import { SEARCH } from "./search";
 import { PRODUCTIVITY } from "./productivity";
@@ -28,6 +29,7 @@ const MODULES: Array<[string, Record<string, TopServiceContent>]> = [
   ["video", VIDEO],
   ["audio", AUDIO],
   ["dev", DEV],
+  ["dev-2", DEV_2],
   ["infra", INFRA],
   ["search", SEARCH],
   ["productivity", PRODUCTIVITY],
