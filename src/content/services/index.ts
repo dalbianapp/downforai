@@ -1,5 +1,6 @@
 import type { TopServiceContent } from "@/content/top-services/types";
 import { LLM } from "./llm";
+import { LLM_2 } from "./llm-2";
 import { IMAGE } from "./image";
 import { VIDEO } from "./video";
 import { AUDIO } from "./audio";
@@ -25,6 +26,7 @@ import { SPORTS_BETTING } from "./sports-betting";
 // module here when a category file grows past ~3000 lines.
 const MODULES: Array<[string, Record<string, TopServiceContent>]> = [
   ["llm", LLM],
+  ["llm-2", LLM_2],
   ["image", IMAGE],
   ["video", VIDEO],
   ["audio", AUDIO],
