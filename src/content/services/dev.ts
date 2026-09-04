@@ -978,4 +978,95 @@ export const DEV: Record<string, TopServiceContent> = {
     ecosystemDependencies: [],
     operatorNotes: [],
   },
+  kiro: {
+    slug: "kiro",
+    providerSummary:
+      "Kiro is AWS's agentic IDE (a VS Code-based desktop app) built around specs, hooks and steering files. Sign-in goes through AWS Builder ID, IAM Identity Center, Google or GitHub, and model calls are served from AWS infrastructure, so 'Kiro is down' is usually an auth or model-capacity problem rather than the editor itself.",
+    docsUrl: "https://kiro.dev/docs",
+    pricingUrl: "https://kiro.dev/pricing",
+    communityLinks: [
+      { type: "github", url: "https://github.com/kirodotdev/Kiro", label: "kirodotdev/Kiro (issues)", verified: true },
+    ],
+    monitoredSurfaces: [
+      { name: "kiro.dev", description: "Website, docs and downloads", criticality: "medium" },
+      { name: "Sign-in (Builder ID / SSO / Google / GitHub)", description: "Required before any agent call", criticality: "critical" },
+      { name: "Agent / model backend", description: "Chat, specs and hooks execution", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Model throttled or 'capacity' errors at peak",
+        scope: "partial",
+        signal: "Chat and spec tasks fail with throttling / overloaded messages while the editor, files and terminal keep working",
+        quickCheck: "Retry after a minute and switch to a lighter model in the model picker; check the kirodotdev/Kiro issues for a capacity incident",
+      },
+      {
+        pattern: "Sign-in loop or expired session",
+        scope: "local",
+        signal: "The browser sign-in completes but Kiro keeps asking to log in, or every agent call returns an authentication error",
+        quickCheck: "Sign out from Kiro, clear the session in the browser and sign in again; for IAM Identity Center check that the SSO session has not expired",
+      },
+      {
+        pattern: "Hooks or spec tasks stall while chat works",
+        scope: "partial",
+        signal: "Autonomous tasks stay 'in progress' without producing diffs, but a plain chat message gets an answer",
+        quickCheck: "Cancel the task and rerun it on a smaller scope; persistent stalls are backend-side, not a config issue",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Kiro's agent backend is unavailable but you need to keep coding",
+        alternative: "Cursor, GitHub Copilot or Claude Code (monitored on DownForAI) run on independent model backends",
+        switchingCost: "medium",
+        note: "Specs, hooks and steering files are Kiro-specific and will not be picked up by other tools",
+      },
+    ],
+    ecosystemDependencies: [
+      "AWS model serving (agent backend)",
+      "AWS Builder ID / IAM Identity Center (authentication)",
+    ],
+    operatorNotes: [
+      "DownForAI only probes kiro.dev (website); the desktop app talks to AWS endpoints that are not on the public homepage path, so community reports are the primary signal for agent or sign-in incidents.",
+    ],
+  },
+  "blackbox-ai": {
+    slug: "blackbox-ai",
+    providerSummary:
+      "Blackbox AI is a coding assistant available as a web app, a VS Code extension and a browser extension, offering chat, code search and agent features backed by third-party models. Failures split between the extension's sign-in and the hosted chat backend.",
+    docsUrl: "https://docs.blackbox.ai",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "blackbox.ai web app", description: "Chat and code search", criticality: "critical" },
+      { name: "VS Code extension", description: "In-editor chat and completions", criticality: "high" },
+      { name: "Model backend", description: "Third-party models behind the chat", criticality: "critical" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Extension asks to sign in repeatedly",
+        scope: "local",
+        signal: "VS Code keeps opening the login page or shows an unauthenticated state after signing in",
+        quickCheck: "Sign out, reload the VS Code window and sign in again; if the web app also fails to log in, the auth service is down",
+      },
+      {
+        pattern: "Chat replies stall or return errors on some models",
+        scope: "partial",
+        signal: "Selecting a different model in the picker restores answers",
+        quickCheck: "Switch models; a single-model failure is an upstream provider issue relayed by Blackbox",
+      },
+      {
+        pattern: "Web app slow or timing out at peak",
+        scope: "global",
+        signal: "blackbox.ai pages load slowly or every request times out",
+        quickCheck: "Check DownForAI's probe and retry later; nothing to fix locally",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Blackbox AI is down",
+        alternative: "GitHub Copilot, Cursor or Tabnine (monitored on DownForAI) provide in-editor AI assistance",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: ["Third-party model providers (OpenAI, Anthropic, Google) behind the model picker"],
+    operatorNotes: [],
+  },
 };

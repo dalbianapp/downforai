@@ -706,4 +706,129 @@ export const IMAGE: Record<string, TopServiceContent> = {
     ecosystemDependencies: [],
     operatorNotes: [],
   },
+  "grok-imagine": {
+    slug: "grok-imagine",
+    providerSummary:
+      "Grok Imagine is xAI's image (and short video) generation feature inside Grok, available in the Grok app, on grok.com and within X. It shares Grok's infrastructure and quotas, so its availability follows Grok and X rather than a standalone service.",
+    docsUrl: "https://docs.x.ai",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "grok.com / Grok app", description: "Where Imagine is used", criticality: "critical" },
+      { name: "Image generation backend", description: "xAI inference for Imagine", criticality: "critical" },
+      { name: "X integration", description: "Grok inside the X app", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generation quota exhausted on the free tier",
+        scope: "local",
+        signal: "Imagine refuses new requests with a limit message while text chat keeps working",
+        quickCheck: "Check the remaining daily allowance in Grok; limits reset on a rolling basis and are not an outage",
+      },
+      {
+        pattern: "Images fail while Grok text works",
+        scope: "partial",
+        signal: "Prompts return an error or a blank result on every attempt; chat answers normally",
+        quickCheck: "Retry a simple prompt; if it still fails for everyone, the image backend is saturated",
+      },
+      {
+        pattern: "Prompt rejected by the content filter",
+        scope: "local",
+        signal: "A refusal message for specific prompts only",
+        quickCheck: "Rephrase; this is policy enforcement rather than a failure",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Grok Imagine is unavailable",
+        alternative: "Midjourney, Ideogram or GPT Image (OpenAI) (monitored on DownForAI) cover text-to-image with similar quality",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: ["Grok / xAI platform", "X (for in-app usage)"],
+    operatorNotes: [
+      "DownForAI probes x.ai; xAI publishes a status page but Grok Imagine has no dedicated entry, so community reports and the xAI Grok service page are the references.",
+    ],
+  },
+  "tensor-art": {
+    slug: "tensor-art",
+    providerSummary:
+      "Tensor.Art is a community image-generation platform hosting thousands of Stable Diffusion and Flux checkpoints and LoRAs, with free daily credits and paid plans. Generation runs on shared GPU queues, so waiting time is the main symptom of trouble.",
+    docsUrl: "https://tensor.art",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "tensor.art web app", description: "Model browsing and generation", criticality: "critical" },
+      { name: "GPU generation queue", description: "Image renders", criticality: "critical" },
+      { name: "Model hosting", description: "Checkpoint and LoRA downloads", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Generations queued for minutes or failing at peak",
+        scope: "partial",
+        signal: "Tasks sit in 'waiting' far longer than usual, sometimes failing after the wait",
+        quickCheck: "Try a smaller resolution or fewer steps; if everything queues, the GPU pool is saturated",
+      },
+      {
+        pattern: "A specific model fails to load",
+        scope: "local",
+        signal: "One checkpoint or LoRA errors while others generate normally",
+        quickCheck: "Switch to another model; a single-model failure is a hosting issue for that file, not an outage",
+      },
+      {
+        pattern: "Daily credits exhausted",
+        scope: "local",
+        signal: "Generation refused with a credit prompt for your account only",
+        quickCheck: "Check the credit balance; it refills daily",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Tensor.Art is down or its queue is stalled",
+        alternative: "SeaArt AI, Civitai or Leonardo AI (monitored on DownForAI) run many of the same community models",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
+  "seaart-ai": {
+    slug: "seaart-ai",
+    providerSummary:
+      "SeaArt AI is a web and mobile image-generation platform with community models, a character/roleplay side and a stamina-style credit system, running on shared GPU queues. Slow queues and model-loading errors are its typical incidents.",
+    docsUrl: "https://docs.seaart.ai",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "seaart.ai web app", description: "Generation and model library", criticality: "critical" },
+      { name: "GPU generation queue", description: "Image renders", criticality: "critical" },
+      { name: "Mobile apps", description: "iOS and Android clients", criticality: "medium" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Renders stuck in the queue at peak",
+        scope: "partial",
+        signal: "Tasks wait far longer than the estimate or fail after queuing",
+        quickCheck: "Lower the resolution or batch size; a universal stall is GPU saturation",
+      },
+      {
+        pattern: "Model or LoRA fails to load for a generation",
+        scope: "local",
+        signal: "One model errors while others work",
+        quickCheck: "Switch models; single-model errors are file-hosting issues, not platform downtime",
+      },
+      {
+        pattern: "Stamina depleted mistaken for an outage",
+        scope: "local",
+        signal: "Generation refused with a stamina/credit prompt for your account",
+        quickCheck: "Check the balance in the profile; it regenerates daily",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "SeaArt AI is down",
+        alternative: "Tensor.Art, Civitai or Leonardo AI (monitored on DownForAI) offer the same community-model generation",
+        switchingCost: "low",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
 };

@@ -193,4 +193,58 @@ export const AGENTS: Record<string, TopServiceContent> = {
     ecosystemDependencies: [],
     operatorNotes: [],
   },
+  n8n: {
+    slug: "n8n",
+    providerSummary:
+      "n8n is a workflow-automation platform with AI agent nodes, available as n8n Cloud (hosted) or self-hosted. Cloud users depend on their instance, the execution queue and webhook ingress; self-hosters depend on their own infrastructure plus the credentials of connected services.",
+    officialStatusUrl: "https://status.n8n.io/",
+    docsUrl: "https://docs.n8n.io",
+    pricingUrl: "https://n8n.io/pricing",
+    communityLinks: [
+      { type: "forum", url: "https://community.n8n.io", label: "n8n Community forum", verified: true },
+    ],
+    monitoredSurfaces: [
+      { name: "n8n Cloud instances", description: "Hosted editor and executions", criticality: "critical" },
+      { name: "Webhook ingress", description: "Incoming triggers on cloud instances", criticality: "critical" },
+      { name: "n8n.io / docs", description: "Website and documentation", criticality: "low" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Cloud instance slow or unreachable",
+        scope: "partial",
+        signal: "The editor times out or executions do not start on your instance while status.n8n.io reports an incident",
+        quickCheck: "Check status.n8n.io; instances are affected per region, so other users may be fine",
+      },
+      {
+        pattern: "Executions queued or stuck in 'running'",
+        scope: "partial",
+        signal: "Workflows pile up in the executions list without finishing",
+        quickCheck: "Open one execution to see the blocked node; if it is an HTTP or AI node, the external service is the bottleneck, not n8n",
+      },
+      {
+        pattern: "Webhooks returning 404 or timing out",
+        scope: "partial",
+        signal: "External systems report failed deliveries to your webhook URL",
+        quickCheck: "Confirm the workflow is active and the production (not test) URL is used; if the instance is up and it still 404s, ingress is degraded",
+      },
+      {
+        pattern: "Credential or OAuth failures in nodes",
+        scope: "local",
+        signal: "A node fails with 401/403 while the rest of the workflow runs",
+        quickCheck: "Reconnect the credential; expired OAuth tokens are the usual cause",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "n8n Cloud is down for critical automations",
+        alternative: "Make (ex-Integromat), Zapier AI or Activepieces (monitored on DownForAI) can run equivalent workflows",
+        switchingCost: "high",
+        note: "Self-hosting n8n avoids the cloud dependency entirely",
+      },
+    ],
+    ecosystemDependencies: ["Every connected service (APIs, OAuth providers, AI model APIs) used by workflows"],
+    operatorNotes: [
+      "Self-hosted n8n is unaffected by n8n Cloud incidents; status.n8n.io covers the cloud offering.",
+    ],
+  },
 };

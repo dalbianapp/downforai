@@ -51,4 +51,47 @@ export const THREE_D: Record<string, TopServiceContent> = {
       "3D generation takes minutes — distinguish queue delay from actual failure before reporting outage",
     ],
   },
+  meshy: {
+    slug: "meshy",
+    providerSummary:
+      "Meshy generates 3D models from text or images (with separate texturing and rigging stages) through a web app and an API, on a credit-based plan. Each stage is a queued GPU job, so a model can be created while its texturing or rigging step stalls.",
+    docsUrl: "https://docs.meshy.ai",
+    pricingUrl: "https://www.meshy.ai/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "meshy.ai web app", description: "Generation workspace", criticality: "critical" },
+      { name: "Generation pipeline", description: "Text/image-to-3D, texturing, rigging", criticality: "critical" },
+      { name: "Meshy API", description: "Programmatic generation", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Jobs stuck at a stage (texturing or refine)",
+        scope: "partial",
+        signal: "The base mesh appears but the texturing or refine step stays in progress or fails",
+        quickCheck: "Retry the stage from the task; if every job stalls at the same stage, that pipeline is degraded",
+      },
+      {
+        pattern: "Long queue times at peak",
+        scope: "partial",
+        signal: "Tasks wait far beyond the usual estimate before starting",
+        quickCheck: "Check the task list for any progress; a universal wait is GPU capacity, not an account issue",
+      },
+      {
+        pattern: "API returns 429 or credit errors",
+        scope: "local",
+        signal: "Programmatic calls rejected with rate-limit or insufficient-credit responses while the web app works",
+        quickCheck: "Check plan limits and the credit balance in the dashboard before treating it as an outage",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Meshy's pipeline is down",
+        alternative: "Tripo AI, Rodin (Deemos) or Luma Genie (monitored on DownForAI) generate 3D assets from text or images",
+        switchingCost: "medium",
+        note: "Output formats and rigging conventions differ between tools",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
 };

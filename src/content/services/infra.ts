@@ -560,4 +560,54 @@ export const INFRA: Record<string, TopServiceContent> = {
       "Cerebras API is OpenAI-compatible — switching to Groq or Together AI is a base_url swap.",
     ],
   },
+  modal: {
+    slug: "modal",
+    providerSummary:
+      "Modal is a serverless platform for running Python functions, GPU jobs and web endpoints, deployed from the CLI. Users experience it through container starts, scheduled runs and served endpoints, so incidents show up as cold starts that never finish or endpoints returning 5xx.",
+    officialStatusUrl: "https://status.modal.com/",
+    docsUrl: "https://modal.com/docs",
+    pricingUrl: "https://modal.com/pricing",
+    communityLinks: [],
+    monitoredSurfaces: [
+      { name: "Modal control plane", description: "Deploys, scheduling and the dashboard", criticality: "critical" },
+      { name: "Container / GPU capacity", description: "Function execution", criticality: "critical" },
+      { name: "Web endpoints", description: "Served HTTP functions", criticality: "high" },
+    ],
+    knownFailurePatterns: [
+      {
+        pattern: "Functions stuck in pending or cold start",
+        scope: "partial",
+        signal: "Calls wait far longer than the usual cold start, often for a specific GPU type",
+        quickCheck: "Check status.modal.com and try a different GPU type; capacity incidents are usually per accelerator",
+      },
+      {
+        pattern: "Deploy or image build failing",
+        scope: "partial",
+        signal: "modal deploy errors during the build step although the code is unchanged",
+        quickCheck: "Retry the deploy; if builds fail for everyone, the build service is degraded",
+      },
+      {
+        pattern: "Served endpoints returning 5xx",
+        scope: "partial",
+        signal: "Web endpoints error while the dashboard works",
+        quickCheck: "Invoke the function directly from the CLI; if that works, the ingress layer is the problem",
+      },
+      {
+        pattern: "Rate limits or quota errors",
+        scope: "local",
+        signal: "Requests rejected with limit messages for your workspace only",
+        quickCheck: "Check workspace limits in the dashboard before treating it as an outage",
+      },
+    ],
+    fallbackAlternatives: [
+      {
+        scenario: "Modal capacity or control plane is down",
+        alternative: "RunPod, Replicate or Baseten (monitored on DownForAI) can host the same GPU workloads",
+        switchingCost: "high",
+        note: "Requires repackaging the function outside Modal's SDK",
+      },
+    ],
+    ecosystemDependencies: [],
+    operatorNotes: [],
+  },
 };
