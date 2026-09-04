@@ -12,6 +12,14 @@ export const revalidate = 3600;
 
 const SERVICE_PAGE_SIZE = 100;
 
+// Without generateStaticParams, Next renders a dynamic-segment page on every request
+// (build table: ƒ) and `revalidate` is ignored — verified in production after the
+// searchParams removal. An empty list keeps the build cheap (no 817 extra prerenders)
+// and makes every service history page on-demand ISR, cached 1h after its first hit.
+export async function generateStaticParams(): Promise<Array<{ serviceSlug: string }>> {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: {

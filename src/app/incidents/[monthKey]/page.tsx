@@ -14,6 +14,15 @@ export const revalidate = 3600;
 
 const MONTH_PAGE_SIZE = 100;
 
+// Without generateStaticParams, Next renders a dynamic-segment page on every request
+// (build table: ƒ) and `revalidate` is ignored — verified in production after the
+// searchParams removal (Cache-Control: private, no-store). Listing the known months
+// prerenders them and switches unknown months to on-demand ISR.
+export async function generateStaticParams() {
+  const months = await getIncidentMonthSummaries();
+  return months.map((m) => ({ monthKey: m.monthKey }));
+}
+
 function isValidMonthKey(key: string): boolean {
   if (!/^\d{4}-\d{2}$/.test(key)) return false;
   const [year, month] = key.split("-").map(Number);
