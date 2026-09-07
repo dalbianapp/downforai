@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { truncateDescription } from "@/lib/seo";
 import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
-import { getServiceBySlug, getReports24hCount, getLastResolvedIncident } from "@/lib/service-queries";
 import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
 import { StatusAndReport } from "@/components/status/StatusAndReport";
@@ -87,14 +86,13 @@ export async function generateMetadata({
   params: Promise<{ serviceSlug: string }>;
 }): Promise<Metadata> {
   const { serviceSlug } = await params;
-  const service = await getServiceBySlug(serviceSlug);
-  if (!service) return {};
-
-  const reports24h = await getReports24hCount(service.id);
+  const dashboard = await getServiceDashboard(serviceSlug);
+  if (!dashboard) return {};
+  const { service, reportSummary } = dashboard;
 
   const year = new Date().getFullYear();
   const title = buildServiceTitle(service.name, year, service.monitoringCapability);
-  const description = buildServiceDescription(service.name, reports24h, service.monitoringCapability);
+  const description = buildServiceDescription(service.name, reportSummary.total24h, service.monitoringCapability);
 
   return {
     title,
@@ -125,9 +123,9 @@ export default async function ServicePage({
   const dashboard = await getServiceDashboard(serviceSlug);
   if (!dashboard) notFound();
 
-  const { service, overallStatus, community, headline, statusExplanation, surfaces, uptime24h, incidents30d, reportSummary, topContent } = dashboard;
+  const { service, overallStatus, community, headline, statusExplanation, surfaces, uptime24h, incidents30d, reportSummary, topContent, lastResolvedIncidentAt } = dashboard;
 
-  const lastIncident = await getLastResolvedIncident(service.id);
+  const lastIncident = lastResolvedIncidentAt ? { startedAt: lastResolvedIncidentAt } : null;
 
   // Derive props for StatusAndReport
   const mostRecent = surfaces.reduce<typeof surfaces[number] | null>((best, s) => {

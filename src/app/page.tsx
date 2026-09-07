@@ -1,16 +1,14 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/db";
+import type { IncidentStatus, IncidentSeverity } from "@prisma/client";
 import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { HeroSection } from "@/components/home/HeroSection";
 import { BentoSection } from "@/components/home/BentoSection";
 import { RecentIncidents } from "@/components/home/RecentIncidents";
 import { EditorialLinks } from "@/components/home/EditorialLinks";
 import { CTAButton } from "@/components/ui/CTAButton";
-import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
-import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 import { generateWebSiteJsonLd } from "@/lib/seo";
-import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore, getPerformanceColor } from "@/lib/performance";
-import { badgeFromCapability } from "@/lib/badges";
+import { getPerformanceColor } from "@/lib/performance";
+import { getIndexSnapshot } from "@/lib/snapshot/read";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -23,199 +21,19 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-async function getServicesStatus() {
-  type RawRow = {
-    service_id: string;
-    slug: string;
-    name: string;
-    description: string | null;
-    category: string;
-    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
-    monitoringCapability: string;
-    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-    communityReportsWindow: number | null;
-    communitySignalAt: Date | null;
-    surface_id: string;
-    observedAt: Date | null;
-    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    latencyMs: number | null;
-    officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-  };
-
-  const rows = await prisma.$queryRaw<RawRow[]>`
-    SELECT
-      s.id            AS service_id,
-      s.slug,
-      s.name,
-      s.description,
-      s.category,
-      s."defaultBadge",
-      s."monitoringCapability"::text AS "monitoringCapability",
-      s."communityStatus"            AS "communityStatus",
-      s."communityConfidence"        AS "communityConfidence",
-      s."communityReportsWindow"     AS "communityReportsWindow",
-      s."communitySignalAt"          AS "communitySignalAt",
-      ss.id           AS surface_id,
-      o."observedAt",
-      o.status,
-      o."latencyMs",
-      o."officialStatus"
-    FROM "Service" s
-    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
-    LEFT JOIN LATERAL (
-      SELECT "observedAt", status, "latencyMs", "officialStatus"::text AS "officialStatus"
-      FROM "Observation"
-      WHERE "serviceSurfaceId" = ss.id
-      ORDER BY "observedAt" DESC
-      LIMIT 24
-    ) o ON true
-  `;
-
-  // Regroupe : service → surfaces → observations
-  type SurfaceAccum = {
-    id: string;
-    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null; officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null }[];
-  };
-  type ServiceAccum = {
-    id: string;
-    slug: string;
-    name: string;
-    description: string | null;
-    category: string;
-    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
-    monitoringCapability: string;
-    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-    communityReportsWindow: number | null;
-    communitySignalAt: Date | null;
-    surfaces: Map<string, SurfaceAccum>;
-  };
-
-  const serviceMap = new Map<string, ServiceAccum>();
-
-  for (const row of rows) {
-    if (!serviceMap.has(row.service_id)) {
-      serviceMap.set(row.service_id, {
-        id: row.service_id,
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        category: row.category,
-        defaultBadge: row.defaultBadge,
-        monitoringCapability: row.monitoringCapability,
-        communityStatus: row.communityStatus,
-        communityConfidence: row.communityConfidence,
-        communityReportsWindow: row.communityReportsWindow,
-        communitySignalAt: row.communitySignalAt,
-        surfaces: new Map(),
-      });
-    }
-
-    const svc = serviceMap.get(row.service_id)!;
-
-    if (!svc.surfaces.has(row.surface_id)) {
-      svc.surfaces.set(row.surface_id, { id: row.surface_id, observations: [] });
-    }
-
-    if (row.observedAt && row.status) {
-      svc.surfaces.get(row.surface_id)!.observations.push({
-        observedAt: row.observedAt,
-        status: row.status,
-        latencyMs: row.latencyMs,
-        officialStatus: row.officialStatus,
-      });
-    }
-  }
-
-  return Array.from(serviceMap.values()).map((service) => {
-    const surfaces = Array.from(service.surfaces.values());
-    const allObservations = surfaces.flatMap((s) => s.observations);
-
-    // Displayed status = CURRENT state: latest observation PER surface + official-
-    // prime + community fold — the SINGLE site-wide derivation. NO worst-of window:
-    // a blip that recovered hours ago lives in the sparkline below, never here.
-    const latestPerSurface = surfaces
-      .map((s) =>
-        s.observations.reduce<(typeof s.observations)[number] | null>(
-          (latest, o) => (latest === null || o.observedAt > latest.observedAt ? o : latest),
-          null,
-        ),
-      )
-      .filter((o): o is NonNullable<typeof o> => o !== null)
-      .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
-
-    const status = resolveDisplayStatus(
-      service.monitoringCapability,
-      latestPerSurface,
-      communitySignalOf(service),
-    ).status;
-
-    // Build sparkline — exclude timeout sentinel (5000ms) and null latencies
-    const sparklineData: number[] = allObservations
-      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())
-      .map((o) => o.latencyMs)
-      .filter((lat): lat is number => lat !== null && lat < 5000)
-      .slice(-24);
-
-    // Compute performance level
-    const surfacePerformances = surfaces.map((surface) => {
-      const latencies = surface.observations
-        .filter((o) => o.latencyMs !== null && o.latencyMs < 5000)
-        .map((o) => o.latencyMs as number);
-      const last5 = latencies.slice(0, 5);
-      const last72h = latencies;
-      const lastObservedAt = surface.observations[0]?.observedAt || null;
-      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5, lastObservedAt });
-    });
-    const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
-    const avgBaseline = surfacePerformances.length > 0
-      ? Math.round(surfacePerformances.reduce((sum, p) => sum + p.baseline, 0) / surfacePerformances.length)
-      : 0;
-
-    return {
-      id: service.id,
-      slug: service.slug,
-      name: service.name,
-      description: service.description,
-      category: service.category,
-      status,
-      badgeType: badgeFromCapability(service.monitoringCapability),
-      latencyMs: (allObservations[0]?.latencyMs ?? null) !== null && (allObservations[0]?.latencyMs ?? 0) < 5000
-        ? allObservations[0]?.latencyMs || null
-        : null,
-      sparklineData,
-      performanceLevel,
-      performanceBaseline: avgBaseline,
-      performanceScore: computePerformanceScore(
-        (allObservations[0]?.latencyMs ?? null) !== null && (allObservations[0]?.latencyMs ?? 0) < 5000
-          ? allObservations[0]?.latencyMs || null
-          : null,
-        avgBaseline,
-        performanceLevel,
-      ),
-    };
-  });
-}
-
-async function getRecentIncidents() {
-  const incidents = await prisma.incident.findMany({
-    where: { isFalsePositive: false },
-    include: {
-      service: {
-        select: { name: true },
-      },
-    },
-    orderBy: { startedAt: "desc" },
-    take: 5,
-  });
-
-  return incidents;
-}
-
 export default async function HomePage() {
-  const services = await getServicesStatus();
-  const incidents = await getRecentIncidents();
+  // Reads the hourly snapshot (src/lib/snapshot) instead of querying Prisma
+  // directly — this page used to run a raw SQL query across every service on
+  // every ISR regeneration, which is most of why the DB never slept.
+  const snapshot = await getIndexSnapshot();
+  const services = snapshot?.services ?? [];
+  const incidents = (snapshot?.recentIncidents ?? []).map((inc) => ({
+    ...inc,
+    status: inc.status as IncidentStatus,
+    severity: inc.severity as IncidentSeverity,
+    startedAt: new Date(inc.startedAt),
+    resolvedAt: inc.resolvedAt ? new Date(inc.resolvedAt) : null,
+  }));
 
   const counts = {
     operational: services.filter((s) => s.status === "OPERATIONAL").length,

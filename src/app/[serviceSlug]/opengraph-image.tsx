@@ -1,9 +1,7 @@
 import { ImageResponse } from "next/og";
-import { prisma } from "@/lib/db";
-import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
-import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
+import { getServiceSnapshot } from "@/lib/snapshot/read";
 
-export const runtime = "nodejs"; // Use nodejs runtime to allow Prisma
+export const runtime = "nodejs";
 export const alt = "Service Status";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -11,23 +9,12 @@ export const contentType = "image/png";
 export default async function Image({ params }: { params: Promise<{ serviceSlug: string }> }) {
   const { serviceSlug } = await params;
 
-  // Fetch service data
-  const service = await prisma.service.findUnique({
-    where: { slug: serviceSlug },
-    include: {
-      surfaces: {
-        where: { isEnabled: true },
-        include: {
-          observations: {
-            orderBy: { observedAt: "desc" },
-            take: 1,
-          },
-        },
-      },
-    },
-  });
+  // Reads the hourly snapshot (src/lib/snapshot) instead of Prisma — this
+  // route used to wake the DB on every first visitor to a given service's
+  // OG image, since Vercel's own image cache only kicks in after that.
+  const dashboard = await getServiceSnapshot(serviceSlug);
 
-  if (!service) {
+  if (!dashboard) {
     return new ImageResponse(
       (
         <div
@@ -49,17 +36,11 @@ export default async function Image({ params }: { params: Promise<{ serviceSlug:
     );
   }
 
-  // Status = CURRENT state via the single site-wide derivation (latest observation
-  // per surface + official-prime + community fold) — matches the service page.
-  const latestPerSurface = service.surfaces
-    .map((s) => s.observations[0])
-    .filter((o): o is NonNullable<typeof o> => o != null)
-    .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
-  const overallStatus = resolveDisplayStatus(
-    service.monitoringCapability,
-    latestPerSurface,
-    communitySignalOf(service),
-  ).status;
+  const { service } = dashboard;
+  // Already resolved by the snapshot cron (same site-wide derivation the
+  // service page uses). REPORTED_ISSUES is a page-level label, not a color
+  // this route ever rendered, so it maps to DEGRADED here as before.
+  const overallStatus = dashboard.overallStatus === "REPORTED_ISSUES" ? "DEGRADED" : dashboard.overallStatus;
 
   const statusConfig = {
     OPERATIONAL: { color: "#16a34a", label: "Operational", emoji: "✅" },

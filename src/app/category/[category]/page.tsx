@@ -1,14 +1,9 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/db";
 import { StatusDashboard } from "@/components/status/StatusDashboard";
 import { formatCategoryLabel } from "@/lib/utils";
-import { badgeFromCapability } from "@/lib/badges";
 import { ServiceCategory } from "@prisma/client";
-import { computeSurfacePerformance, aggregateServicePerformance, computePerformanceScore } from "@/lib/performance";
-import { isValidForPublicLatency } from "@/lib/monitoring/probeValidity";
-import { communitySignalOf } from "@/lib/status/resolveServiceStatus";
-import { resolveDisplayStatus } from "@/lib/status/deriveTechnicalStatus";
 import { generateBreadcrumbJsonLd, truncateTitle, truncateDescription } from "@/lib/seo";
+import { getIndexSnapshot } from "@/lib/snapshot/read";
 
 export const revalidate = 3600;
 
@@ -25,10 +20,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { category } = await params;
   const categoryLabel = formatCategoryLabel(category.toUpperCase().replace(/-/g, "_"));
+  const categoryUpper = category.toUpperCase().replace(/-/g, "_");
 
-  const count = await prisma.service.count({
-    where: { category: category.toUpperCase().replace(/-/g, "_") as ServiceCategory },
-  });
+  const snapshot = await getIndexSnapshot();
+  const count = (snapshot?.services ?? []).filter((s) => s.category === categoryUpper).length;
 
   const fullTitle = `${count} ${categoryLabel} AI Tools Monitored Live | DownForAI`;
   const title = truncateTitle(fullTitle, `${count} ${categoryLabel} AI Tools Monitored Live`);
@@ -49,168 +44,11 @@ export async function generateMetadata({
 }
 
 async function getCategoryServices(category: string) {
-  const categoryUpper = category.toUpperCase().replace(/-/g, "_") as ServiceCategory;
-
-  type RawRow = {
-    slug: string;
-    name: string;
-    description: string | null;
-    category: string;
-    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
-    monitoringCapability: string;
-    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-    communityReportsWindow: number | null;
-    communitySignalAt: Date | null;
-    surface_id: string;
-    observedAt: Date | null;
-    status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    latencyMs: number | null;
-    probeResult: string | null;
-    officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-  };
-
-  const rows = await prisma.$queryRaw<RawRow[]>`
-    SELECT
-      s.slug,
-      s.name,
-      s.description,
-      s.category,
-      s."defaultBadge",
-      s."monitoringCapability"::text AS "monitoringCapability",
-      s."communityStatus"            AS "communityStatus",
-      s."communityConfidence"        AS "communityConfidence",
-      s."communityReportsWindow"     AS "communityReportsWindow",
-      s."communitySignalAt"          AS "communitySignalAt",
-      ss.id           AS surface_id,
-      o."observedAt",
-      o.status,
-      o."latencyMs",
-      o."probeResult",
-      o."officialStatus"
-    FROM "Service" s
-    INNER JOIN "ServiceSurface" ss ON ss."serviceId" = s.id AND ss."isEnabled" = true
-    LEFT JOIN LATERAL (
-      SELECT "observedAt", status, "latencyMs", "probeResult"::text AS "probeResult", "officialStatus"::text AS "officialStatus"
-      FROM "Observation"
-      WHERE "serviceSurfaceId" = ss.id
-      ORDER BY "observedAt" DESC
-      LIMIT 24
-    ) o ON true
-    WHERE s.category = ${categoryUpper}::"ServiceCategory"
-  `;
-
-  // Regroupe : service (par slug) → surfaces → observations
-  type SurfaceAccum = {
-    id: string;
-    observations: { observedAt: Date; status: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN"; latencyMs: number | null; probeResult: string | null; officialStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null }[];
-  };
-  type ServiceAccum = {
-    slug: string;
-    name: string;
-    description: string | null;
-    category: string;
-    defaultBadge: "LIVE_MONITORING" | "STATUS_PAGE_SYNC" | "COMMUNITY_REPORTS";
-    monitoringCapability: string;
-    communityStatus: "OPERATIONAL" | "DEGRADED" | "OUTAGE" | "UNKNOWN" | null;
-    communityConfidence: "CONFIRMED" | "PROBABLE" | null;
-    communityReportsWindow: number | null;
-    communitySignalAt: Date | null;
-    surfaces: Map<string, SurfaceAccum>;
-  };
-
-  const serviceMap = new Map<string, ServiceAccum>();
-
-  for (const row of rows) {
-    if (!serviceMap.has(row.slug)) {
-      serviceMap.set(row.slug, {
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        category: row.category,
-        defaultBadge: row.defaultBadge,
-        monitoringCapability: row.monitoringCapability,
-        communityStatus: row.communityStatus,
-        communityConfidence: row.communityConfidence,
-        communityReportsWindow: row.communityReportsWindow,
-        communitySignalAt: row.communitySignalAt,
-        surfaces: new Map(),
-      });
-    }
-
-    const svc = serviceMap.get(row.slug)!;
-
-    if (!svc.surfaces.has(row.surface_id)) {
-      svc.surfaces.set(row.surface_id, { id: row.surface_id, observations: [] });
-    }
-
-    if (row.observedAt && row.status) {
-      svc.surfaces.get(row.surface_id)!.observations.push({
-        observedAt: row.observedAt,
-        status: row.status,
-        latencyMs: row.latencyMs,
-        probeResult: row.probeResult,
-        officialStatus: row.officialStatus,
-      });
-    }
-  }
-
-  return Array.from(serviceMap.values()).map((service) => {
-    const surfaces = Array.from(service.surfaces.values());
-    const allObservations = surfaces.flatMap((s) => s.observations);
-
-    // Displayed status = CURRENT state: latest observation PER surface + official-
-    // prime + community fold — the SINGLE site-wide derivation (no worst-of window).
-    const latestPerSurface = surfaces
-      .map((s) =>
-        s.observations.reduce<(typeof s.observations)[number] | null>(
-          (latest, o) => (latest === null || o.observedAt > latest.observedAt ? o : latest),
-          null,
-        ),
-      )
-      .filter((o): o is NonNullable<typeof o> => o !== null)
-      .map((o) => ({ status: o.status, officialStatus: o.officialStatus, observedAt: o.observedAt }));
-
-    const status = resolveDisplayStatus(
-      service.monitoringCapability,
-      latestPerSurface,
-      communitySignalOf(service),
-    ).status;
-
-    // Build sparkline data from real latency observations
-    const sparklineData: number[] = allObservations
-      .sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())
-      .filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs))
-      .map((o) => o.latencyMs as number)
-      .slice(-24);
-
-    // Compute performance level
-    const surfacePerformances = surfaces.map((surface) => {
-      const latencies = surface.observations.filter((o) => isValidForPublicLatency(o.probeResult, o.latencyMs)).map((o) => o.latencyMs as number);
-      const last5 = latencies.slice(0, 5);
-      const last72h = latencies;
-      const lastObservedAt = surface.observations[0]?.observedAt || null;
-      return computeSurfacePerformance({ last72hLatencies: last72h, last5Latencies: last5, lastObservedAt });
-    });
-    const performanceLevel = aggregateServicePerformance(surfacePerformances.map((p) => p.level));
-    const avgBaseline = surfacePerformances.length > 0
-      ? Math.round(surfacePerformances.reduce((sum, p) => sum + p.baseline, 0) / surfacePerformances.length)
-      : 0;
-
-    return {
-      slug: service.slug,
-      name: service.name,
-      description: service.description,
-      category: service.category,
-      status,
-      badgeType: badgeFromCapability(service.monitoringCapability),
-      latencyMs: allObservations[0]?.latencyMs || null,
-      sparklineData,
-      performanceLevel,
-      performanceBaseline: avgBaseline,
-      performanceScore: computePerformanceScore(allObservations[0]?.latencyMs || null, avgBaseline, performanceLevel),
-    };
-  });
+  // Reads the hourly snapshot (src/lib/snapshot) instead of querying Prisma
+  // directly — same fix as the home page, for the same reason.
+  const categoryUpper = category.toUpperCase().replace(/-/g, "_");
+  const snapshot = await getIndexSnapshot();
+  return (snapshot?.services ?? []).filter((s) => s.category === categoryUpper);
 }
 
 export default async function CategoryPage({

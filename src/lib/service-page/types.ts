@@ -79,4 +79,8 @@ export type ServiceDashboardData = {
   incidents30d: IncidentSummary[];
   reportSummary: ReportSummary;
   topContent: import("@/content/top-services/types").TopServiceContent | null;
+  // Most recent resolved incident's start date (30d window) — the page's
+  // "since X" snippet magnet. Precomputed by the snapshot cron alongside
+  // incidents30d instead of a second query.
+  lastResolvedIncidentAt: Date | null;
 };
