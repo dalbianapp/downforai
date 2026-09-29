@@ -27,6 +27,10 @@ export type FallbackAlternative = {
 
 export type TopServiceContent = {
   slug: string;
+  // Short name people actually type into search, used ONLY in the <title> tag
+  // (H1 and body copy keep the full service name). See the Sept 2026 title
+  // correction mission in memory for the GSC/Bing query data behind these.
+  searchName?: string;
   providerSummary: string;
   officialStatusUrl?: string;
   docsUrl: string;

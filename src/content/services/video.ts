@@ -197,6 +197,7 @@ export const VIDEO: Record<string, TopServiceContent> = {
   },
   "minimax-hailuo": {
     slug: "minimax-hailuo",
+    searchName: "MiniMax",
     providerSummary:
       "MiniMax's video AI (Hailuo). Chinese origin; strong realism and motion.",
     docsUrl: "https://www.minimaxi.com/en",

@@ -520,6 +520,7 @@ export const LLM: Record<string, TopServiceContent> = {
   },
   "google-gemini": {
     slug: "google-gemini",
+    searchName: "Gemini",
     providerSummary:
       "Google's flagship AI assistant across Gemini web/mobile and Google's developer/enterprise AI stack. Available via gemini.google.com, AI Studio (free dev access), and Vertex AI (enterprise).",
     officialStatusUrl: "https://status.cloud.google.com",
@@ -969,6 +970,7 @@ export const LLM: Record<string, TopServiceContent> = {
   },
   "microsoft-copilot": {
     slug: "microsoft-copilot",
+    searchName: "Copilot",
     providerSummary:
       "Microsoft's consumer AI assistant (separate from Microsoft 365 Copilot). Runs on OpenAI models via Azure OpenAI.",
     officialStatusUrl: "https://status.microsoft.com",
@@ -1020,6 +1022,7 @@ export const LLM: Record<string, TopServiceContent> = {
   },
   "character-ai": {
     slug: "character-ai",
+    searchName: "Character.AI (c.ai)",
     providerSummary:
       "AI companion and roleplay platform. High-concurrency long-polling sessions, heavy load scaling.",
     officialStatusUrl: "https://status.character.ai",
@@ -1479,6 +1482,7 @@ export const LLM: Record<string, TopServiceContent> = {
   },
   "moonshot-kimi": {
     slug: "moonshot-kimi",
+    searchName: "Kimi",
     providerSummary:
       "Chinese AI lab Moonshot's assistant. Strong long-context capabilities. Popular in China and expanding internationally.",
     docsUrl: "https://platform.moonshot.cn/docs",

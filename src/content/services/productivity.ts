@@ -151,6 +151,7 @@ export const PRODUCTIVITY: Record<string, TopServiceContent> = {
   },
   "airtable-ai": {
     slug: "airtable-ai",
+    searchName: "Airtable",
     providerSummary:
       "Airtable's AI features (AI fields, Omni, app building) run inside the Airtable platform, so they inherit Airtable's availability and per-plan AI credit limits. Incidents are published on Airtable's Atlassian status page.",
     officialStatusUrl: "https://status.airtable.com",
@@ -1120,6 +1121,7 @@ export const PRODUCTIVITY: Record<string, TopServiceContent> = {
   },
   "microsoft-365-copilot": {
     slug: "microsoft-365-copilot",
+    searchName: "M365 Copilot",
     providerSummary:
       "Microsoft 365 Copilot brings AI into Word, Excel, Outlook, Teams and the Copilot app, licensed per user on top of Microsoft 365. It runs on Microsoft's cloud (Azure OpenAI and Microsoft Graph), and incidents appear in the Microsoft 365 admin service health.",
     docsUrl: "https://support.microsoft.com/copilot",

@@ -12,9 +12,9 @@ import { getIndexSnapshot } from "@/lib/snapshot/read";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "AI Service Status Monitor for 800+ Tools | DownForAI",
+  title: "Is AI Down Right Now? Live AI Outages Today | DownForAI",
   description:
-    "Track outages, status, and response times for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
+    "Is AI down right now? Live status and outage tracking for 800+ AI services — from major LLMs to niche AI tools most trackers miss.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
 };

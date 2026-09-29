@@ -7,6 +7,7 @@ import type { TopServiceContent } from "@/content/top-services/types";
 export const SUPPORT: Record<string, TopServiceContent> = {
   "gong-io": {
     slug: "gong-io",
+    searchName: "Gong",
     providerSummary:
       "Gong is a revenue-intelligence platform that records and transcribes sales calls from Zoom, Teams, Google Meet and dialers, then analyses them and syncs insights to the CRM. Its incidents are usually about calls not being captured or processed rather than the web app being unreachable.",
     officialStatusUrl: "https://status.gong.io/",

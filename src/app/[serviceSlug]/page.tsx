@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { truncateDescription } from "@/lib/seo";
 import { getServiceDashboard } from "@/lib/service-page/getServiceDashboard";
+import { TITLE_VARIANT } from "@/content/ab-test/title-variant";
 import { buildBreadcrumbJsonLd, buildSoftwareApplicationJsonLd } from "@/lib/service-page/structuredData";
 import { InteractiveLink } from "@/components/ui/InteractiveLink";
 import { StatusAndReport } from "@/components/status/StatusAndReport";
@@ -39,23 +40,56 @@ export async function generateStaticParams() {
   return services.map((s) => ({ serviceSlug: s.slug }));
 }
 
-function buildServiceTitle(serviceName: string, year: number, capability?: string | null): string {
+// Control (group A, unchanged since launch).
+function buildServiceTitleA(displayName: string, year: number, capability?: string | null): string {
   if (capability === "BLOCKED_FROM_PROBES") {
-    const primary = `Is ${serviceName} Down? Status & User Reports ${year}`;
-    const fallback = `${serviceName} Status & User Reports ${year}`;
+    const primary = `Is ${displayName} Down? Status & User Reports ${year}`;
+    const fallback = `${displayName} Status & User Reports ${year}`;
     return primary.length <= 60 ? primary : fallback;
   }
   if (capability === "UNVERIFIABLE") {
-    const primary = `Is ${serviceName} Down? Status Unconfirmed ${year}`;
-    const fallback = `${serviceName} Status Unconfirmed ${year}`;
+    const primary = `Is ${displayName} Down? Status Unconfirmed ${year}`;
+    const fallback = `${displayName} Status Unconfirmed ${year}`;
     return primary.length <= 60 ? primary : fallback;
   }
-  const primary = `Is ${serviceName} Down Today? Live Status & Outages ${year}`;
-  const fallback = `Is ${serviceName} Down? Live Status ${year}`;
-  const shortFallback = `${serviceName} Status & Outages ${year}`;
+  const primary = `Is ${displayName} Down Today? Live Status & Outages ${year}`;
+  const fallback = `Is ${displayName} Down? Live Status ${year}`;
+  const shortFallback = `${displayName} Status & Outages ${year}`;
   if (primary.length <= 60) return primary;
   if (fallback.length <= 60) return fallback;
   return shortFallback;
+}
+
+// Variant (group B, Sept 2026 title test — see TITLE_VARIANT). No year;
+// shortening drops " Live Outages" first, then " Right Now".
+function buildServiceTitleB(displayName: string, capability?: string | null): string {
+  if (capability === "BLOCKED_FROM_PROBES") {
+    const primary = `${displayName} Status: Limited Monitoring, User Reports`;
+    const fallback = `${displayName} Status & User Reports`;
+    return primary.length <= 60 ? primary : fallback;
+  }
+  if (capability === "UNVERIFIABLE") {
+    const primary = `${displayName} Status: Unconfirmed, Live Reports`;
+    const fallback = `${displayName} Status Unconfirmed`;
+    return primary.length <= 60 ? primary : fallback;
+  }
+  const full = `${displayName} Status: Is It Down Right Now? Live Outages`;
+  if (full.length <= 60) return full;
+  const noOutages = `${displayName} Status: Is It Down Right Now?`;
+  if (noOutages.length <= 60) return noOutages;
+  return `${displayName} Status: Is It Down?`;
+}
+
+function buildServiceTitle(
+  slug: string,
+  displayName: string,
+  year: number,
+  capability?: string | null
+): string {
+  const variant = TITLE_VARIANT[slug] ?? "A";
+  return variant === "B"
+    ? buildServiceTitleB(displayName, capability)
+    : buildServiceTitleA(displayName, year, capability);
 }
 
 function buildServiceDescription(serviceName: string, reports24h: number, capability?: string | null): string {
@@ -88,10 +122,11 @@ export async function generateMetadata({
   const { serviceSlug } = await params;
   const dashboard = await getServiceDashboard(serviceSlug);
   if (!dashboard) return {};
-  const { service, reportSummary } = dashboard;
+  const { service, reportSummary, topContent } = dashboard;
+  const displayName = topContent?.searchName ?? service.name;
 
   const year = new Date().getFullYear();
-  const title = buildServiceTitle(service.name, year, service.monitoringCapability);
+  const title = buildServiceTitle(service.slug, displayName, year, service.monitoringCapability);
   const description = buildServiceDescription(service.name, reportSummary.total24h, service.monitoringCapability);
 
   return {

@@ -354,6 +354,7 @@ export const ROLEPLAY: Record<string, TopServiceContent> = {
   },
   "chai-ai": {
     slug: "chai-ai",
+    searchName: "Chai",
     providerSummary:
       "Chai (Chai Research) is a mobile-first character-chat app where users create and swipe through community bots. The app runs on Chai's own models, is free with ads and a daily message cap, and there is no full web client, so incidents are almost always reported from the iOS/Android apps.",
     docsUrl: "https://www.chai-research.com",
@@ -1616,6 +1617,7 @@ export const ROLEPLAY: Record<string, TopServiceContent> = {
   },
   "spicychat-ai": {
     slug: "spicychat-ai",
+    searchName: "SpicyChat",
     providerSummary:
       "SpicyChat AI is a large unfiltered character-chat platform with community characters, a free tier that goes through a waiting queue at busy times, and subscriptions that skip the queue and unlock bigger models. The queue is its signature behaviour and the source of most 'is it down' reports.",
     docsUrl: "https://docs.spicychat.ai",
